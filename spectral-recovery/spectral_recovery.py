@@ -40,9 +40,9 @@ def spectral_recovery(
             # TODO: check if individual polygon given? even though it's checked 
             # at initializiation of RestorationArea instance? 
         restoration_area = RestorationArea(
-                 restoration_polygons=restoration_poly,
+                 restoration_polygon=restoration_poly,
                  restoration_year=restoration_year,
-                 reference_range=reference_range
+                 reference_system=reference_range # just a historic time range
         )
         stack = MultiBandYearlyStack(band_dict)
         if not stack.contains(restoration_area):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     test_poly = gpd.read_file("../data/test_poly.gpkg")
     bad_poly = gpd.read_file("../data/out_of_bounds_poly.gpkg")
     rest_year = 2019
-    reference_year = [2018, 2020]
+    reference_year = [2018, 2019]
 
     test_stack = rioxarray.open_rasterio("../data/nir_18_19.tif",
                                              chunks="auto")
