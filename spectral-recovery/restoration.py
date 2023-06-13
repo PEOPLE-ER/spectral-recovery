@@ -1,6 +1,6 @@
 
 from typing import Callable, Optional, Union, List
-from baseline import historic_average
+from baselines import historic_average
 
 import xarray as xr
 import geopandas as gpd
@@ -17,18 +17,22 @@ class ReferenceSystem():
             self,
             reference_polygons: gpd.GeoDataFrame,
             reference_range: Union[int, List[int]],
-            baseline_method: Callable=None
+            baseline_method: Callable=None,
+            variation_method: Callable=None
             ) -> None:
         
         self.reference_polygons = reference_polygons
         self.reference_range = reference_range
         self.baseline_method = baseline_method or historic_average
+        self.variation_method = variation_method
     
     def baseline(self, stack):
-        return self.baseline_method(
-            stack=stack,
-            reference_range=self.reference_range
-            )
+        baseline = self.baseline_method(stack, self.reference_range)
+        if self.variation_method is not None:
+            variation = self.variation_method(stack, self.reference_range)
+            return {"baseline": baseline, "variation": variation}
+        return {"baseline": baseline}
+
     # TODO: some method related to getting bounding boxes
 
 
@@ -46,7 +50,7 @@ class RestorationArea():
             reference_system: Union[int, List[int], ReferenceSystem],
             ) -> None:
         
-        if not self._single_restoration_area(restoration_polygon):
+        if restoration_polygon.shape[0] != 1:
             return ValueError(
                 f"restoration_polygons contains more than one Polygon."
                 f"A RestorationArea instance can only contain one Polygon." )
@@ -64,8 +68,6 @@ class RestorationArea():
             self.reference_system = historic_reference
         else:
             self.reference_system = reference_system
-            
-    def _single_restoration_area(self, restoration_polygons):
-        if restoration_polygons.shape[0] != 1:
-            return False
-        return True
+    
+    def baseline(self, stack):
+        return self.reference_system.baseline(stack)
