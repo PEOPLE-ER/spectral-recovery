@@ -1,11 +1,12 @@
 from typing import Dict, Type, Union, List
-from baseline import historic_average
+from baselines import historic_average
 
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 
-from restoration import ReferenceSystem, RestorationArea
+from restoration import RestorationArea
 from shapely.geometry import box
 
 class MultiBandYearlyStack():
@@ -15,33 +16,30 @@ class MultiBandYearlyStack():
             bands_dict: Dict[str, xr.DataArray], 
             data_mask: xr.DataArray = None
             ) -> None:
-        # TODO: validate dimension names/format of dict
-        self.stack = self._stack_bands(bands_dict)
-        self.data_mask = data_mask
+        # TODO: validate format of bands
+        stacked_stack = self.stack_bands(bands_dict)
+        if data_mask is not None:
+            self.stack = self.mask_stack(stacked_stack, data_mask)
+        else:
+            self.stack = stacked_stack
 
     def contains(self, restoration_area: Type[RestorationArea]):
-        """ Check whether image stack contains the temporal and spatial
-        attributes of a restoration area.
-        """
-        # otherwise,
-        contains_flag = True
-        # For now run each statement seperately so that we can know
-        # which ones fail/if any. TODO: make this prettier?
-        if not self.contains_spatial(restoration_area.restoration_polygon):
-            contains_flag = False
-        if not self.contains_temporal(restoration_area.restoration_year):
-            contains_flag = False
-        if isinstance(restoration_area.reference_system, ReferenceSystem):
-            ref_years = restoration_area.reference_system.reference_range
-            if not self.contains_temporal(ref_years):
-                contains_flag = False
-        else: 
-            if not self.contains_temporal(restoration_area.reference_system):
-                contains_flag = False
+        """ Check if stack contains a RestorationArea.
 
-        return contains_flag
+        Method returns bool flag indicating whether the restoration
+        polygons, reference polygons, restoration date/range, and 
+        reference date/range are contained within the instance's stack.
+        """
+        if not (self.contains_spatial(restoration_area.restoration_polygon) and
+                self.contains_temporal(restoration_area.restoration_year) and
+                self.contains_temporal(
+            restoration_area.reference_system.reference_range
+            )):
+            return False
+        return True
 
     def contains_spatial(self, polygons: gpd.GeoDataFrame):
+        """ Check if stack spatially contains polygons. """
         # NOTE: if this changes to looking at individual polygons
         # rather than the bbox of all polygons, consider this algo:
         # https://stackoverflow.com/questions/14697442/
@@ -52,6 +50,7 @@ class MultiBandYearlyStack():
         return True
  
     def contains_temporal(self, years: Union[int, List[int]]):
+        """ Check if stack temporally contains year/year range. """
         if isinstance(years, list) and len(years) > 1:
             required_years = range(years[0], years[1]+1)
         else: 
@@ -67,15 +66,20 @@ class MultiBandYearlyStack():
         clipped_raster = self.stack.rio.clip(polygons.geometry.values)
         return clipped_raster
 
-    def mask(self):
-        pass 
-
-    def _stack_bands(self, bands_dict):
-        """ Stack 3D dataArrays along new band dimension """
+    @staticmethod
+    def mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):
+        """ Mask a ND stack with 2D mask """
+        # NOTE: should this allow more than 2D mask?
+        mask = mask.squeeze(dim="band")
+        masked_stack = stack.where(mask, fill)
+        return masked_stack
+    
+    @staticmethod
+    def stack_bands(bands_dict, dim_name="band"):
+        """ Stack 3D image stacks to create 4D image stack """
         stacked_bands = xr.concat(
             bands_dict.values(), 
-            dim=pd.Index(bands_dict.keys(), name='band')
+            dim=pd.Index(bands_dict.keys(), name=dim_name)
             )
-        # TODO: add band/index names to band dimensions
         return stacked_bands
 
