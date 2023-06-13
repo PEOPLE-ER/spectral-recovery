@@ -5,7 +5,7 @@ import xarray as xr
 import geopandas as gpd
 import pandas as pd
 
-from reference import ReferenceSystem, RestorationArea
+from restoration import ReferenceSystem, RestorationArea
 from shapely.geometry import box
 
 class MultiBandYearlyStack():
@@ -23,9 +23,6 @@ class MultiBandYearlyStack():
         """ Check whether image stack contains the temporal and spatial
         attributes of a restoration area.
         """
-        # NOTE: if this changes to looking at individual polygons
-        # rather than the bbox of all polygons, consider this algo:
-        # https://stackoverflow.com/questions/14697442/faster-way-of-polygon-intersection-with-shapely
         # otherwise,
         contains_flag = True
         # For now run each statement seperately so that we can know
@@ -44,32 +41,32 @@ class MultiBandYearlyStack():
 
         return contains_flag
 
-    # TODO: maybe make these into static methods?
     def contains_spatial(self, polygons: gpd.GeoDataFrame):
+        # NOTE: if this changes to looking at individual polygons
+        # rather than the bbox of all polygons, consider this algo:
+        # https://stackoverflow.com/questions/14697442/
         ext = box(*self.stack.rio.bounds())
         poly_ext = box(*polygons.total_bounds)
         if not ext.contains(poly_ext):
             return False
         return True
-        
+ 
     def contains_temporal(self, years: Union[int, List[int]]):
         if isinstance(years, list) and len(years) > 1:
             required_years = range(years[0], years[1]+1)
         else: 
             required_years = [years]
         for year in required_years:
-            if not (year in self.stack.coords['time']):
+            if not (pd.to_datetime(str(year)) 
+                    in self.stack.coords['time'].values):
                 return False
         return True
 
-    def clip(self):
-        # clip area for restoration area
-        # NOTE: later when ReferenceSystem is included, this will need to
-        # make sure that the 
+    def clip(self, polygons: gpd.GeoDataFrame) -> xr.DataArray:
+        # filter for relevant years?
+        clipped_raster = self.stack.rio.clip(polygons.geometry.values)
+        return clipped_raster
 
-        pass 
-        
-    
     def mask(self):
         pass 
 
