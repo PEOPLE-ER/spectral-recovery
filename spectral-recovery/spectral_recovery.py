@@ -9,11 +9,42 @@ import pandas as pd
 
 from geopandas import GeoDataFrame
 from typing import Optional, Union, List, Dict
+from enum import Enum
 
-from reference import RestorationArea
-from spectralstack import MultiBandYearlyStack
+from restoration import RestorationArea
+from multiband_yearly_stack import MultiBandYearlyStack
 
+class Indices(Enum):
+    NDVI = "NDVI"
+    NBR = "NBR"
 
+    def __str__(self) -> str:
+        return self.name
+    
+    @classmethod
+    def _missing_(cls, value):
+        for member in cls:
+            if member.value == value.upper():
+                return member
+
+def ndvi(stack):
+    nir = stack.sel(band="nir") 
+    red = stack.sel(band="red")
+    ndvi = (nir - red) / (nir + red)
+    print(ndvi)
+    return ndvi
+
+def nbr(stack):
+    nir = stack.sel(band="nir") 
+    swir = stack.sel(band="swir")
+    nbr = (nir - swir) / (nir + swir)
+    print(nbr)
+    return nbr
+     
+indices_map = {
+    Indices.NDVI: ndvi,
+    Indices.NBR: nbr,
+}
 
 def spectral_recovery(
         band_dict: Dict[str, xr.DataArray],
@@ -45,34 +76,41 @@ def spectral_recovery(
                  reference_system=reference_range # just a historic time range
         )
         stack = MultiBandYearlyStack(band_dict)
-        if not stack.contains(restoration_area):
-            print(
-                f"Restoration polygon is not within temporal or spatial bounds "
-                f"of the provided timeseries. Exiting..."
-                )
-            return
-        # clipped_stack = stack.clip(restoration_area)
-        # for index in indices:
-        #     index_array = getattr(spectral_recovery, )
+        metric_dict = compute_metrics(
+            restoration_area,
+            stack,
+            [],
+            ["ndvi", "nbr"]
+            )
         return
 
-def compute_metrics():
-      pass
-
-def compute_index():
-      pass
+# TODO: possibly organize this function into a class
+def compute_metrics(restoration_area, stack, metrics, indices):
+    if not stack.contains(restoration_area):
+        print(
+            f"Restoration polygon is not within temporal or spatial bounds "
+            f"of the provided timeseries. Exiting..."
+            )
+    clipped_stack = stack.clip(restoration_area.restoration_polygon)
+    indices_dict = {}
+    for indice_input in indices:
+        indice = Indices(indice_input)
+        indices_dict[str(indice)] = indices_map[indice](clipped_stack)
+    
+    print(restoration_area.reference_system.baseline(indices_dict["NDVI"]))
 
 
 if __name__ == "__main__":
     test_poly = gpd.read_file("../data/test_poly.gpkg")
     bad_poly = gpd.read_file("../data/out_of_bounds_poly.gpkg")
     rest_year = 2019
-    reference_year = [2018, 2019]
+    reference_year = 2018
 
     test_stack = rioxarray.open_rasterio("../data/nir_18_19.tif",
                                              chunks="auto")
+    print(test_stack)
     test_stack = test_stack.rename({"band":"time"})
-    test_stack = test_stack.assign_coords(time=([2018]))
-    test_stack2 = test_stack.assign_coords(time=([2019]))
-    test_band_dict = {"b_one": test_stack, "b_two": test_stack2}
+    test_stack = test_stack.assign_coords(time=(pd.to_datetime(["2018"])))
+    test_stack2 = test_stack.assign_coords(time=(pd.to_datetime(["2019"])))
+    test_band_dict = {"nir": test_stack, "red": test_stack2, "swir": test_stack2}
     spectral_recovery(test_band_dict, test_poly, rest_year, reference_year)
