@@ -19,7 +19,7 @@ def spectral_recovery(
         band_dict: Dict[str, xr.DataArray],
         restoration_poly: Union[str, gpd.GeoDataFrame],
         restoration_year: int,
-        reference_range: Union[int, List[int]],
+        reference_years: Union[int, List[int]],
         data_mask: xr.DataArray = None,
         ) -> None:
         """
@@ -43,13 +43,13 @@ def spectral_recovery(
         restoration_area = RestorationArea(
                  restoration_polygon=restoration_poly,
                  restoration_year=restoration_year,
-                 reference_system=reference_range # just a historic time range
+                 reference_system=reference_years # just a historic time range
         )
         stack = MultiBandYearlyStack(band_dict, data_mask)
         metric_dict = compute_metrics(
             restoration_area,
             stack,
-            [],
+            ["percent_recovered", "y2r"],
             ["ndvi", "nbr"]
             )
         return
@@ -62,14 +62,13 @@ def compute_metrics(restoration_area, stack, metrics, indices):
             f"the provided timeseries. Exiting..."
             )
     clipped_stack = stack.clip(restoration_area.restoration_polygon)
-   
     indices_dict = {}
     for indice_input in indices:
         indice = Indices(indice_input)
         indices_dict[str(indice)] = indices_map[indice](clipped_stack)
     indices = MultiBandYearlyStack(indices_dict)
     bl = restoration_area.baseline(indices.stack)
-    print(bl)
+    print(bl["baseline"].sel(band="NDVI").data)
     # metrics_dict = {}
     # for metrics_input in metrics:
     #     metric = Metrics(metrics_input)
@@ -77,16 +76,22 @@ def compute_metrics(restoration_area, stack, metrics, indices):
 
 
 if __name__ == "__main__":
-    test_poly = gpd.read_file("../data/test_poly.gpkg")
-    bad_poly = gpd.read_file("../data/out_of_bounds_poly.gpkg")
-    rest_year = 2018
-    reference_year = 2018
+    test_poly = gpd.read_file("../../data/test_poly.gpkg")
+    bad_poly = gpd.read_file("../../data/out_of_bounds_poly.gpkg")
+    rest_year = pd.to_datetime("2018")
+    reference_year = (pd.to_datetime("2018"),pd.to_datetime("2019"))
 
-    test_stack = rioxarray.open_rasterio("../data/nir_18_19.tif",
+    test_stack = rioxarray.open_rasterio("../../data/nir_18_19.tif",
                                              chunks="auto")
-    test_mask = xr.where(test_stack > 15515, True, False)
     test_stack = test_stack.rename({"band":"time"})
-    test_stack = test_stack.assign_coords(time=(pd.to_datetime(["2018"])))
-    test_stack2 = test_stack.assign_coords(time=(pd.to_datetime(["2018"])))
+    test_stack =  xr.concat(
+            [test_stack,test_stack,test_stack], 
+            dim=pd.Index(["2018", "2019", "2020"], name="time")
+            )
+    test_mask = xr.where(test_stack > 15515, True, False)
+    test_stack = test_stack.assign_coords(time=(pd.to_datetime(["2018", "2019", "2020"])))
+    test_stack2 = test_stack.assign_coords(time=(pd.to_datetime(["2018", "2019", "2020"])))
+
+
     test_band_dict = {"nir": test_stack, "red": test_stack2 * 5, "swir": test_stack2 * 2.1}
     spectral_recovery(test_band_dict, test_poly, rest_year, reference_year)
