@@ -1,5 +1,5 @@
-from typing import Dict, Type, Union, List
-from baselines import historic_average
+from typing import Dict, Type, Union, List, Tuple
+from datetime import datetime
 
 import xarray as xr
 import geopandas as gpd
@@ -9,6 +9,8 @@ import numpy as np
 from restoration import RestorationArea
 from shapely.geometry import box
 
+DATETIME_FREQ = "YS"
+
 class MultiBandYearlyStack():
 
     def __init__(
@@ -17,6 +19,7 @@ class MultiBandYearlyStack():
             data_mask: xr.DataArray = None
             ) -> None:
         # TODO: validate format of bands
+        # TODO: check that years are stored as DATETIME_FREQ
         stacked_stack = self.stack_bands(bands_dict)
         if data_mask is not None:
             self.stack = self.mask_stack(stacked_stack, data_mask)
@@ -30,8 +33,10 @@ class MultiBandYearlyStack():
         polygons, reference polygons, restoration date/range, and 
         reference date/range are contained within the instance's stack.
         """
-        if not (self.contains_spatial(restoration_area.restoration_polygon) and
-                self.contains_temporal(restoration_area.restoration_year) and
+        if not (self.contains_spatial(
+            restoration_area.restoration_polygon) and
+                self.contains_temporal(
+            restoration_area.restoration_year) and
                 self.contains_temporal(
             restoration_area.reference_system.reference_range
             )):
@@ -49,12 +54,10 @@ class MultiBandYearlyStack():
             return False
         return True
  
-    def contains_temporal(self, years: Union[int, List[int]]):
+    def contains_temporal(self, years: datetime):
         """ Check if stack temporally contains year/year range. """
-        if isinstance(years, list) and len(years) > 1:
-            required_years = range(years[0], years[1]+1)
-        else: 
-            required_years = [years]
+        required_years = self._datetime_to_index(years, list=True)
+        print(required_years)
         for year in required_years:
             if not (pd.to_datetime(str(year)) 
                     in self.stack.coords['time'].values):
@@ -65,6 +68,28 @@ class MultiBandYearlyStack():
         # filter for relevant years?
         clipped_raster = self.stack.rio.clip(polygons.geometry.values)
         return clipped_raster
+    
+    @staticmethod
+    def _datetime_to_index(
+        value: Union[datetime, Tuple[datetime]],
+        list: bool=False
+        ) -> pd.DatetimeIndex:
+        if isinstance(value, tuple):
+            dt_range = pd.date_range(
+                start=value[0],
+                end=value[1], 
+                freq=DATETIME_FREQ
+                )
+        else:
+            dt_range = pd.date_range(
+                start=value,
+                end=value, 
+                freq=DATETIME_FREQ
+                )
+        if not list:
+            return dt_range
+        return dt_range.to_list()
+
 
     @staticmethod
     def mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):

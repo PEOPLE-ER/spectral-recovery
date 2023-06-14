@@ -1,9 +1,18 @@
 import functools
-from typing import List, Union, Callable
+
+import xarray as xr
+
+from typing import List, Union, Callable, Tuple
+from datetime import datetime
 """ Methods for computing baselines for reference """
 
 
-def historic_average(stack, reference_range: Union[int, List[int]]):
+def historic_average(
+        stack : xr.DataArray,
+        reference_date: Union[datetime, Tuple[datetime]]
+        ) -> xr.DataArray:
+    # TODO: should this just return a simple list?
+    # TODO: should this take _just_ pd datetimeIndex?
     """
     Compute the average within a stack over a time range.
 
@@ -13,16 +22,9 @@ def historic_average(stack, reference_range: Union[int, List[int]]):
     Returns
     -------
     """
-    if isinstance(reference_range, list):
-        if len(reference_range) > 1:
-            time_range = f"{reference_range[0]}-{reference_range[1]}"
-        else: 
-            time_range = str(reference_range[0])
+    if isinstance(reference_date, tuple):
+        ranged_stack = stack.sel(time=slice(*reference_date))
     else:
-        time_range = str(reference_range)
-    # import dask.array as da
-    # print(da.nansum(stack.data).compute())
-    ranged_stack = stack.sel(time=time_range)
-    baseline_avg = stack.mean(dim=["time", "y", "x"], skipna=True)
+        ranged_stack = stack.sel(time=slice(reference_date))
+    baseline_avg = ranged_stack.mean(dim=["time", "y", "x"], skipna=True)
     return baseline_avg
-
