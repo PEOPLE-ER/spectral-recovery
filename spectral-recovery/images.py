@@ -6,42 +6,49 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from restoration import RestorationArea
+# from restoration import RestorationArea
 from shapely.geometry import box
+from indices import Indices, indices_map
 
 DATETIME_FREQ = "YS"
 
 class MultiBandYearlyStack():
+    """ A multi-band stack of yearly composites """
 
     def __init__(
             self, 
-            bands_dict: Dict[str, xr.DataArray], 
-            data_mask: xr.DataArray = None
+            bands: Union[Dict[str, xr.DataArray], xr.DataArray],
+            dict = False,
+            data_mask: xr.DataArray = None,
             ) -> None:
-        # TODO: validate format of bands
+        # TODO: validate format of bands, continuity of years
         # TODO: check that years are stored as DATETIME_FREQ
-        stacked_stack = self.stack_bands(bands_dict)
+        if dict:
+            stacked_stack = self.stack_bands(bands)
+        else:
+            stacked_stack = bands
         if data_mask is not None:
             self.stack = self.mask_stack(stacked_stack, data_mask)
         else:
             self.stack = stacked_stack
 
-    def contains(self, restoration_area: Type[RestorationArea]):
-        """ Check if stack contains a RestorationArea.
+    # # TODO: remove this?
+    # def contains(self, restoration_area: Type[RestorationArea]):
+    #     """ Check if stack contains a RestorationArea.
 
-        Method returns bool flag indicating whether the restoration
-        polygons, reference polygons, restoration date/range, and 
-        reference date/range are contained within the instance's stack.
-        """
-        if not (self.contains_spatial(
-            restoration_area.restoration_polygon) and
-                self.contains_temporal(
-            restoration_area.restoration_year) and
-                self.contains_temporal(
-            restoration_area.reference_system.reference_range
-            )):
-            return False
-        return True
+    #     Method returns bool flag indicating whether the restoration
+    #     polygons, reference polygons, restoration date/range, and 
+    #     reference date/range are contained within the instance's stack.
+    #     """
+    #     if not (self.contains_spatial(
+    #         restoration_area.restoration_polygon) and
+    #             self.contains_temporal(
+    #         restoration_area.restoration_year) and
+    #             self.contains_temporal(
+    #         restoration_area.reference_system.reference_range
+    #         )):
+    #         return False
+    #     return True
 
     def contains_spatial(self, polygons: gpd.GeoDataFrame):
         """ Check if stack spatially contains polygons. """
@@ -57,7 +64,7 @@ class MultiBandYearlyStack():
     def contains_temporal(self, years: datetime):
         """ Check if stack temporally contains year/year range. """
         required_years = self._datetime_to_index(years, list=True)
-        print(required_years)
+        # print(required_years)
         for year in required_years:
             if not (pd.to_datetime(str(year)) 
                     in self.stack.coords['time'].values):
@@ -67,13 +74,22 @@ class MultiBandYearlyStack():
     def clip(self, polygons: gpd.GeoDataFrame) -> xr.DataArray:
         # filter for relevant years?
         clipped_raster = self.stack.rio.clip(polygons.geometry.values)
-        return clipped_raster
+        return MultiBandYearlyStack(clipped_raster, dict=False)
+    
+    def indices(self, indices_list):
+        indices_dict = {}
+        for indice_input in indices_list:
+            indice = Indices(indice_input)
+            indices_dict[str(indice)] = indices_map[indice](self.stack)
+        # print(indices_dict)
+        return MultiBandYearlyStack(indices_dict, dict=True)
     
     @staticmethod
     def _datetime_to_index(
         value: Union[datetime, Tuple[datetime]],
         list: bool=False
         ) -> pd.DatetimeIndex:
+        """ Convert datetime or range of datetimes into pd.DatetimeIndex """
         if isinstance(value, tuple):
             dt_range = pd.date_range(
                 start=value[0],
@@ -89,7 +105,6 @@ class MultiBandYearlyStack():
         if not list:
             return dt_range
         return dt_range.to_list()
-
 
     @staticmethod
     def mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):
