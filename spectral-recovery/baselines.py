@@ -1,5 +1,3 @@
-import functools
-
 import xarray as xr
 
 from typing import List, Union, Callable, Tuple
@@ -28,3 +26,4 @@ def historic_average(
         ranged_stack = stack.sel(time=slice(reference_date))
     baseline_avg = ranged_stack.mean(dim=["time", "y", "x"], skipna=True)
     return baseline_avg
+

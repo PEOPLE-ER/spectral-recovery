@@ -12,15 +12,17 @@ from typing import Optional, Union, List, Dict
 from enum import Enum
 
 from restoration import RestorationArea
-from multiband_yearly_stack import MultiBandYearlyStack
-from indices import Indices, indices_map
+from images import MultiBandYearlyStack
+from metrics import percent_recovered, Metrics
 
 def spectral_recovery(
         band_dict: Dict[str, xr.DataArray],
-        restoration_poly: Union[str, gpd.GeoDataFrame],
+        restoration_poly: gpd.GeoDataFrame,
         restoration_year: int,
         reference_years: Union[int, List[int]],
-        data_mask: xr.DataArray = None,
+        indices_list: List[str],
+        metrics_list: List[str],
+        data_mask: xr.DataArray = None
         ) -> None:
         """
         The main calling function. Better doc-string incoming. 
@@ -35,23 +37,17 @@ def spectral_recovery(
             Year of restoration event.
 
         """
-        # Read file if given filename
-        if isinstance(restoration_poly, str):
-            restoration_poly = gpd.read_file(restoration_poly)
-            # TODO: check if individual polygon given? even though it's checked 
-            # at initializiation of RestorationArea instance? 
-        restoration_area = RestorationArea(
-                 restoration_polygon=restoration_poly,
-                 restoration_year=restoration_year,
-                 reference_system=reference_years # just a historic time range
-        )
-        stack = MultiBandYearlyStack(band_dict, data_mask)
-        metric_dict = compute_metrics(
-            restoration_area,
-            stack,
-            ["percent_recovered", "y2r"],
-            ["ndvi", "nbr"]
-            )
+        indices = MultiBandYearlyStack(
+             bands=band_dict,
+             dict=True,
+             data_mask=data_mask).indices(indices_list)
+        # print(indices.stack)
+        metrics = RestorationArea(
+             restoration_polygon=restoration_poly,
+             restoration_year=restoration_year,
+             reference_system=reference_years,
+             stack=indices
+        ).metrics(metrics_list)
         return
 
 # TODO: possibly organize this function into a class
@@ -67,8 +63,18 @@ def compute_metrics(restoration_area, stack, metrics, indices):
         indice = Indices(indice_input)
         indices_dict[str(indice)] = indices_map[indice](clipped_stack)
     indices = MultiBandYearlyStack(indices_dict)
+    indices.stack.sel(band="NDVI").rio.to_raster("ndvi_wrapped.tif")
     bl = restoration_area.baseline(indices.stack)
-    print(bl["baseline"].sel(band="NDVI").data)
+    total_change = restoration_area.change(indices.stack)
+    curr
+    # print(bl["baseline"].sel(band="NDVI").data)
+    import dask.array as da
+    pr = percent_recovered(indices.stack, bl["baseline"], event)
+    # print(pr.sel(band="NBR").data.compute())
+    # print(pr.sel(band="NDVI").data.compute())
+    # pr.sel(band="NDVI").rio.to_raster("ndvi_pr.tif")
+    # pr.sel(band="NBR").rio.to_raster("nbr_pr.tif")
+
     # metrics_dict = {}
     # for metrics_input in metrics:
     #     metric = Metrics(metrics_input)
@@ -76,13 +82,14 @@ def compute_metrics(restoration_area, stack, metrics, indices):
 
 
 if __name__ == "__main__":
-    test_poly = gpd.read_file("../../data/test_poly.gpkg")
+    test_poly = gpd.read_file("../../data/small_poly.gpkg")
     bad_poly = gpd.read_file("../../data/out_of_bounds_poly.gpkg")
     rest_year = pd.to_datetime("2018")
     reference_year = (pd.to_datetime("2018"),pd.to_datetime("2019"))
 
     test_stack = rioxarray.open_rasterio("../../data/nir_18_19.tif",
                                              chunks="auto")
+    test_stack = xr.ones_like(test_stack)
     test_stack = test_stack.rename({"band":"time"})
     test_stack =  xr.concat(
             [test_stack,test_stack,test_stack], 
@@ -92,6 +99,14 @@ if __name__ == "__main__":
     test_stack = test_stack.assign_coords(time=(pd.to_datetime(["2018", "2019", "2020"])))
     test_stack2 = test_stack.assign_coords(time=(pd.to_datetime(["2018", "2019", "2020"])))
 
+    # print(test_stack.rio.crs, test_stack.encoding, test_stack.attrs)
 
-    test_band_dict = {"nir": test_stack, "red": test_stack2 * 5, "swir": test_stack2 * 2.1}
-    spectral_recovery(test_band_dict, test_poly, rest_year, reference_year)
+    test_band_dict = {"nir": test_stack, "red": test_stack2 * 2, "swir": test_stack2 * 3}
+    spectral_recovery(
+         band_dict=test_band_dict,
+         restoration_poly=test_poly,
+         restoration_year=rest_year,
+         reference_years=reference_year,
+         indices_list=["ndvi"],
+         metrics_list=["percent_recovered"],
+         )
