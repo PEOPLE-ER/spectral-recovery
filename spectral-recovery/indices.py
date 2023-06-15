@@ -2,6 +2,8 @@ import functools
 from enum import Enum 
 from utils import maintain_spatial_attrs
 
+import xarray as xr
+
 class Indices(Enum):
     NDVI = "NDVI"
     NBR = "NBR"
@@ -16,7 +18,7 @@ class Indices(Enum):
                 return member
 
 @maintain_spatial_attrs
-def ndvi(stack):
+def ndvi(stack: xr.DataArray):
     nir = stack.sel(band="nir") 
     red = stack.sel(band="red")
     ndvi = (nir - red) / (nir + red) 

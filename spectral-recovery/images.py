@@ -12,6 +12,7 @@ from indices import Indices, indices_map
 
 DATETIME_FREQ = "YS"
 
+# TODO: maybe dissolve this class into a set of functions?
 class MultiBandYearlyStack():
     """ A multi-band stack of yearly composites """
 
@@ -32,6 +33,9 @@ class MultiBandYearlyStack():
         else:
             self.stack = stacked_stack
 
+    def __getitem__(self, arg):
+        """ A wrapper(?) xr.DataArray.__getitem__"""
+        return self.stack[arg]
     # # TODO: remove this?
     # def contains(self, restoration_area: Type[RestorationArea]):
     #     """ Check if stack contains a RestorationArea.
@@ -84,6 +88,10 @@ class MultiBandYearlyStack():
         # print(indices_dict)
         return MultiBandYearlyStack(indices_dict, dict=True)
     
+    def sel(self, **kwargs) -> xr.DataArray:
+        """ A wrapper(?) for xr.DataArray.sel returns raw DataArray"""
+        return self.stack.sel(**kwargs)
+
     @staticmethod
     def _datetime_to_index(
         value: Union[datetime, Tuple[datetime]],
