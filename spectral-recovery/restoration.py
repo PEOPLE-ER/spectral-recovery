@@ -7,7 +7,7 @@ from baselines import historic_average
 from utils import to_datetime
 from images import MultiBandYearlyStack
 from datetime import datetime
-from metrics import Metrics, percent_recovered
+from metrics import Metrics, percent_recovered, theil_sen, years_to_recovery
 
 
 class ReferenceSystem():
@@ -65,7 +65,8 @@ class RestorationArea():
             restoration_polygon: gpd.GeoDataFrame, 
             restoration_year: Union[str, datetime],
             reference_system: Union[int, List[int], ReferenceSystem],
-            stack: MultiBandYearlyStack
+            composite_stack: MultiBandYearlyStack,
+            end_year: Union[str, datetime] = None
             ) -> None:
         
         if restoration_polygon.shape[0] != 1:
@@ -75,25 +76,33 @@ class RestorationArea():
         
         self.restoration_polygon = restoration_polygon
         self.restoration_year = to_datetime(restoration_year)
-
         if not isinstance(reference_system, ReferenceSystem):
             historic_reference = ReferenceSystem(
                 reference_polygons=restoration_polygon,
                 reference_range=reference_system
-                ) 
+                )
             self.reference_system = historic_reference
         else:
             self.reference_system = reference_system
 
-        # TODO: Move _within/contains to clip?
-        if not self._within(stack):
+        # TODO: is this function appropriate in this class? Move to MultiBandYearlyStack?
+        if not self._within(composite_stack):
             raise ValueError(
                 f"Restoration not contained by stack. Better message soon!" )
         # print(stack)
-        self.stack = stack.clip(self.restoration_polygon)
-    
+        self.stack = composite_stack.clip(self.restoration_polygon)
+        # print(self.stack.sel(band="NDVI").data.compute())
+        if not end_year:
+            # TODO: there's a more xarray-enabled way to do this via DatetimeIndex.
+            # I know it in my bones. Might not matter though.
+            self.end_year = self.stack["time"].max()
 
-    def _within(self, stack):
+
+    def _within(self, stack: MultiBandYearlyStack) -> bool:
+        """ Determine whether an instance's spatial (polygons) and
+        temporal (reference and event years) attributes are contained
+        within a stack of yearly composites
+        """
         if not (stack.contains_spatial(self.restoration_polygon) and
                     stack.contains_temporal(self.restoration_year) and
                         stack.contains_temporal(
@@ -101,9 +110,8 @@ class RestorationArea():
             )):
             return  False
         return True
-    
 
-    def metrics(self, metrics):
+    def metrics(self, metrics) -> MultiBandYearlyStack:
         """ Generate recovery metrics over restoration area """
         metrics_dict = {}
         for metrics_input in metrics:
@@ -113,11 +121,27 @@ class RestorationArea():
             except Exception:
                 raise ValueError(f"{metric} not implemented")
             metrics_dict[str(metric)] = metric_func()
-            MultiBandYearlyStack.stack_bands(metrics_dict,
-                                             dim_name="metric")
-            
+            metrics_stack = MultiBandYearlyStack.stack_bands(
+                metrics_dict,
+                dim_name="metric"
+                )
+        return metrics_stack
+
     def _percent_recovered(self) -> xr.DataArray:
-        curr = self.stack.sel(time=self.restoration_year)
+
+        curr = self.stack.sel(time=self.end_year)
         baseline = self.reference_system.baseline(self.stack)
         event = self.stack.sel(time=self.restoration_year)
-        return percent_recovered(curr, baseline, event)
+        return percent_recovered(curr, baseline["baseline"], event)
+    
+    def _years_to_recovery(self) -> xr.DataArray:
+
+        filtered_stack = self.stack.sel(
+            time=slice(self.restoration_year,
+                       self.end_year)
+                       )
+        baseline = self.reference_system.baseline(self.stack)
+        return years_to_recovery(
+            stack=filtered_stack,
+            baseline=baseline["baseline"]
+            )

@@ -12,11 +12,24 @@ def to_datetime(value: Union[str, List[str], datetime, pd.Timestamp]):
     return value
 
 def maintain_spatial_attrs(func):
-    """ A wrapper for maintaining rioxarray spatial information (like 
-    CRS and encoding) when performing xarray operations.
+    """ A wrapper for maintaining rioxarray spatial information on an
+    xarray.DataArray object when performing xarray operations.
     """
     @functools.wraps(func)
     def wrapper_maintain_spatial_attrs(stack, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        stack : xr.DataArray
+            The DataArray object whose spatial attributes will be
+            maintained
+
+        Returns
+        --------
+        indice : xr.DataArray
+            DataArray object returned by func with rioxarray CRS and 
+            encoding from original stack re-attached
+        """
         indice = func(stack, *args, **kwargs)
         indice.rio.write_crs(stack.rio.crs, inplace=True)
         indice.rio.update_encoding(stack.encoding, inplace=True)
