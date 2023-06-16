@@ -12,7 +12,7 @@ from indices import Indices, indices_map
 
 DATETIME_FREQ = "YS"
 
-# TODO: maybe dissolve this class into a set of functions?
+# TODO: maybe dissolve this class into a set of functions? 
 class MultiBandYearlyStack():
     """ A multi-band stack of yearly composites """
 
@@ -36,6 +36,7 @@ class MultiBandYearlyStack():
     def __getitem__(self, arg):
         """ A wrapper(?) xr.DataArray.__getitem__"""
         return self.stack[arg]
+    
     # # TODO: remove this?
     # def contains(self, restoration_area: Type[RestorationArea]):
     #     """ Check if stack contains a RestorationArea.
@@ -68,7 +69,6 @@ class MultiBandYearlyStack():
     def contains_temporal(self, years: datetime):
         """ Check if stack temporally contains year/year range. """
         required_years = self._datetime_to_index(years, list=True)
-        # print(required_years)
         for year in required_years:
             if not (pd.to_datetime(str(year)) 
                     in self.stack.coords['time'].values):
@@ -76,7 +76,7 @@ class MultiBandYearlyStack():
         return True
 
     def clip(self, polygons: gpd.GeoDataFrame) -> xr.DataArray:
-        # filter for relevant years?
+        """ Clip the stack of images with a set of polygons """
         clipped_raster = self.stack.rio.clip(polygons.geometry.values)
         return MultiBandYearlyStack(clipped_raster, dict=False)
     
@@ -89,7 +89,7 @@ class MultiBandYearlyStack():
         return MultiBandYearlyStack(indices_dict, dict=True)
     
     def sel(self, **kwargs) -> xr.DataArray:
-        """ A wrapper(?) for xr.DataArray.sel returns raw DataArray"""
+        """ A wrapper for xr.DataArray.sel """
         return self.stack.sel(**kwargs)
 
     @staticmethod

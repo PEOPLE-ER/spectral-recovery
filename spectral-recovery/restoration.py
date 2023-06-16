@@ -7,7 +7,7 @@ from baselines import historic_average
 from utils import to_datetime
 from images import MultiBandYearlyStack
 from datetime import datetime
-from metrics import Metrics, percent_recovered, theil_sen, years_to_recovery
+from metrics import Metrics, percent_recovered, years_to_recovery
 
 
 class ReferenceSystem():
@@ -19,24 +19,26 @@ class ReferenceSystem():
     Attributes
     -----------
     polygons : gpd.GeoDataframe
-        A GeoDataframe containing at least one Polygon representing
-        the collective area/ecosystems in the reference system
+        A GeoDataframe containing at least one Polygon. Polygons
+        represent areas that are considered to be references.
+
     reference_years : Tuple of datetimes
         The year or range of years to consider as reference
-    baseline_method : Callable
-        The method of computing the baseline within the reference system
-    variation_method : Callable
-        THe method for characterizing baseline variation within the 
-        reference system. Default is None.
 
-    
+    baseline_method : Callable
+        A function for computing the baseline within the reference
+        system. Must be able to operate on DataArrays.
+
+    variation_method : Callable, optional
+        THe method for characterizing baseline variation within the 
+        reference system. Default is None.    
     """
     def __init__(
             self,
             reference_polygons: gpd.GeoDataFrame,
             reference_range: Union[int, List[int]],
             baseline_method: Callable=None,
-            variation_method: Callable=None
+            variation_method: Optional[Callable]=None
             ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
         self.reference_polygons = reference_polygons
@@ -66,7 +68,7 @@ class RestorationArea():
             restoration_year: Union[str, datetime],
             reference_system: Union[int, List[int], ReferenceSystem],
             composite_stack: MultiBandYearlyStack,
-            end_year: Union[str, datetime] = None
+            end_year: Optional[Union[str, datetime]] = None
             ) -> None:
         
         if restoration_polygon.shape[0] != 1:
@@ -88,10 +90,9 @@ class RestorationArea():
         # TODO: is this function appropriate in this class? Move to MultiBandYearlyStack?
         if not self._within(composite_stack):
             raise ValueError(
-                f"Restoration not contained by stack. Better message soon!" )
-        # print(stack)
+                f"RestorationArea not contained by stack. "
+                f"Better message soon!" )
         self.stack = composite_stack.clip(self.restoration_polygon)
-        # print(self.stack.sel(band="NDVI").data.compute())
         if not end_year:
             # TODO: there's a more xarray-enabled way to do this via DatetimeIndex.
             # I know it in my bones. Might not matter though.
@@ -99,20 +100,33 @@ class RestorationArea():
 
 
     def _within(self, stack: MultiBandYearlyStack) -> bool:
-        """ Determine whether an instance's spatial (polygons) and
-        temporal (reference and event years) attributes are contained
-        within a stack of yearly composites
+        """ Check if instance is within MultiBandYearlyStack 
+        
+        Determines whether an instance's spatial (polygons) and temporal 
+        (reference and event years) attributes are contained within a
+        stack of yearly composite images.
+
         """
         if not (stack.contains_spatial(self.restoration_polygon) and
                     stack.contains_temporal(self.restoration_year) and
                         stack.contains_temporal(
-            self.reference_system.reference_range
-            )):
+                                self.reference_system.reference_range)):
             return  False
         return True
 
-    def metrics(self, metrics) -> MultiBandYearlyStack:
-        """ Generate recovery metrics over restoration area """
+    def metrics(self, metrics: List[str]) -> MultiBandYearlyStack:
+        """ Generate recovery metrics over a Restoration Area
+        
+        Parameters
+        ----------
+        metrics : list of str
+            A list of metrics to generate.
+
+        Returns
+        -------
+        metrics_stack : MultiBandYearlyStack
+
+        """
         metrics_dict = {}
         for metrics_input in metrics:
             metric = Metrics(metrics_input)
@@ -128,7 +142,6 @@ class RestorationArea():
         return metrics_stack
 
     def _percent_recovered(self) -> xr.DataArray:
-
         curr = self.stack.sel(time=self.end_year)
         baseline = self.reference_system.baseline(self.stack)
         event = self.stack.sel(time=self.restoration_year)
@@ -143,5 +156,6 @@ class RestorationArea():
         baseline = self.reference_system.baseline(self.stack)
         return years_to_recovery(
             stack=filtered_stack,
-            baseline=baseline["baseline"]
+            baseline=baseline["baseline"],
+            curr_year=self.end_year.dt.year
             )

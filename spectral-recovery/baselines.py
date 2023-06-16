@@ -16,14 +16,20 @@ def historic_average(
 
     Parameters
     ----------
+    stack : xr.DataArray
+        DataArray of images to derive historic average from. Must be 3D
+        and contain "time", "y" and "x" labelled dimensions. 
 
     Returns
     -------
+    baseline_avg : xr.DataArray
+        A 1D DataArray of historic average. 
     """
     if isinstance(reference_date, tuple):
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
+    print(ranged_stack.data.compute())
     baseline_avg = ranged_stack.mean(dim=["time", "y", "x"], skipna=True)
     return baseline_avg
 

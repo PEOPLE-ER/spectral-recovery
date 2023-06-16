@@ -38,11 +38,18 @@ def spectral_recovery(
             Year of restoration event.
 
         """
+        # indices = MultiBandYearlyStack(
+        #      bands=band_dict,
+        #      dict=True,
+        #      data_mask=data_mask
+        #      ).indices(indices_list) # NOTE: indices computed on full stack. Might come to regret this.
+
         indices = MultiBandYearlyStack(
              bands=band_dict,
              dict=True,
              data_mask=data_mask
-             ).indices(indices_list) # NOTE: indices computed on full stack. Might come to regret this.
+             )
+
         ra = RestorationArea(
              restoration_polygon=restoration_poly,
              restoration_year=restoration_year,
@@ -50,9 +57,9 @@ def spectral_recovery(
              composite_stack=indices
         )
         metrics = ra.metrics(metrics_list)
-        a = metrics.sel(metric='years_to_recovery').data.compute()
-        print(a)
-        # data = metrics.sel(metric="years_to_recovery").data.compute()[0][0][0]
+        data = metrics.data.compute()
+        # data = metrics.sel(metric="years_to_recovery").data.compute()
+        print(data)
         # vals = ra.stack.sel(time=slice(ra.restoration_year,ra.end_year)).data.compute()
         # intercept =  ra.stack.sel(time=slice(ra.restoration_year)).squeeze().data.compute()
         # y_vals = intercept[0] + data[0]*vals
@@ -68,37 +75,26 @@ def spectral_recovery(
 
 
 if __name__ == "__main__":
-    test_poly = gpd.read_file("../../data/smaller_poly.gpkg")
-    bad_poly = gpd.read_file("../../data/out_of_bounds_poly.gpkg")
-    rest_year = pd.to_datetime("2013")
-    reference_year = (pd.to_datetime("2010"), pd.to_datetime("2012"))
+    test_poly = gpd.read_file("../../data/1p_test.gpkg")
+    # bad_poly = gpd.read_file("../../data/out_of_bounds_poly.gpkg")
+    rest_year = pd.to_datetime("2012")
+    reference_year = (pd.to_datetime("2009"), pd.to_datetime("2011"))
 
-    test_stack = rioxarray.open_rasterio("../../data/nir_18_19.tif",
+    test_stack = rioxarray.open_rasterio("../../data/test.tif",
                                              chunks="auto")
-    test_stack = xr.ones_like(test_stack)
+    
     test_stack = test_stack.rename({"band":"time"})
-    
-    test_stack =  xr.concat(
-            [test_stack*100, test_stack*100,test_stack*101, test_stack*100, test_stack*11, test_stack,test_stack*2, test_stack*2.5, test_stack*3, test_stack*3.5, test_stack*4, test_stack*4.5], 
-            dim=pd.Index(["2008","2009","2010", "2011","2012","2013","2014", "2015","2016","2017","2018", "2019"], name="time")
-            )
-    # test_mask = xr.where(test_stack > 15515, True, False)
-    test_stack = test_stack.assign_coords(time=(pd.to_datetime(["2008","2009","2010", "2011","2012","2013","2014", "2015","2016","2017","2018", "2019"])))
-    # test_stack.rio.write_crs(test_raster.rio.crs, inplace=True)
-    # test_stack.rio.update_encoding(test_stack.encoding, inplace=True)
+    # # test_mask = xr.where(test_stack > 15515, True, False)
+    test_stack = test_stack.assign_coords(
+          time=(
+                pd.to_datetime(["2008","2009","2010", "2011","2012","2013","2014", "2015","2016","2017","2018", "2019"])))
 
-    # print(test_stack.rio.crs, test_stack.encoding, test_stack.attrs)
-
-    test_band_dict = {"red": test_stack * np.random.randint(low=1, high=50, size=test_stack.shape), 
-                      "nir": test_stack * np.random.randint(low=1, high=50, size=test_stack.shape),
-                      "swir": test_stack * np.random.randint(low=1, high=50, size=test_stack.shape)
-                      }
-    
+    test_band_dict = {"NDVI": test_stack}
     spectral_recovery(
          band_dict=test_band_dict,
          restoration_poly=test_poly,
          restoration_year=rest_year,
          reference_years=reference_year,
          indices_list=["ndvi"],
-         metrics_list=["years_to_recovery"],
+         metrics_list=["percent_recovered", "years_to_recovery"],
          )

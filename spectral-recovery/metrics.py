@@ -1,7 +1,6 @@
 import xarray as xr
 import numpy as np
 
-from typing import Callable
 from enum import Enum
 from utils import maintain_spatial_attrs
 from scipy import stats
@@ -23,9 +22,6 @@ def percent_recovered(
     ) -> xr.DataArray:
     """ Per-pixel percent recovery
 
-    Recovery computation based on a baseline measurement, a restoration 
-    event measure, and the current/relevant observations.
-
     """
     total_change = abs(baseline-event)
     recovered = abs(stack-baseline)
@@ -35,33 +31,61 @@ def percent_recovered(
 @maintain_spatial_attrs
 def years_to_recovery(
     stack: xr.DataArray,
-    baseline: xr.DataArray
+    baseline: xr.DataArray,
+    percent: int = 80,
+    curr_year = int
 ) -> xr.DataArray:
-    reco_80 = baseline * 0.80
-    # print(baseline.data.compute())
-    ts = theil_sen(stack.chunk(dict(time=-1)), stack.time.dt.year)
-    # print(ts.data.compute())
-    temp = reco_80 - stack / ts[0][0][0][0]
-    return temp[0,:,0,0] # TODO: this is insane. Fix the dims before computing.
+    """ Years-to-recovery
+
+    
+    """
+    reco_80 = baseline * (percent / 100)
+    print(baseline.data.compute())
+    # theil_sen calls apply_ufunc along the time dimension so stack's 
+    # chunks need to contain the entire timestack before being passed
+    ts = theil_sen(y=stack.chunk(dict(time=-1)), x=stack.time.dt.year)
+    y2r = ((reco_80 - ts.sel(parameter="intercept")) 
+           / ts.sel(parameter="slope"))
+    return y2r - curr_year
 
 
-def new_linregress(x, y):
-    # Wrapper around scipy mstats.theilslopes to use in apply_ufunc
-    print(f"ts input: {x} and {y}")
-    slope, intercept, low_slope, high_slope = stats.mstats.theilslopes(x, y)
-    return np.array([slope, intercept, low_slope, high_slope])
+def new_linregress(y, x):
+    """ Wrapper around  mstats.theilslopes for apply_ufunc usage """
+    slope, intercept, low_slope, high_slope = stats.mstats.theilslopes(y, x)
+    print(slope, intercept)
+    return np.array([slope, intercept])
 
 
-def theil_sen(spectral, time):
+def theil_sen(y, x):
+    """ Apply theil_sen slope regression across time on each pixel
+    
+    Parameters
+    ----------
+    y : xr.DataArray
 
-    return xr.apply_ufunc(
+    x : list of int
+    
+    Returns
+    -------
+    ts_reg : xr.DataArray
+        DataArray of  theil-sen slope and intercept parameters for each
+        pixel. 3D DataArray with "parameter", "y" and "x" labelled 
+        dimensions where "y" and "x" match input "y" and "x".
+
+    """
+    ts_dim_name = "parameter"
+    ts_reg = xr.apply_ufunc(
         new_linregress,
-        spectral,
-        time,
+        y,
+        x,
         input_core_dims=[['time'], ['time']],
-        output_core_dims=[["parameter"]],
+        output_core_dims=[[ts_dim_name]],
         vectorize=True,
         dask="parallelized",
         output_dtypes=['float64'],
-        dask_gufunc_kwargs={"output_sizes": {"parameter": 4}},
+        dask_gufunc_kwargs={
+            "output_sizes": {ts_dim_name: 2}
+            },
         )
+    ts_reg = ts_reg.assign_coords({"parameter": ["slope", "intercept"]})
+    return ts_reg
