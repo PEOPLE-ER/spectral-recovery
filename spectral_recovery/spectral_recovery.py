@@ -48,13 +48,12 @@ def spectral_recovery(
         if not timeseries.yearcomp.valid:
             raise ValueError("Stack not a valid yearly composite stack.")  
         # indices = timeseries.yearcomp.indices(indices_list)
-        ra = RestorationArea(
+        metrics = RestorationArea(
              restoration_polygon=restoration_poly,
              restoration_year=restoration_year,
              reference_system=reference_years,
              composite_stack=timeseries
-        )
-        metrics = ra.metrics(metrics_list)
+        ).metrics(metrics_list)
         data = metrics.data.compute()
 
 
@@ -87,7 +86,7 @@ if __name__ == "__main__":
     # # test_mask = xr.where(test_stack > 15515, True, False)
     test_stack = test_stack.assign_coords(
           time=(
-                pd.to_datetime(["2008","2009","2010", "2011","2012","2013","2014", "2015","2016","2017","2018", "2019"])))
+                pd.to_datetime(["2008","2009","2011", "2010","2012","2013","2014", "2015","2016","2017","2018", "2019"])))
 
     test_band_dict = {"NDVI":test_stack}
     spectral_recovery(
