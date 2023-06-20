@@ -81,30 +81,27 @@ class YearlyCompositeAccessor:
 
     @property
     def valid(self):
-        return self._valid
-    
-    def _is_valid(self) -> bool:
-        """ Check whether an xarray object is a valid yearly composite.
+        """Return flag for whether DataArray is validy yearly comppsite.
 
-        Check if the object has the required dimension labels (as
-        defined within project) and valid coordinate values. Will
+        Checks whether the object has the required dimension labels (as
+        defined by/for project) and valid coordinate values. Will
         massage object inplace where possible to try to make valid.  
-
+    
         """
-        if not set(self._obj.dims) == set(REQ_DIMS):
-            return False
+        if self._valid is None:
+            if not set(self._obj.dims) == set(REQ_DIMS):
+                self._valid = False
         
-        # TODO: check for valid band coordinate names (`indices` needs 
-        # to be able to recognize them)
+            # TODO: check for valid band coordinate names (`indices` needs 
+            # to be able to recognize them)
+            # TODO: check that datetime frequency matches DATETIME_FREQ
+            self._obj = self._obj.sortby("time")
+            years = self._obj.time.dt.year.data
 
-        self._obj = self._obj.sortby("time")
-        years = self._obj.time.dt.year.data
-        print(years)
-
-        if not np.all((years == list(range(min(years), max(years)+1)))):
-            return False
-
-        return True
+            if not np.all((years == list(range(min(years), max(years)+1)))):
+                self._valid = False
+            self._valid = True
+        return self._valid
     
     def contains_spatial(self, polygons: gpd.GeoDataFrame) -> bool:
         """ Check if stack contains polygons. """
