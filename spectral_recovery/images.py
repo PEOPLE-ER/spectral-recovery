@@ -66,10 +66,10 @@ def datetime_to_index(
 
 @xr.register_dataarray_accessor("yearcomp")
 class YearlyCompositeAccessor:
-    """ An accessor on the xarray DataArray object.
+    """ A DataArray accessor yearly composite operations.
     
     For methods related to yearly composite timeseries as well as
-    general image stack operations.
+    general image stack operations. 
     
     See "Extending xarray using accessors" for more information: 
     https://docs.xarray.dev/en/stable/internals/extending-xarray.html
@@ -77,7 +77,7 @@ class YearlyCompositeAccessor:
     """
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self._valid = self._is_valid()
+        self._valid = None
 
     @property
     def valid(self):
