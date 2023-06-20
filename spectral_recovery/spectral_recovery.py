@@ -37,13 +37,11 @@ def spectral_recovery(
         restoration_year :
             Year of restoration event.
 
-        """
-        # indices = MultiBandYearlyStack(
-        #      bands=band_dict,
-        #      dict=True,
-        #      data_mask=data_mask
-        #      ).indices(indices_list) # NOTE: indices computed on full stack. Might come to regret this.
+        reference_years : int or list of int
+        indices_list : list of str
+        metrics_list : list of 
 
+        """
         timeseries = images.stack_from_files(band_dict, data_mask)
         if not timeseries.yearcomp.valid:
             raise ValueError("Stack not a valid yearly composite stack.")  
@@ -75,13 +73,13 @@ def spectral_recovery(
 
 if __name__ == "__main__":
     test_poly = gpd.read_file("../1p_test.gpkg")
-    # bad_poly = gpd.read_file("../../data/out_of_bounds_poly.gpkg")
+    bad_poly = gpd.read_file("../../data/out_of_bounds_poly.gpkg")
     rest_year = pd.to_datetime("2012")
     reference_year = (pd.to_datetime("2009"), pd.to_datetime("2011"))
 
     test_stack = rioxarray.open_rasterio("../test_recovered_early.tif",
                                              chunks="auto")
-    
+    print(test_stack.band)
     test_stack = test_stack.rename({"band":"time"})
     # # test_mask = xr.where(test_stack > 15515, True, False)
     test_stack = test_stack.assign_coords(
@@ -91,7 +89,7 @@ if __name__ == "__main__":
     test_band_dict = {"NDVI":test_stack}
     spectral_recovery(
          band_dict=test_band_dict,
-         restoration_poly=test_poly,
+         restoration_poly=bad_poly,
          restoration_year=rest_year,
          reference_years=reference_year,
          indices_list=["ndvi"],
