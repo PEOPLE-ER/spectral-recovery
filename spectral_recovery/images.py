@@ -1,11 +1,12 @@
-from typing import Dict, Type, Union, List, Tuple
-from datetime import datetime
+import rioxarray
 
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 
+from typing import Dict, Type, Union, List, Tuple
+from datetime import datetime
 from shapely.geometry import box
 from indices import Indices, indices_map
 
@@ -13,23 +14,32 @@ DATETIME_FREQ = "YS"
 REQ_DIMS = ["band", "time", "y", "x"]
 
 
-def stack_from_files(band_dict, mask):
+def stack_from_files(band_dict, timeseries_range, mask):
     """ """
-    # TODO: handle reading files. rn assumes it's given xr structures
-    stacked = stack_bands(band_dict)
-    if mask:
-        masked = mask_stack(stacked, mask)
-        return masked
+    if all([isinstance(band, str) for band in band_dict.values()]):  # Read TIFs
+        read_bands = {}
+        for name, file in band_dict.items():
+            with rioxarray.open_rasterio(file, chunks="auto") as band:
+                band = band.rename({"band": "time"})
+                read_bands[name] = band
+        stacked_bands = stack_bands(read_bands.values(), read_bands.keys())
     else:
-        return stacked
+        stacked_bands = stack_bands(band_dict.values(), band_dict.keys())
+
+    years = [str(e) for e in np.arange(timeseries_range[0], timeseries_range[1] + 1)]
+    stacked_bands = stacked_bands.assign_coords(time=(pd.to_datetime(years)))
+    print(stacked_bands)
+    if mask:
+        masked_bands = mask_stack(stacked_bands, mask)
+        return masked_bands
+    else:
+        return stacked_bands
 
 
-def stack_bands(bands_dict, dim_name="band"):
+def stack_bands(bands, names, dim_name="band"):
     """Stack 3D image stacks to create 4D image stack"""
     # TODO: handle band dimension/coordinate errors
-    stacked_bands = xr.concat(
-        bands_dict.values(), dim=pd.Index(bands_dict.keys(), name=dim_name)
-    )
+    stacked_bands = xr.concat(bands, dim=pd.Index(names, name=dim_name))
     return stacked_bands
 
 
@@ -92,6 +102,7 @@ class YearlyCompositeAccessor:
             self._obj = self._obj.sortby("time")
             years = self._obj.time.dt.year.data
 
+            # NOTE: this wont work if the time coords aren't 199X/20XX
             if not np.all((years == list(range(min(years), max(years) + 1)))):
                 self._valid = False
             self._valid = True
@@ -129,4 +140,4 @@ class YearlyCompositeAccessor:
         for indice_input in indices_list:
             indice = Indices(indice_input)
             indices_dict[str(indice)] = indices_map[indice](self._obj)
-        return stack_bands(indices_dict)
+        return stack_bands(indices_dict.values(), indices_dict.keys())

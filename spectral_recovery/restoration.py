@@ -80,6 +80,7 @@ class RestorationArea:
 
         self.restoration_polygon = restoration_polygon
         self.restoration_year = to_datetime(restoration_year)
+
         if not isinstance(reference_system, ReferenceSystem):
             historic_reference = ReferenceSystem(
                 reference_polygons=restoration_polygon, reference_range=reference_system
@@ -88,10 +89,9 @@ class RestorationArea:
         else:
             self.reference_system = reference_system
 
-        # TODO: is this function appropriate in this class? Move to MultiBandYearlyStack?
         if not self._within(composite_stack):
             raise ValueError(
-                f"RestorationArea not contained by stack. " f"Better message soon!"
+                f"RestorationArea not contained by stack. Better message soon!"
             )
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
         if not end_year:
@@ -136,7 +136,9 @@ class RestorationArea:
             except Exception:
                 raise ValueError(f"{metric} not implemented")
             metrics_dict[str(metric)] = metric_func()
-            metrics_stack = images.stack_bands(metrics_dict, dim_name="metric")
+            metrics_stack = images.stack_bands(
+                metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
+            )
         return metrics_stack
 
     def percent_recovered(self) -> xr.DataArray:
