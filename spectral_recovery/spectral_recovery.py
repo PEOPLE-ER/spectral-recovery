@@ -1,26 +1,22 @@
-import rioxarray
-import dask
 import os
 
 os.environ["USE_PYGEOS"] = "0"
 import xarray as xr
 import geopandas as gpd
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import images
 
-from typing import Optional, Union, List, Dict
+from typing import Union, List, Dict
 
 from restoration import RestorationArea
-from metrics import percent_recovered, Metrics
 
 
 def spectral_recovery(
-    band_dict: Dict[str, xr.DataArray],
-    restoration_poly: gpd.GeoDataFrame,
+    band_dict: Dict[str, xr.DataArray | str],
+    restoration_poly: gpd.GeoDataFrame | str,
+    timeseries_range: List[int],
     restoration_year: int,
-    reference_years: Union[int, List[int]],
+    reference_range: Union[int, List[int]],
     indices_list: List[str],
     metrics_list: List[str],
     data_mask: xr.DataArray = None,
@@ -42,20 +38,25 @@ def spectral_recovery(
     metrics_list : list of
 
     """
-    timeseries = images.stack_from_files(band_dict, data_mask)
+    if isinstance(restoration_poly, str):
+        restoration_poly = gpd.read_file(restoration_poly)
+
+    timeseries = images.stack_from_files(band_dict, timeseries_range, data_mask)
     if not timeseries.yearcomp.valid:
         raise ValueError("Stack not a valid yearly composite stack.")
-    # indices = timeseries.yearcomp.indices(indices_list)
+
+    indices = timeseries.yearcomp.indices(indices_list)
+
     metrics = RestorationArea(
         restoration_polygon=restoration_poly,
         restoration_year=restoration_year,
-        reference_system=reference_years,
+        reference_system=reference_range,
         composite_stack=timeseries,
     ).metrics(metrics_list)
     data = metrics.data.compute()
 
     # data = metrics.sel(metric="years_to_recovery").data.compute()
-    print(data)
+    print(metrics.data)
     # vals = ra.stack.sel(time=slice(ra.restoration_year,ra.end_year)).data.compute()
     # intercept =  ra.stack.sel(time=slice(ra.restoration_year)).squeeze().data.compute()
     # y_vals = intercept[0] + data[0]*vals
@@ -76,20 +77,24 @@ if __name__ == "__main__":
     rest_year = pd.to_datetime("2012")
     reference_year = (pd.to_datetime("2009"), pd.to_datetime("2011"))
 
-    test_stack = rioxarray.open_rasterio("../test_recovered_early.tif", chunks="auto")
-    print(test_stack.band)
-    test_stack = test_stack.rename({"band": "time"})
+    # test_stack = rioxarray.open_rasterio("../test_recovered_early.tif", chunks="auto", band_as_variable=True)
+    # print(test_stack)
+    # test_stack = test_stack.rename({"band": "time"})
     # # test_mask = xr.where(test_stack > 15515, True, False)
     # test_stack = test_stack.assign_coords(
     #       time=(
     #             pd.to_datetime(["2008","2009","2011", "2010","2012","2013","2014", "2015","2016","2017","2018", "2019"])))
 
     # test_band_dict = {"NDVI":test_stack}
-    # spectral_recovery(
-    #      band_dict=test_band_dict,
-    #      restoration_poly=bad_poly,
-    #      restoration_year=rest_year,
-    #      reference_years=reference_year,
-    #      indices_list=["ndvi"],
-    #      metrics_list=["percent_recovered", "years_to_recovery"],
-    #      )
+    spectral_recovery(
+        band_dict={
+            "nir": "../test_recovered_early.tif",
+            "red": "../test_recovered.tif",
+        },
+        restoration_poly="../1p_test.gpkg",
+        timeseries_range=[2008, 2019],
+        restoration_year=rest_year,
+        reference_range=reference_year,
+        indices_list=["ndvi"],
+        metrics_list=["percent_recovered", "years_to_recovery"],
+    )
