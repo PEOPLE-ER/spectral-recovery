@@ -6,7 +6,7 @@ from typing import Callable, Optional, Union, List
 from baselines import historic_average
 from utils import to_datetime
 from datetime import datetime
-from metrics import Metrics, percent_recovered, years_to_recovery
+from metrics import Metrics, percent_recovered, years_to_recovery, dNBR, RI
 
 
 class ReferenceSystem:
@@ -116,7 +116,7 @@ class RestorationArea:
         return True
 
     def metrics(self, metrics: List[str]) -> xr.DataArray:
-        """Generate recovery metrics over a Restoration Area
+        """ Generate recovery metrics over a Restoration Area
 
         Parameters
         ----------
@@ -125,15 +125,15 @@ class RestorationArea:
 
         Returns
         -------
-        metrics_stack : MultiBandYearlyStack
+        metrics_stack : xr.DataArray
 
         """
         metrics_dict = {}
         for metrics_input in metrics:
             metric = Metrics(metrics_input)
             try:
-                metric_func = getattr(self, f"{metric}")
-            except Exception:
+                metric_func = getattr(self, f"_{metric}")
+            except Exception: # TODO: better error
                 raise ValueError(f"{metric} not implemented")
             metrics_dict[str(metric)] = metric_func()
             metrics_stack = images.stack_bands(
@@ -141,7 +141,7 @@ class RestorationArea:
             )
         return metrics_stack
 
-    def percent_recovered(self) -> xr.DataArray:
+    def _percent_recovered(self) -> xr.DataArray:
         curr = self.stack.sel(time=self.end_year)
         baseline = self.reference_system.baseline(self.stack)
         event = self.stack.sel(time=self.restoration_year)
@@ -149,11 +149,23 @@ class RestorationArea:
             eval_stack=curr, baseline=baseline["baseline"], event_obs=event
         )
 
-    def years_to_recovery(self) -> xr.DataArray:
+    def _years_to_recovery(self) -> xr.DataArray:
         filtered_stack = self.stack.sel(
             time=slice(self.restoration_year, self.end_year)
         )
         baseline = self.reference_system.baseline(self.stack)
         return years_to_recovery(
             image_stack=filtered_stack, baseline=baseline["baseline"]
+        )
+    
+    def _dNBR(self) -> xr.DataArray:
+        restoration_stack = self.stack.sel(time=slice(self.restoration_year, self.end_year))
+        return dNBR(
+            restoration_stack=restoration_stack
+        )
+    
+    def _RI(self) -> xr.DataArray:
+        restoration_stack = self.stack.sel(time=slice(self.restoration_year, self.end_year))
+        return RI(
+            restoration_stack=restoration_stack
         )

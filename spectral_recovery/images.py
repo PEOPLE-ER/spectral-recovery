@@ -5,7 +5,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from typing import Dict, Type, Union, List, Tuple
+from typing import Union, Tuple
 from datetime import datetime
 from shapely.geometry import box
 from indices import Indices, indices_map
@@ -28,7 +28,6 @@ def stack_from_files(band_dict, timeseries_range, mask):
 
     years = [str(e) for e in np.arange(timeseries_range[0], timeseries_range[1] + 1)]
     stacked_bands = stacked_bands.assign_coords(time=(pd.to_datetime(years)))
-    print(stacked_bands)
     if mask:
         masked_bands = mask_stack(stacked_bands, mask)
         return masked_bands
