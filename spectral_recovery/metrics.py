@@ -1,9 +1,11 @@
 import xarray as xr
 import numpy as np
+import dask.array as da
 
 from enum import Enum
 from utils import maintain_spatial_attrs
 from scipy import stats
+from typing import Callable, Optional
 
 
 class Metrics(Enum):
@@ -52,26 +54,27 @@ def years_to_recovery(
     image_stack : xr.DataArray
         Timeseries of images to compute years-to-recovery across.
 
+    # TODO: faster implementation located in `metrics_playground` module
     """
     reco_80 = baseline * (percent / 100)
     # theil_sen calls apply_ufunc along the time dimension so stack's
     # chunks need to contain the entire timestack before being passed
     y_vals = image_stack.chunk(dict(time=-1))
     x_vals = image_stack.time.dt.year
-    ts = theil_sen(y=y_vals, x=x_vals)
+
+    ts = _theil_sen(y=y_vals, x=x_vals)
     y2r = (reco_80 - ts.sel(parameter="intercept")) / ts.sel(parameter="slope")
     # TODO: maybe return NaN if intercept + slope*curr_year is not recovered
     return y2r - x_vals[0]
 
 
-def new_linregress(y, x):
+def _new_linregress(y, x):
     """Wrapper around mstats.theilslopes for apply_ufunc usage"""
     slope, intercept, low_slope, high_slope = stats.mstats.theilslopes(y, x)
-    print(slope, intercept)
     return np.array([slope, intercept])
 
 
-def theil_sen(y, x):
+def _theil_sen(y, x):
     """Apply theil_sen slope regression across time on each pixel
 
     Parameters
@@ -90,7 +93,7 @@ def theil_sen(y, x):
     """
     ts_dim_name = "parameter"
     ts_reg = xr.apply_ufunc(
-        new_linregress,
+        _new_linregress,
         y,
         x,
         input_core_dims=[["time"], ["time"]],
@@ -102,3 +105,37 @@ def theil_sen(y, x):
     )
     ts_reg = ts_reg.assign_coords({"parameter": ["slope", "intercept"]})
     return ts_reg
+
+
+@maintain_spatial_attrs
+def dNBR(
+    restoration_stack: xr.DataArray,
+    trajectory_func: Optional[Callable] = None
+) -> xr.DataArray:
+    if trajectory_func is not None:
+        # Fit timeseries to trajectory and use fitted values for formula
+        # fit trajectory here!
+        raise NotImplementedError
+    dNBR = restoration_stack.isel(time=4) - restoration_stack(time=0)
+    return dNBR
+
+@maintain_spatial_attrs
+def RI(
+    image_stack: xr.DataArray,
+    restoration_index: int,
+    trajectory_func: Optional[Callable] = None
+) -> xr.DataArray:
+    """
+    Notes
+    -----
+    This implementation currently assumes that the disturbance period is 1 year long.
+    # TODO: allow for multi-year disturbances?
+    """
+    if trajectory_func is not None:
+        # Fit timeseries to trajectory and use fitted values for formula
+        # fit trajectory here!
+        raise NotImplementedError
+    dNBR = ((image_stack.isel(time=restoration_index+5) - image_stack(time=restoration_index))
+            / (image_stack.isel(time=restoration_index-1)) - image_stack(time=restoration_index))
+    return dNBR
+    

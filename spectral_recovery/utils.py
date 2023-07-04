@@ -90,45 +90,52 @@ def set_band_descriptions(filepath, bands):
 
 
 if __name__ == "__main__":
-    tif = "../test_recovered_early.tif"
-    list_bands = dict(
-        zip(
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-            [
-                "2008",
-                "2009",
-                "2011",
-                "2010",
-                "2012",
-                "2013",
-                "2014",
-                "2015",
-                "2016",
-                "2017",
-                "2018",
-                "2019",
-            ],
-        )
-    )
-    print(list_bands)
-    set_band_descriptions(tif, list_bands)
+    # tif = "../test_bigger.tif"
+    # list_bands = dict(
+    #     zip(
+    #         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    #         [
+    #             "2008",
+    #             "2009",
+    #             "2011",
+    #             "2010",
+    #             "2012",
+    #             "2013",
+    #             "2014",
+    #             "2015",
+    #             "2016",
+    #             "2017",
+    #             "2018",
+    #             "2019",
+    #         ],
+    #     )
+    # )
+    # print(list_bands)
+    # set_band_descriptions(tif, list_bands)
 
-    # rasterOrigin = (-123.25745,45.43013)
-    # pixelWidth = 30
-    # pixelHeight = 30
-    # newRasterfn = '../test_recovered_early.tif'
-    # epsg = 4326
-    # array = np.array([[[100]],
-    #                   [[100]],
-    #                   [[100]],
-    #                   [[100]],
-    #                   [[20]],
-    #                   [[40]],
-    #                   [[60]],
-    #                   [[80]],
-    #                   [[100]],
-    #                   [[100]],
-    #                   [[100]],
-    #                   [[100]]
-    #                   ])
-    # array2raster(newRasterfn,rasterOrigin,pixelWidth,pixelHeight,array,epsg)
+    rasterOrigin = (-123.25745, 45.43013)
+    pixelWidth = 30
+    pixelHeight = 30
+    newRasterfn = "../test_200.tif"
+    epsg = 4326
+    array = np.array(
+        [
+            np.ones((200, 200)) * 100,
+            np.ones((200, 200)) * 100,
+            np.ones((200, 200)) * 100,
+            np.ones((200, 200)) * 100,
+            np.ones((200, 200)) * 10,
+            np.ones((200, 200)) * 20,
+            np.ones((200, 200)) * 30,
+            np.ones((200, 200)) * 40,
+            np.ones((200, 200)) * 50,
+            np.ones((200, 200)) * 60,
+            np.ones((200, 200)) * 70,
+            np.ones((200, 200)) * 80,
+            np.ones((200, 200)) * 90,
+            np.ones((200, 200)) * 100,
+        ]
+    )
+    print(array.shape)
+    print(array)
+    array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array, epsg)

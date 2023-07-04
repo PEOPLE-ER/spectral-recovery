@@ -29,6 +29,5 @@ def historic_average(
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
-    print(ranged_stack.data.compute())
     baseline_avg = ranged_stack.mean(dim=["time", "y", "x"], skipna=True)
     return baseline_avg
