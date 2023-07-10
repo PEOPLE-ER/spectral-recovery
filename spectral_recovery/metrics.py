@@ -9,14 +9,6 @@ from scipy import stats
 from typing import Callable, Optional
 
 
-class Metrics(Enum):
-    percent_recovered = "percent_recovered"
-    years_to_recovery = "years_to_recovery"
-
-    def __str__(self) -> str:
-        return self.name
-
-
 @maintain_spatial_attrs
 def percent_recovered(
     eval_stack: xr.DataArray, baseline: xr.DataArray, event_obs: xr.DataArray
@@ -37,8 +29,8 @@ def percent_recovered(
         from. x and y dimensions must match `eval_stack`.
 
     """
-    total_change = abs(baseline - event_obs)
-    recovered = abs(eval_stack - baseline)
+    total_change = abs(baseline - event_obs) # 90
+    recovered = abs(eval_stack - event_obs) # 
     return recovered / total_change
 
 
@@ -112,30 +104,33 @@ def _theil_sen(y, x):
 def dNBR(
     restoration_stack: xr.DataArray,
     rest_start: int | datetime,
-    trajectory_func: Optional[Callable] = None
+    trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
-    """ Delta-NBR
+    """Delta-NBR
 
     Parameters
     ----------
     restoration_stack :
     trajectory_func : callable, optional
-    
+
     """
     if trajectory_func is not None:
         # Fit timeseries to trajectory and use fitted values for formula
         # fit trajectory here!
         raise NotImplementedError
-    
-    rest_post_5 = rest_start+5
-    dNBR = restoration_stack.sel(time=rest_post_5) - restoration_stack.sel(time=rest_start)
+
+    rest_post_5 = rest_start + 5
+    dNBR = restoration_stack.sel(time=rest_post_5) - restoration_stack.sel(
+        time=rest_start
+    )
     return dNBR
 
+
 @maintain_spatial_attrs
-def RI(
+def recovery_indicator(
     image_stack: xr.DataArray,
     rest_start: int,
-    trajectory_func: Optional[Callable] = None
+    trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
     """
     Notes
@@ -147,12 +142,11 @@ def RI(
         # Fit timeseries to trajectory and use fitted values for formula
         # fit trajectory here!
         raise NotImplementedError
-    
-    rest_post_5 = rest_start+5
-    dist_start = rest_start-1
+
+    rest_post_5 = rest_start + 5
+    dist_start = rest_start - 1
     dist_end = rest_start
-    RI = ((image_stack.sel(time=rest_post_5) - image_stack.sel(time=rest_start))
-            / (image_stack.sel(time=dist_start) - image_stack.sel(time=dist_end))
-            )
+    RI = (image_stack.sel(time=rest_post_5) - image_stack.sel(time=rest_start)) / (
+        image_stack.sel(time=dist_start) - image_stack.sel(time=dist_end)
+    )
     return RI
-    

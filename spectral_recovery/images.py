@@ -5,37 +5,56 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
+from enum import Enum, auto
 from typing import Union, Tuple
 from datetime import datetime
 from shapely.geometry import box
-from indices import Indices, indices_map
+from indices import indices_map
+from enums import Index, BandCommon
 
 DATETIME_FREQ = "YS"
 REQ_DIMS = ["band", "time", "y", "x"]
 
 
-def stack_from_files(band_dict, timeseries_range, mask):
+def stack_from_files(timeseries_dict, mask, timeseries_range=None):
     """ """
-    if all([isinstance(band, str) for band in band_dict.values()]):  # Read TIFs
-        read_bands = {}
-        for name, file in band_dict.items():
-            with rioxarray.open_rasterio(file, chunks="auto") as band:
-                band = band.rename({"band": "time"})
-                read_bands[name] = band
-        stacked_bands = stack_bands(read_bands.values(), read_bands.keys())
-    else:
-        stacked_bands = stack_bands(band_dict.values(), band_dict.keys())
+    if all([isinstance(data, str) for data in timeseries_dict.values()]):
+        # Need to read in data
+        for name, file in timeseries_dict.items():
+            with rioxarray.open_rasterio(file, chunks="auto") as data:
+                timeseries_dict[name] = data
 
-    years = [str(e) for e in np.arange(timeseries_range[0], timeseries_range[1] + 1)]
-    stacked_bands = stacked_bands.assign_coords(time=(pd.to_datetime(years)))
+    if all([isinstance(key, BandCommon) for key in timeseries_dict.keys()]):
+        for key, data in timeseries_dict.items():
+            timeseries_dict[key] = data.rename({"band": "time"})
+        stacked_data = stack_bands(
+            timeseries_dict.values(), timeseries_dict.keys(), dim_name="band"
+        )
+    elif all([isinstance(key, np.datetime64) for key in timeseries_dict.keys()]):
+        stacked_data = stack_bands(
+            timeseries_dict.values(), timeseries_dict.keys(), dim_name="time"
+        )
+    # TODO: catch missing dimension error here
+    stacked_data = stacked_data.transpose(*REQ_DIMS)
+    stacked_data = stacked_data.sortby("time")
+
+    if timeseries_range is not None:
+        stacked_data = stacked_data.assign_coords(time=(pd.date_range(*timeseries_range, freq=DATETIME_FREQ)))
+    if not all(
+        [isinstance(index, np.datetime64) for index in stacked_data.coords["time"].data]
+    ):
+        raise ValueError(
+            "Time dimension not initialized as np.datetime64. If rasters passed per-band please "
+            "ensure the `time_series` range parameter is set. Otherwise... something's gone wrong."
+        ) from None
     if mask:
-        masked_bands = mask_stack(stacked_bands, mask)
-        return masked_bands
+        masked_data = mask_stack(stacked_data, mask)
+        return masked_data
     else:
-        return stacked_bands
+        return stacked_data
 
 
-def stack_bands(bands, names, dim_name="band"):
+def stack_bands(bands, names, dim_name):
     """Stack 3D image stacks to create 4D image stack"""
     # TODO: handle band dimension/coordinate errors
     stacked_bands = xr.concat(bands, dim=pd.Index(names, name=dim_name))
@@ -45,7 +64,8 @@ def stack_bands(bands, names, dim_name="band"):
 def mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):
     """Mask a ND stack with 2D mask"""
     # TODO: should this allow more than 2D mask?
-    mask = mask.squeeze(dim="band")
+    if len(mask.dims) != 2:
+        raise ValueError(f"Mask must be 2D but {len(mask.dims)}D mask provided.")
     masked_stack = stack.where(mask, fill)
     return masked_stack
 
@@ -58,7 +78,7 @@ def datetime_to_index(
     For ease of indexing through a DataArray object
     """
     if isinstance(value, tuple):
-        dt_range = pd.date_range(start=value[0], end=value[1], freq=DATETIME_FREQ)
+        dt_range = pd.date_range(*value, freq=DATETIME_FREQ)
     else:
         dt_range = pd.date_range(start=value, end=value, freq=DATETIME_FREQ)
     if not list:
@@ -98,10 +118,10 @@ class YearlyCompositeAccessor:
             # TODO: check for valid band coordinate names (`indices` needs
             # to be able to recognize them)
             # TODO: check that datetime frequency matches DATETIME_FREQ
+            # TODO: this will fail/error "time" not in datetime. Allow for non-datetime indices?
             self._obj = self._obj.sortby("time")
             years = self._obj.time.dt.year.data
 
-            # NOTE: this wont work if the time coords aren't 199X/20XX
             if not np.all((years == list(range(min(years), max(years) + 1)))):
                 self._valid = False
             self._valid = True
@@ -119,7 +139,10 @@ class YearlyCompositeAccessor:
         return True
 
     def contains_temporal(self, years: datetime) -> bool:
-        """Check if stack contains year/year range."""
+        """Check if stack contains year/year range.
+
+        TODO: again, this func only works on datetime indices
+        """
         required_years = datetime_to_index(years, list=True)
         for year in required_years:
             if not (pd.to_datetime(str(year)) in self._obj.coords["time"].values):
@@ -134,9 +157,14 @@ class YearlyCompositeAccessor:
         indices_list : list of str
             The list of indices to compute/produce.
 
+        Returns
+        --------
+        xr.DataArray
+            A 4D (band, time, y, x) array with indices stacked
+            along the band dimension.
         """
         indices_dict = {}
         for indice_input in indices_list:
-            indice = Indices(indice_input)
-            indices_dict[str(indice)] = indices_map[indice](self._obj)
-        return stack_bands(indices_dict.values(), indices_dict.keys())
+            indice = Index(indice_input)
+            indices_dict[indice] = indices_map[indice](self._obj)
+        return stack_bands(indices_dict.values(), indices_dict.keys(), dim_name="band")

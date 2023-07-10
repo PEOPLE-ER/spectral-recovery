@@ -116,26 +116,16 @@ if __name__ == "__main__":
     rasterOrigin = (-123.25745, 45.43013)
     pixelWidth = 30
     pixelHeight = 30
-    newRasterfn = "../test_200.tif"
-    epsg = 4326
-    array = np.array(
-        [
-            np.ones((200, 200)) * 100,
-            np.ones((200, 200)) * 100,
-            np.ones((200, 200)) * 100,
-            np.ones((200, 200)) * 100,
-            np.ones((200, 200)) * 10,
-            np.ones((200, 200)) * 20,
-            np.ones((200, 200)) * 30,
-            np.ones((200, 200)) * 40,
-            np.ones((200, 200)) * 50,
-            np.ones((200, 200)) * 60,
-            np.ones((200, 200)) * 70,
-            np.ones((200, 200)) * 80,
-            np.ones((200, 200)) * 90,
-            np.ones((200, 200)) * 100,
-        ]
-    )
-    print(array.shape)
-    print(array)
-    array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array, epsg)
+    for i, year in enumerate([2008, 2009, 2010, 2011]):
+        newRasterfn = f"../test_{year}_time.tif"
+        epsg = 4326
+        array = np.array(
+            [
+                np.ones((200, 200)) * 1 * i + 1,
+                np.ones((200, 200)) * 2 * i + 1,
+                np.ones((200, 200)) * 3 * i + 1,
+            ]
+        )
+        print(array.shape)
+        print(array)
+        array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array, epsg)
