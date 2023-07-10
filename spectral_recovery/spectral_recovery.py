@@ -76,7 +76,7 @@ if __name__ == "__main__":
         restoration_poly="../1p_test.gpkg",
         restoration_year=rest_year,
         reference_range=reference_year,
-        indices_list=[Index.ndvi],
+        indices_list=[Index.ndvi, Index.sr],
         metrics_list=[Metric.percent_recovered],
     )
     print(metrics)

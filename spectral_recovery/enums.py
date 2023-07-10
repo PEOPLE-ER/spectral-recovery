@@ -12,6 +12,18 @@ class BandCommon(Enum):
 class Index(Enum):
     ndvi = "NDVI"
     nbr = "NBR"
+    gndvi = "GNDVI"
+    evi = "EVI"
+    avi = "AVI"
+    savi = "SAVI"
+    ndwi = "NDWI"
+    tcg = "TCG"
+    tcw = "TCW"
+    tcb = "TCB"
+    sr = "SR"
+    ndmi = "NDMI"
+    gci = "GCI"
+    ndii = "NDII"
 
     def __str__(self) -> str:
         return self.value
