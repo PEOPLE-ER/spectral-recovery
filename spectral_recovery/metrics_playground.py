@@ -72,26 +72,36 @@ def theil_sen(y, x):
 
 
 def _theilsen_regression(pixel):
-    """ 
-    # TODO: this could accept any regression callable?
+    """
+    Parameters
+    ----------
+    pixel : pd.Series
+        Timeseries of pixel
+
+    Returns
+    -------
+    pd.Dataframe
+        Slope and intercept vals
+
     """
     slope, intercept, low_slope, high_slope = stats.mstats.theilslopes(pixel)
     return pd.DataFrame({"slope": [slope], "intercept": [intercept]})
 
 
 def _trend_block_mapper(block):
-    """ Determine per-pixel, per-band trajectory params across time.
+    """Determine per-pixel, per-band trajectory params across time.
 
     Parameters
     ----------
     block : np.array
         4D array (band, time, y, x) of timeseries data.
-    
+
     Returns
     -------
     block_with_trajectory : np.array
         4D array (band, time, y, x) containing per-pixel, per-band trajectory
         params along the time dimension.
+
     """
     block_without_time = (block.shape[0], block.shape[2], block.shape[3])
     block_as_df = pd.DataFrame(
@@ -102,10 +112,10 @@ def _trend_block_mapper(block):
             + [block.ravel()]
         ),
         columns=["band", "time", "y", "x", "val"],
-    )  # from https://stackoverflow.com/questions/45422898
+    )  # Fast. From https://stackoverflow.com/questions/45422898
     reg_out = (
         block_as_df.groupby(["x", "y", "band"], group_keys=True)["val"]
-        .apply(_theilsen_regression)
+        .apply(_theilsen_regression)  # TODO: parameterize this
         .reset_index()
     )
     indices = reg_out.index.tolist()
@@ -131,12 +141,12 @@ def _trend_block_mapper(block):
 
 
 def get_trajectory(array):
-    """ Coordinator for calling regression function over Dask blocks.
+    """Coordinator for calling regression function over Dask blocks.
 
-    # TODO: this function could be maybe be redundant if we find a way to let map_block
-    # calls have a new dimension on return (e.g params, band, y, x) vs. (band, time, y, x)
+    TODO: this function could be maybe be redundant if we find a way to let map_block
+    calls have a new dimension on return (e.g params, band, y, x) vs. (band, time, y, x)
     """
-    # TODO: Chunking should be dynamic not hard-coded
+    # TODO: Chunk sizes should be dynamic not hard-coded
     array = array.chunk((1, -1, 10, 10))
     array.data = array.data.map_blocks(_trend_block_mapper, dtype=np.ndarray)
 
@@ -165,7 +175,7 @@ def simple_years_to_recovery(
     # That way we can seperate the Y2R equation from trajectory algos
     ts = get_trajectory(image_stack)
     # print(ts.sel(parameter="slope").data.compute().shape)
-    y2r = (1250000 - ts.sel(parameter="intercept")) / ts.sel(parameter="slope")
+    y2r = (reco_80 - ts.sel(parameter="intercept")) / ts.sel(parameter="slope")
     return y2r
 
 
@@ -180,10 +190,21 @@ if __name__ == "__main__":
     import rioxarray
 
     array = xr.DataArray(
-        da.from_array(np.arange(0, 500*500*5).reshape(1, 5, 500, 500), chunks="auto"),
+        da.from_array(
+            np.arange(0, 500 * 500 * 5).reshape(1, 5, 500, 500), chunks="auto"
+        ),
         coords=[
             ("band", ["red"]),
-            ("time", [pd.to_datetime("2010"),pd.to_datetime("2011"),pd.to_datetime("2012"),pd.to_datetime("2013"),pd.to_datetime("2014")]),
+            (
+                "time",
+                [
+                    pd.to_datetime("2010"),
+                    pd.to_datetime("2011"),
+                    pd.to_datetime("2012"),
+                    pd.to_datetime("2013"),
+                    pd.to_datetime("2014"),
+                ],
+            ),
             ("y", np.arange(0, 500)),
             ("x", np.arange(0, 500)),
         ],
