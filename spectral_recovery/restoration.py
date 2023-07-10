@@ -6,7 +6,8 @@ from typing import Callable, Optional, Union, List
 from baselines import historic_average
 from utils import to_datetime
 from datetime import datetime
-from metrics import Metrics, percent_recovered, years_to_recovery, dNBR, RI
+from metrics import percent_recovered, years_to_recovery, dNBR, recovery_indicator
+from enums import Metric
 
 
 class ReferenceSystem:
@@ -47,6 +48,7 @@ class ReferenceSystem:
         self.variation_method = variation_method
 
     def baseline(self, stack):
+        # TODO: replace dict with named tuple
         baseline = self.baseline_method(stack, self.reference_range)
         if self.variation_method is not None:
             variation = self.variation_method(stack, self.reference_range)
@@ -116,7 +118,7 @@ class RestorationArea:
         return True
 
     def metrics(self, metrics: List[str]) -> xr.DataArray:
-        """ Generate recovery metrics over a Restoration Area
+        """Generate recovery metrics over a Restoration Area
 
         Parameters
         ----------
@@ -130,12 +132,12 @@ class RestorationArea:
         """
         metrics_dict = {}
         for metrics_input in metrics:
-            metric = Metrics(metrics_input)
+            metric = Metric(metrics_input)
             try:
-                metric_func = getattr(self, f"_{metric}")
-            except Exception: # TODO: better error
+                metric_func = getattr(self, f"_{metric.name}")
+            except Exception:  # TODO: More specific Exception
                 raise ValueError(f"{metric} not implemented")
-            metrics_dict[str(metric)] = metric_func()
+            metrics_dict[metric] = metric_func()
             metrics_stack = images.stack_bands(
                 metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
             )
@@ -145,6 +147,9 @@ class RestorationArea:
         curr = self.stack.sel(time=self.end_year)
         baseline = self.reference_system.baseline(self.stack)
         event = self.stack.sel(time=self.restoration_year)
+        print(baseline["baseline"].data.compute())
+        print(event.data.compute())
+        print(curr.data.compute())
         return percent_recovered(
             eval_stack=curr, baseline=baseline["baseline"], event_obs=event
         )
@@ -155,17 +160,18 @@ class RestorationArea:
         )
         baseline = self.reference_system.baseline(self.stack)
         return years_to_recovery(
-            image_stack=filtered_stack, baseline=baseline["baseline"]
+            image_stack=filtered_stack,
+            baseline=baseline["baseline"],
         )
-    
+
     def _dNBR(self) -> xr.DataArray:
-        restoration_stack = self.stack.sel(time=slice(self.restoration_year, self.end_year))
-        return dNBR(
-            restoration_stack=restoration_stack
+        restoration_stack = self.stack.sel(
+            time=slice(self.restoration_year, self.end_year)
         )
-    
-    def _RI(self) -> xr.DataArray:
-        restoration_stack = self.stack.sel(time=slice(self.restoration_year, self.end_year))
-        return RI(
-            restoration_stack=restoration_stack
+        return dNBR(restoration_stack=restoration_stack)
+
+    def _recovery_indicator(self) -> xr.DataArray:
+        restoration_stack = self.stack.sel(
+            time=slice(self.restoration_year, self.end_year)
         )
+        return recovery_indicator(restoration_stack=restoration_stack)
