@@ -3,6 +3,7 @@ import numpy as np
 import dask.array as da
 
 from enum import Enum
+from datetime import datetime
 from utils import maintain_spatial_attrs
 from scipy import stats
 from typing import Callable, Optional
@@ -110,19 +111,30 @@ def _theil_sen(y, x):
 @maintain_spatial_attrs
 def dNBR(
     restoration_stack: xr.DataArray,
+    rest_start: int | datetime,
     trajectory_func: Optional[Callable] = None
 ) -> xr.DataArray:
+    """ Delta-NBR
+
+    Parameters
+    ----------
+    restoration_stack :
+    trajectory_func : callable, optional
+    
+    """
     if trajectory_func is not None:
         # Fit timeseries to trajectory and use fitted values for formula
         # fit trajectory here!
         raise NotImplementedError
-    dNBR = restoration_stack.isel(time=4) - restoration_stack(time=0)
+    
+    rest_post_5 = rest_start+5
+    dNBR = restoration_stack.sel(time=rest_post_5) - restoration_stack.sel(time=rest_start)
     return dNBR
 
 @maintain_spatial_attrs
 def RI(
     image_stack: xr.DataArray,
-    restoration_index: int,
+    rest_start: int,
     trajectory_func: Optional[Callable] = None
 ) -> xr.DataArray:
     """
@@ -135,7 +147,12 @@ def RI(
         # Fit timeseries to trajectory and use fitted values for formula
         # fit trajectory here!
         raise NotImplementedError
-    dNBR = ((image_stack.isel(time=restoration_index+5) - image_stack(time=restoration_index))
-            / (image_stack.isel(time=restoration_index-1)) - image_stack(time=restoration_index))
-    return dNBR
+    
+    rest_post_5 = rest_start+5
+    dist_start = rest_start-1
+    dist_end = rest_start
+    RI = ((image_stack.sel(time=rest_post_5) - image_stack.sel(time=rest_start))
+            / (image_stack.sel(time=dist_start) - image_stack.sel(time=dist_end))
+            )
+    return RI
     
