@@ -24,7 +24,7 @@ def stack_from_files(timeseries_dict, mask, timeseries_range=None):
             with rioxarray.open_rasterio(file, chunks="auto") as data:
                 timeseries_dict[name] = data
 
-    if all([isinstance(key, BandCommon) for key in timeseries_dict.keys()]):
+    if all([(isinstance(key, BandCommon) or isinstance(key, Index)) for key in timeseries_dict.keys()]):
         for key, data in timeseries_dict.items():
             timeseries_dict[key] = data.rename({"band": "time"})
         stacked_data = stack_bands(
