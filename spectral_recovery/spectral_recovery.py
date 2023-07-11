@@ -16,8 +16,8 @@ def spectral_recovery(
     restoration_poly: gpd.GeoDataFrame | str,
     restoration_year: int,
     reference_range: Union[int, List[int]],
-    indices_list: List[str],
     metrics_list: List[str],
+    indices_list: List[str] = None,
     timeseries_range: List[int] = None,
     data_mask: xr.DataArray = None,
 ) -> None:
@@ -45,13 +45,16 @@ def spectral_recovery(
     if not timeseries.yearcomp.valid:
         raise ValueError("Stack not a valid yearly composite stack.") 
     
-    indices = timeseries.yearcomp.indices(indices_list)
+    if indices_list is not None and len(indices_list) != 0:
+        timeseries_for_metrics = timeseries.yearcomp.indices(indices_list)
+    else:
+        timeseries_for_metrics = timeseries
 
     metrics = RestorationArea(
         restoration_polygon=restoration_poly,
         restoration_year=restoration_year,
         reference_system=reference_range,
-        composite_stack=timeseries,
+        composite_stack=timeseries_for_metrics,
     ).metrics(metrics_list)
     metrics = metrics.compute()
 
@@ -69,14 +72,14 @@ if __name__ == "__main__":
 
     metrics = spectral_recovery(
         timeseries_dict={
-            BandCommon.red: "../test_recovered.tif",
-            BandCommon.nir: "../test_recovered.tif",
+            Index.ndvi: "../test_recovered.tif",
+            Index.tcw: "../test_recovered.tif",
         },
         timeseries_range=["2008", "2019"],
         restoration_poly="../1p_test.gpkg",
         restoration_year=rest_year,
         reference_range=reference_year,
-        indices_list=[Index.ndvi, Index.sr],
+        # indices_list=[Index.ndvi, Index.sr],
         metrics_list=[Metric.percent_recovered],
     )
     print(metrics)
