@@ -4,7 +4,7 @@ import dask.array as da
 
 from enum import Enum
 from datetime import datetime
-from utils import maintain_spatial_attrs
+from spectral_recovery.utils import maintain_spatial_attrs
 from scipy import stats
 from typing import Callable, Optional
 
@@ -29,8 +29,8 @@ def percent_recovered(
         from. x and y dimensions must match `eval_stack`.
 
     """
-    total_change = abs(baseline - event_obs) # 90
-    recovered = abs(eval_stack - event_obs) # 
+    total_change = abs(baseline - event_obs)  # 90
+    recovered = abs(eval_stack - event_obs)  #
     return recovered / total_change
 
 
@@ -39,6 +39,7 @@ def years_to_recovery(
     image_stack: xr.DataArray,
     baseline: xr.DataArray,
     percent: int = 80,
+    predictive: bool = False,
 ) -> xr.DataArray:
     """Per-pixel years-to-recovery
 
@@ -48,17 +49,29 @@ def years_to_recovery(
         Timeseries of images to compute years-to-recovery across.
 
     # TODO: faster implementation located in `metrics_playground` module
+    # TODO: decide on "undetermined" value (e.g not recovered, negative recovery)
+    # NOTE: re #5: If current observations are not recovered but at a previous timestep
+    # an observation reached the recovered state... do we report the # of years to the
+    # previous step? or report nan?
     """
     reco_80 = baseline * (percent / 100)
-    # theil_sen calls apply_ufunc along the time dimension so stack's
+    # _theil_sen calls apply_ufunc along the time dimension so stack's
     # chunks need to contain the entire timestack before being passed
     y_vals = image_stack.chunk(dict(time=-1))
     x_vals = image_stack.time.dt.year
 
     ts = _theil_sen(y=y_vals, x=x_vals)
     y2r = (reco_80 - ts.sel(parameter="intercept")) / ts.sel(parameter="slope")
-    # TODO: maybe return NaN if intercept + slope*curr_year is not recovered
-    return y2r - x_vals[0]
+
+    predictive_y2r = y2r - x_vals[0]
+    total_years_recovering = len(x_vals) - 1
+    if predictive:
+        return predictive_y2r
+    else:
+        non_predictive_y2r = xr.where(
+            predictive_y2r > total_years_recovering, np.nan, predictive_y2r
+        )
+        return non_predictive_y2r.drop_vars("time")
 
 
 def _new_linregress(y, x):
@@ -119,10 +132,11 @@ def dNBR(
         # fit trajectory here!
         raise NotImplementedError
 
-    rest_post_5 = rest_start + 5
-    dNBR = restoration_stack.sel(time=rest_post_5) - restoration_stack.sel(
-        time=rest_start
-    )
+    rest_post_5 = str(int(rest_start) + 5)
+    dNBR = (
+        restoration_stack.sel(time=rest_post_5).drop_vars("time")
+        - restoration_stack.sel(time=rest_start).drop_vars("time")
+    ).squeeze("time")
     return dNBR
 
 
@@ -136,17 +150,17 @@ def recovery_indicator(
     Notes
     -----
     This implementation currently assumes that the disturbance period is 1 year long.
-    # TODO: allow for multi-year disturbances?
+    TODO: allow for multi-year disturbances?
     """
     if trajectory_func is not None:
         # Fit timeseries to trajectory and use fitted values for formula
         # fit trajectory here!
         raise NotImplementedError
 
-    rest_post_5 = rest_start + 5
-    dist_start = rest_start - 1
+    rest_post_5 = str(int(rest_start) + 5)
+    dist_start = str(int(rest_start) - 1)
     dist_end = rest_start
-    RI = (image_stack.sel(time=rest_post_5) - image_stack.sel(time=rest_start)) / (
-        image_stack.sel(time=dist_start) - image_stack.sel(time=dist_end)
-    )
+    RI = ((image_stack.sel(time=rest_post_5).drop_vars("time") - image_stack.sel(time=rest_start)).drop_vars("time") / (
+        image_stack.sel(time=dist_start).drop_vars("time") - image_stack.sel(time=dist_end).drop_vars("time")
+    )).squeeze("time")
     return RI

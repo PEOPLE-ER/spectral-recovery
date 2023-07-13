@@ -9,8 +9,8 @@ from enum import Enum, auto
 from typing import Union, Tuple
 from datetime import datetime
 from shapely.geometry import box
-from indices import indices_map
-from enums import Index, BandCommon
+from spectral_recovery.indices import indices_map
+from spectral_recovery.enums import Index, BandCommon
 
 DATETIME_FREQ = "YS"
 REQ_DIMS = ["band", "time", "y", "x"]
@@ -24,7 +24,12 @@ def stack_from_files(timeseries_dict, mask, timeseries_range=None):
             with rioxarray.open_rasterio(file, chunks="auto") as data:
                 timeseries_dict[name] = data
 
-    if all([(isinstance(key, BandCommon) or isinstance(key, Index)) for key in timeseries_dict.keys()]):
+    if all(
+        [
+            (isinstance(key, BandCommon) or isinstance(key, Index))
+            for key in timeseries_dict.keys()
+        ]
+    ):
         for key, data in timeseries_dict.items():
             timeseries_dict[key] = data.rename({"band": "time"})
         stacked_data = stack_bands(
@@ -39,7 +44,9 @@ def stack_from_files(timeseries_dict, mask, timeseries_range=None):
     stacked_data = stacked_data.sortby("time")
 
     if timeseries_range is not None:
-        stacked_data = stacked_data.assign_coords(time=(pd.date_range(*timeseries_range, freq=DATETIME_FREQ)))
+        stacked_data = stacked_data.assign_coords(
+            time=(pd.date_range(*timeseries_range, freq=DATETIME_FREQ))
+        )
     if not all(
         [isinstance(index, np.datetime64) for index in stacked_data.coords["time"].data]
     ):
