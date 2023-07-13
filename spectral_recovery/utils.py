@@ -90,6 +90,7 @@ def set_band_descriptions(filepath, bands):
 
 
 if __name__ == "__main__":
+    pass
     # tif = "../test_bigger.tif"
     # list_bands = dict(
     #     zip(
@@ -113,19 +114,19 @@ if __name__ == "__main__":
     # print(list_bands)
     # set_band_descriptions(tif, list_bands)
 
-    rasterOrigin = (-123.25745, 45.43013)
-    pixelWidth = 30
-    pixelHeight = 30
-    for i, year in enumerate([2008, 2009, 2010, 2011]):
-        newRasterfn = f"../test_{year}_time.tif"
-        epsg = 4326
-        array = np.array(
-            [
-                np.ones((200, 200)) * 1 * i + 1,
-                np.ones((200, 200)) * 2 * i + 1,
-                np.ones((200, 200)) * 3 * i + 1,
-            ]
-        )
-        print(array.shape)
-        print(array)
-        array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array, epsg)
+    # rasterOrigin = (-123.25745, 45.43013)
+    # pixelWidth = 30
+    # pixelHeight = 30
+    # for i, year in enumerate([2008, 2009, 2010, 2011]):
+    #     newRasterfn = f"../test_{year}_time.tif"
+    #     epsg = 4326
+    #     array = np.array(
+    #         [
+    #             np.ones((200, 200)) * 1 * i + 1,
+    #             np.ones((200, 200)) * 2 * i + 1,
+    #             np.ones((200, 200)) * 3 * i + 1,
+    #         ]
+    #     )
+    #     print(array.shape)
+    #     print(array)
+    #     array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array, epsg)

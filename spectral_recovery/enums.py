@@ -9,6 +9,7 @@ class BandCommon(Enum):
     swir1 = "SWIR1"
     swir2 = "SWIR2"
 
+
 class Index(Enum):
     ndvi = "NDVI"
     nbr = "NBR"
@@ -27,7 +28,8 @@ class Index(Enum):
 
     def __str__(self) -> str:
         return self.value
-            
+
+
 class Metric(Enum):
     percent_recovered = 1
     years_to_recovery = 2

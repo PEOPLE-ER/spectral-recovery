@@ -1,13 +1,18 @@
 import xarray as xr
 import geopandas as gpd
-import images
 
 from typing import Callable, Optional, Union, List
-from baselines import historic_average
-from utils import to_datetime
 from datetime import datetime
-from metrics import percent_recovered, years_to_recovery, dNBR, recovery_indicator
-from enums import Metric
+from spectral_recovery.images import stack_bands
+from spectral_recovery.baselines import historic_average
+from spectral_recovery.utils import to_datetime
+from spectral_recovery.metrics import (
+    percent_recovered,
+    years_to_recovery,
+    dNBR,
+    recovery_indicator,
+)
+from spectral_recovery.enums import Metric
 
 
 class ReferenceSystem:
@@ -138,7 +143,7 @@ class RestorationArea:
             except Exception:  # TODO: More specific Exception
                 raise ValueError(f"{metric} not implemented")
             metrics_dict[metric] = metric_func()
-            metrics_stack = images.stack_bands(
+            metrics_stack = stack_bands(
                 metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
             )
         return metrics_stack
@@ -147,9 +152,6 @@ class RestorationArea:
         curr = self.stack.sel(time=self.end_year)
         baseline = self.reference_system.baseline(self.stack)
         event = self.stack.sel(time=self.restoration_year)
-        print(baseline["baseline"].data.compute())
-        print(event.data.compute())
-        print(curr.data.compute())
         return percent_recovered(
             eval_stack=curr, baseline=baseline["baseline"], event_obs=event
         )
