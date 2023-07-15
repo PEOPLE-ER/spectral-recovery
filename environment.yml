@@ -1,4 +1,4 @@
-name: mamba
+name: people
 channels:
   - conda-forge
   - defaults
