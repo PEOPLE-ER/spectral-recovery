@@ -1,3 +1,4 @@
+from ast import Str
 import xarray as xr
 import numpy as np
 import dask.array as da
@@ -116,7 +117,7 @@ def _theil_sen(y, x):
 @maintain_spatial_attrs
 def dNBR(
     restoration_stack: xr.DataArray,
-    rest_start: int | datetime,
+    rest_start: str,
     trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
     """Delta-NBR
@@ -133,6 +134,7 @@ def dNBR(
         raise NotImplementedError
 
     rest_post_5 = str(int(rest_start) + 5)
+    print(rest_post_5)
     dNBR = (
         restoration_stack.sel(time=rest_post_5).drop_vars("time")
         - restoration_stack.sel(time=rest_start).drop_vars("time")
@@ -143,7 +145,7 @@ def dNBR(
 @maintain_spatial_attrs
 def recovery_indicator(
     image_stack: xr.DataArray,
-    rest_start: int,
+    rest_start: str ,
     trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
     """
@@ -159,8 +161,16 @@ def recovery_indicator(
 
     rest_post_5 = str(int(rest_start) + 5)
     dist_start = str(int(rest_start) - 1)
+    print(rest_post_5)
     dist_end = rest_start
-    RI = ((image_stack.sel(time=rest_post_5).drop_vars("time") - image_stack.sel(time=rest_start)).drop_vars("time") / (
-        image_stack.sel(time=dist_start).drop_vars("time") - image_stack.sel(time=dist_end).drop_vars("time")
-    )).squeeze("time")
+    RI = (
+        (
+            image_stack.sel(time=rest_post_5).drop_vars("time")
+            - image_stack.sel(time=rest_start)
+        ).drop_vars("time")
+        / (
+            image_stack.sel(time=dist_start).drop_vars("time")
+            - image_stack.sel(time=dist_end).drop_vars("time")
+        )
+    ).squeeze("time")
     return RI

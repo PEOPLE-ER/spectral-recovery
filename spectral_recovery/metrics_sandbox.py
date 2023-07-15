@@ -1,3 +1,7 @@
+"""
+This module is for sandboxing different metric implementations. 
+Should not be included in any final/official release of the package. 
+"""
 import xarray as xr
 import numpy as np
 from utils import maintain_spatial_attrs
