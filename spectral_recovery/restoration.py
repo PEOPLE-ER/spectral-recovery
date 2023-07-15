@@ -14,7 +14,8 @@ from spectral_recovery.metrics import (
 )
 from spectral_recovery.enums import Metric
 
-# TODO: change all useage of "baselines" to "recovery target" or "reference target"; baseline and reference are curr used interchangably. 
+
+# TODO: change all useage of "baselines" to "recovery target" or "reference target"; baseline and reference are curr used interchangably.
 # TODO: split date into start and end dates.
 class ReferenceSystem:
 
@@ -38,7 +39,7 @@ class ReferenceSystem:
         The method for reporting/determing reference value variation
         (e.g 2 std). Default is None.
         TODO: this might be replaced with a simple named/str param
-        
+
     """
 
     def __init__(
@@ -56,7 +57,7 @@ class ReferenceSystem:
 
     def baseline(self, stack):
         # TODO: replace return dicts with named tuple
-        """ Get the baseline/recovery target for a reference system """
+        """Get the baseline/recovery target for a reference system"""
         baseline = self.baseline_method(stack, self.reference_range)
         if self.variation_method is not None:
             variation = self.variation_method(stack, self.reference_range)
@@ -70,18 +71,18 @@ class RestorationArea:
     Attributes
     -----------
     restoration_polygon : GeoDataFrame
-        Dataframe containing the spatial deliniation of the 
+        Dataframe containing the spatial deliniation of the
         restoration event. Assumed to be Polygon.
     restoration_year : str or datetime
         The start year of the restoration event.
     reference_system : int or list of int of ReferenceSystem
-        The reference system to compute the recovery target value. 
+        The reference system to compute the recovery target value.
         If year or year(s) are provided then a historic reference
-        system will be used[TODO], if a ReferenceSystem object is 
+        system will be used[TODO], if a ReferenceSystem object is
         provided then target values will be based on reference polygons.
     composite_stack : xr.DataArray
         A 4D (band, time, y, x) DataArray containing spectral or
-        index data. The time dimension is expected to be 
+        index data. The time dimension is expected to be
     end_year : str or datetime
         The final year of the restoration period. If not given, the
         the final timestep along the time dimension of `composite_stack`
@@ -125,7 +126,7 @@ class RestorationArea:
             self.end_year = self.stack["time"].max()
 
     def _within(self, stack: xr.DataArray) -> bool:
-        """ Check if within a DataArray
+        """Check if within a DataArray
 
         Determines whether an RestorationArea's spatial (polygons) and temporal
         (reference and event years) attributes are contained within a
@@ -189,7 +190,11 @@ class RestorationArea:
         )
 
     def _dNBR(self) -> xr.DataArray:
-        return dNBR(restoration_stack=self.stack, rest_start=str(self.restoration_year.year))
+        return dNBR(
+            restoration_stack=self.stack, rest_start=str(self.restoration_year.year)
+        )
 
     def _recovery_indicator(self) -> xr.DataArray:
-        return recovery_indicator(image_stack=self.stack, rest_start=str(self.restoration_year.year))
+        return recovery_indicator(
+            image_stack=self.stack, rest_start=str(self.restoration_year.year)
+        )
