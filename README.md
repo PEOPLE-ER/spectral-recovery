@@ -26,9 +26,9 @@ Run the package with the following command
 (people) $ python -m spectral_recovery.spectral_recovery
 ```
 
-Parameters to the tool can be changed in the `spectral_recovery` module, inside
-the `if __name__ == '__main__':` function. The module is current set-up to be 
-run over a set of synthetic data and to compute all implemented methods.
+Arguments to the tool can be changed in the `spectral_recovery` module, inside
+the `if __name__ == '__main__':` function. The module is currently set-up to be 
+run over a simple 1-pixel data set, computes all implemented metrics.
 
 ### Tests
 
