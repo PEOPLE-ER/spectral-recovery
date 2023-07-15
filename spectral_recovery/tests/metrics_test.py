@@ -256,13 +256,14 @@ year_period_RI = [
     np.datetime64("2006"),
 ]
 
+
 # TODO: follow-up on test cases with Melissa
 @pytest.mark.parametrize(
     ("obs", "restoration_date", "trajectory_func", "expected"),
     [
         (
             xr.DataArray(
-                [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]],[[110]]]],
+                [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[110]]]],
                 coords={"time": year_period_RI},
                 dims=["band", "time", "y", "x"],
             ).rio.write_crs("4326"),
@@ -276,11 +277,13 @@ year_period_RI = [
     ],
 )
 def test_correct_recovery_indicator(obs, restoration_date, trajectory_func, expected):
-    print(recovery_indicator(
-        image_stack=obs,
-        rest_start=restoration_date,
-        trajectory_func=trajectory_func,
-    ).compute())
+    print(
+        recovery_indicator(
+            image_stack=obs,
+            rest_start=restoration_date,
+            trajectory_func=trajectory_func,
+        ).compute()
+    )
     assert recovery_indicator(
         image_stack=obs,
         rest_start=restoration_date,
