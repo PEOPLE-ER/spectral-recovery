@@ -27,7 +27,8 @@ Run the package with the following command
 ```
 
 Parameters to the tool can be changed in the `spectral_recovery` module, inside
-the `if __name__ == '__main__':` function.
+the `if __name__ == '__main__':` function. The module is current set-up to be 
+run over a set of synthetic data and to compute all implemented methods.
 
 ### Tests
 
