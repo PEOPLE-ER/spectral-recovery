@@ -17,18 +17,18 @@ REQ_DIMS = ["band", "time", "y", "x"]
 
 
 def _stack_from_user_input(timeseries_dict, mask, timeseries_range=None):
-    """ Stack a dictionary of rasters into a 4D DataArray.
-    
+    """Stack a dictionary of rasters into a 4D DataArray.
+
     Dimensions of output DataArray will be (band, time, y, x) and the
     time dimension will contain np.datetime64 coordinates with datetime
     frequency set to `DATETIME_FREQ`.
-    
+
     Parameters
     ----------
     timeseries_dict : Dict of str or DataArray
         Dict of paths to rasters or DataArrays to stack.
     mask : DataArray
-        Mask to apply to stacked DataArrays.   
+        Mask to apply to stacked DataArrays.
     timeseries_range : list of int, optional
         The year range for the timeseries data.
 

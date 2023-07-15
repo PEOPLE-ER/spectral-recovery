@@ -100,7 +100,12 @@ if __name__ == "__main__":
         restoration_year=rest_year,
         reference_range=reference_year,
         # indices_list=[Index.ndvi, Index.sr],
-        metrics_list=[Metric.percent_recovered, Metric.years_to_recovery, Metric.recovery_indicator, Metric.dNBR],
+        metrics_list=[
+            Metric.percent_recovered,
+            Metric.years_to_recovery,
+            Metric.recovery_indicator,
+            Metric.dNBR,
+        ],
     )
     # TODO: figure out how to display progress to users
     # progress(metrics)

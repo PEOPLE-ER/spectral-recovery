@@ -145,7 +145,7 @@ def dNBR(
 @maintain_spatial_attrs
 def recovery_indicator(
     image_stack: xr.DataArray,
-    rest_start: str ,
+    rest_start: str,
     trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
     """
