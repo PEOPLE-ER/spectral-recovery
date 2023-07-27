@@ -21,6 +21,8 @@ def spectral_recovery(
     indices_list: List[Index] = None,
     timeseries_range: List[str] = None,
     data_mask: xr.DataArray = None,
+    write: bool = False,
+    
 ) -> None:
     """The main calling function. Better doc-string is on the TO-DO.
 
@@ -77,6 +79,14 @@ def spectral_recovery(
     ).metrics(metrics_list)
     metrics = metrics.compute()
 
+    if write:
+        for metric in metrics['metric'].values:
+            xa_dataset = xr.Dataset()
+            for band in metrics['band'].values:
+                print(metrics.sel(metric=metric, band=band))
+                xa_dataset[str(band)] = metrics.sel(metric=metric, band=band)
+                xa_dataset.rio.to_raster(raster_path=f'{metric!s}.tif')
+
     return metrics
 
 
@@ -106,6 +116,7 @@ if __name__ == "__main__":
                 Metric.recovery_indicator,
                 Metric.dNBR,
             ],
+            write=True
         )
         # TODO: figure out how to display progress to users
         # progress(metrics)
