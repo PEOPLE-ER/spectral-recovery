@@ -83,30 +83,30 @@ def spectral_recovery(
 if __name__ == "__main__":
     from dask.distributed import Client, LocalCluster, progress
 
-    # NOTE: a distributed cluster that works locally is recommneded by Dask over a local cluster
-    cluster = LocalCluster()
-    client = Client(cluster)
-
     rest_year = pd.to_datetime("2012")
     reference_year = pd.to_datetime("2008")
 
-    metrics = spectral_recovery(
-        timeseries_dict={
-            Index.ndvi: "test_recovered.tif",
-            Index.tcw: "test_recovered.tif",
-        },
-        timeseries_range=["2008", "2019"],
-        restoration_poly="1p_test.gpkg",
-        restoration_year=rest_year,
-        reference_range=reference_year,
-        # indices_list=[Index.ndvi, Index.sr],
-        metrics_list=[
-            Metric.percent_recovered,
-            Metric.years_to_recovery,
-            Metric.recovery_indicator,
-            Metric.dNBR,
-        ],
-    )
-    # TODO: figure out how to display progress to users
-    # progress(metrics)
-    print(metrics)
+    print("Tool currently only supports Landsat data. Please ensure any rasters passed in `timeseries_dic` are Landsat-derived.\n")
+
+    # NOTE: a distributed cluster that works locally is recommneded by Dask over a local cluster
+    with LocalCluster() as cluster, Client(cluster) as client:
+        metrics = spectral_recovery(
+            timeseries_dict={
+                Index.ndvi: "test_recovered.tif",
+                Index.tcw: "test_recovered.tif",
+            },
+            timeseries_range=["2008", "2019"],
+            restoration_poly="1p_test.gpkg",
+            restoration_year=rest_year,
+            reference_range=reference_year,
+            # indices_list=[Index.ndvi, Index.sr],
+            metrics_list=[
+                Metric.percent_recovered,
+                Metric.years_to_recovery,
+                Metric.recovery_indicator,
+                Metric.dNBR,
+            ],
+        )
+        # TODO: figure out how to display progress to users
+        # progress(metrics)
+        print(metrics)
