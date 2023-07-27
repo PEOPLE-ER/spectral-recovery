@@ -1,0 +1,10 @@
+dask
+distributed
+GDAL
+geopandas
+numpy
+pandas
+pytest
+rioxarray
+scipy
+xarray
