@@ -134,7 +134,6 @@ def dNBR(
         raise NotImplementedError
 
     rest_post_5 = str(int(rest_start) + 5)
-    print(rest_post_5)
     dNBR = (
         restoration_stack.sel(time=rest_post_5).drop_vars("time")
         - restoration_stack.sel(time=rest_start).drop_vars("time")
@@ -161,7 +160,6 @@ def recovery_indicator(
 
     rest_post_5 = str(int(rest_start) + 5)
     dist_start = str(int(rest_start) - 1)
-    print(rest_post_5)
     dist_end = rest_start
     RI = (
         (
