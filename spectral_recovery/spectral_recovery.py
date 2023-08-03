@@ -86,7 +86,9 @@ if __name__ == "__main__":
     rest_year = pd.to_datetime("2012")
     reference_year = pd.to_datetime("2008")
 
-    print("Tool currently only supports Landsat data. Please ensure any rasters passed in `timeseries_dic` are Landsat-derived.\n")
+    print(
+        "Tool currently only supports Landsat data. Please ensure any rasters passed in `timeseries_dic` are Landsat-derived.\n"
+    )
 
     # NOTE: a distributed cluster that works locally is recommneded by Dask over a local cluster
     with LocalCluster() as cluster, Client(cluster) as client:
