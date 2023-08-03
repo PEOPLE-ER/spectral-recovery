@@ -234,12 +234,12 @@ class TestMetrics:
     def test_RestorationArea_stack_multiple_metrics(
         self,
         percent_reco_return,
-        dNBR_return, 
+        dNBR_return,
         valid_resto_area,
     ):
         metric = [Metric.percent_recovered, Metric.dNBR]
         expected_result = xr.DataArray(
-            [[[1.0]],[[0.5]]],
+            [[[1.0]], [[0.5]]],
             dims=["metric", "y", "x"],
             coords={"metric": [Metric.percent_recovered, Metric.dNBR]},
         )
