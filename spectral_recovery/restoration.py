@@ -143,7 +143,6 @@ class RestorationArea:
         stack of yearly composite images.
 
         """
-        print("checking")
         if not (
             stack.yearcomp.contains_spatial(self.restoration_polygon)
             and stack.yearcomp.contains_temporal(self.restoration_year)

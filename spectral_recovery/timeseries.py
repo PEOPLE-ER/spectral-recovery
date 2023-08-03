@@ -100,17 +100,24 @@ def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):
 
 
 def datetime_to_index(
-    value: Union[datetime, Tuple[datetime]], list: bool = False
+    value: Union[datetime, Tuple[datetime]], return_list: bool = False
 ) -> pd.DatetimeIndex:
     """Convert datetime or range of datetimes into pd.DatetimeIndex
 
     For ease of indexing through a DataArray object
     """
-    if isinstance(value, tuple):
+    if (isinstance(value, tuple) or isinstance(value, list)) and len(value) == 2:
         dt_range = pd.date_range(*value, freq=DATETIME_FREQ)
     else:
-        dt_range = pd.date_range(start=value, end=value, freq=DATETIME_FREQ)
-    if not list:
+        try:
+            if len(value) > 2:
+                raise ValueError(
+                    "Passed value={value} but `datetime` must be a single Timestamp or an iterable with exactly two Timestamps."
+                )
+            dt_range = pd.date_range(start=value[0], end=value[0], freq=DATETIME_FREQ)
+        except TypeError:
+            dt_range = pd.date_range(start=value, end=value, freq=DATETIME_FREQ)
+    if not return_list:
         return dt_range
     return dt_range.to_list()
 
@@ -169,7 +176,7 @@ class YearlyCompositeAccessor:
 
     def contains_temporal(self, years: datetime) -> bool:
         """Check if stack contains year/year range."""
-        required_years = datetime_to_index(years, list=True)
+        required_years = datetime_to_index(years, return_list=True)
         for year in required_years:
             if not (pd.to_datetime(str(year)) in self._obj.coords["time"].values):
                 return False
