@@ -119,7 +119,6 @@ def test_RestorationArea_not_contained_error(
     with rioxarray.open_rasterio(raster, chunks="auto") as data:
         stack = data
         stack = stack.rename({"band": "time"})
-        print(time_range)
         stack = stack.assign_coords(
             time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
         )
@@ -137,83 +136,130 @@ def test_RestorationArea_not_contained_error(
             )
 
 
-@pytest.fixture()
-def valid_resto_area():
-    polygon = "1p_test.gpkg"
-    restoration_year = (pd.to_datetime("2015"),)
-    reference_year = (pd.to_datetime("2012"),)
-    raster = "test_recovered.tif"
-    time_range = [str(x) for x in np.arange(2010, 2022)]
+class TestMetrics:
+    @pytest.fixture()
+    def valid_resto_area(self):
+        polygon = "1p_test.gpkg"
+        restoration_year = pd.to_datetime("2015")
+        reference_year = pd.to_datetime("2012")
+        raster = "test_recovered.tif"
+        time_range = [str(x) for x in np.arange(2010, 2022)]
 
-    with rioxarray.open_rasterio(raster, chunks="auto") as data:
-        resto_poly = gpd.read_file(polygon)
-        stack = data
-        stack = stack.rename({"band": "time"})
-        stack = stack.assign_coords(
-            time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
-        )
-        # print(stack)
-        resto_area = RestorationArea(
-            restoration_polygon=resto_poly,
-            restoration_year=restoration_year[0],
-            reference_system=reference_year,
-            composite_stack=stack,
-            end_year=None,
-        )
+        with rioxarray.open_rasterio(raster, chunks="auto") as data:
+            resto_poly = gpd.read_file(polygon)
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.assign_coords(
+                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
+            )
+            # print(stack)
+            resto_area = RestorationArea(
+                restoration_polygon=resto_poly,
+                restoration_year=restoration_year,
+                reference_system=reference_year,
+                composite_stack=stack,
+                end_year=None,
+            )
+        return resto_area
 
-    return resto_area
+    @pytest.mark.parametrize(
+        ("metric_list", "metric_method"),
+        [
+            (
+                [Metric.percent_recovered],
+                "percent_recovered",
+            ),
+            (
+                [Metric.years_to_recovery],
+                "years_to_recovery",
+            ),
+            (
+                [Metric.recovery_indicator],
+                "recovery_indicator",
+            ),
+            (
+                [Metric.dNBR],
+                "dNBR",
+            ),
+        ],
+    )
+    @patch("spectral_recovery.restoration._stack_bands")
+    def test_RestorationArea_metric_switch_case(
+        self, mock_stack, valid_resto_area, metric_list, metric_method, mocker
+    ):
+        metric_patch = mocker.patch(f"spectral_recovery.restoration.{metric_method}")
 
+        valid_resto_area.metrics(metric_list)
 
-@pytest.mark.parametrize(
-    ("metric_list", "metric_method"),
-    [
-        (
-            [Metric.percent_recovered],
+        assert metric_patch.call_count == 1
+        assert mock_stack.call_count == 1
+
+    @patch("spectral_recovery.restoration._stack_bands")
+    def test_RestorationArea_multiple_metrics(
+        self, mock_stack, valid_resto_area, mocker
+    ):
+        metrics_list = [
+            Metric.percent_recovered,
+            Metric.years_to_recovery,
+            Metric.recovery_indicator,
+            Metric.dNBR,
+        ]
+        methods_list = [
             "percent_recovered",
-        ),
-        (
-            [Metric.years_to_recovery],
-            "years_to_recovery",  
-        ),
-        (
-            [Metric.recovery_indicator],
-            "recovery_indicator", 
-        ),
-        (
-            [Metric.dNBR],
+            "years_to_recovery",
+            "recovery_indicator",
             "dNBR",
-        ),
-    ],
-)
-@patch("spectral_recovery.restoration._stack_bands")
-def test_RestorationArea_metric_switch_case(
-    mock_stack, valid_resto_area, metric_list, metric_method, mocker
-):
-    metric_patch = mocker.patch(f"spectral_recovery.restoration.{metric_method}")
+        ]
 
-    valid_resto_area.metrics(metric_list)
-    
-    assert metric_patch.call_count == 1
-    assert mock_stack.call_count == 1
+        patches = {}
+        for i, metric in enumerate(metrics_list):
+            patches[metric] = mocker.patch(
+                f"spectral_recovery.restoration.{methods_list[i]}"
+            )
 
+        valid_resto_area.metrics(metrics_list)
 
-@patch("spectral_recovery.restoration._stack_bands")
-def test_RestorationArea_multiple_metrics(
-    mock_stack, valid_resto_area, mocker
-):
-    metrics_list = [Metric.percent_recovered, Metric.years_to_recovery, Metric.recovery_indicator, Metric.dNBR]
-    methods_list = ["percent_recovered", "years_to_recovery", "recovery_indicator", "dNBR"]
+        for i, metric in enumerate(metrics_list):
+            assert patches[metric].call_count == 1
+        assert mock_stack.call_count == 1
 
-    patches = {}
-    for i, metric in enumerate(metrics_list):
-        patches[metric] = mocker.patch(f"spectral_recovery.restoration.{methods_list[i]}")
+    @patch(
+        "spectral_recovery.restoration.percent_recovered",
+        return_value=xr.DataArray([[1.0]], dims=["y", "x"]),
+    )
+    @patch(
+        "spectral_recovery.restoration.dNBR",
+        return_value=xr.DataArray([[0.5]], dims=["y", "x"]),
+    )
+    def test_RestorationArea_stack_multiple_metrics(
+        self,
+        percent_reco_return,
+        dNBR_return, 
+        valid_resto_area,
+    ):
+        metric = [Metric.percent_recovered, Metric.dNBR]
+        expected_result = xr.DataArray(
+            [[[1.0]],[[0.5]]],
+            dims=["metric", "y", "x"],
+            coords={"metric": [Metric.percent_recovered, Metric.dNBR]},
+        )
+        result = valid_resto_area.metrics(metric)
+        assert result.equals(expected_result)
 
-    valid_resto_area.metrics(metrics_list)
-    
-    for i, metric in enumerate(metrics_list):
-        assert patches[metric].call_count == 1
-    assert mock_stack.call_count == 1
-
-
-def test_RestorationArea_stacked_metrics():
-    pass
+    @patch(
+        "spectral_recovery.restoration.percent_recovered",
+        return_value=xr.DataArray([[1.0]], dims=["y", "x"]),
+    )
+    def test_RestorationArea_stack_single_metric(
+        self,
+        percent_reco_return,
+        valid_resto_area,
+    ):
+        metric = [Metric.percent_recovered]
+        expected_result = xr.DataArray(
+            [[[1.0]]],
+            dims=["metric", "y", "x"],
+            coords={"metric": [Metric.percent_recovered]},
+        )
+        result = valid_resto_area.metrics(metric)
+        assert result.equals(expected_result)
