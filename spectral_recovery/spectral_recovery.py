@@ -4,11 +4,14 @@ os.environ["USE_PYGEOS"] = "0"
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 
 from typing import Union, List, Dict
+from rasterio import merge
 from spectral_recovery.timeseries import _stack_from_user_input
 from spectral_recovery.enums import Index, Metric, BandCommon
 from spectral_recovery.restoration import RestorationArea
+from rasterio._err import CPLE_AppDefinedError
 
 
 # TODO: generalize "*_list" types to non-Enums.
@@ -21,6 +24,7 @@ def spectral_recovery(
     indices_list: List[Index] = None,
     timeseries_range: List[str] = None,
     data_mask: xr.DataArray = None,
+    write: bool = False,
 ) -> None:
     """The main calling function. Better doc-string is on the TO-DO.
 
@@ -58,6 +62,7 @@ def spectral_recovery(
         A 3D (metrics, y, x) DataArray of recovery metrics for the restoration
         area and period. NaN values represent data-gaps and/or undetermined metrics.
     """
+    # TODO: check that the out file names don't already exist... abort early if they do
     if isinstance(restoration_poly, str):
         restoration_poly = gpd.read_file(restoration_poly)
     timeseries = _stack_from_user_input(timeseries_dict, data_mask, timeseries_range)
@@ -75,28 +80,49 @@ def spectral_recovery(
         reference_system=reference_range,
         composite_stack=timeseries_for_metrics,
     ).metrics(metrics_list)
-    metrics = metrics.compute()
 
+    if write:
+        out_raster = xr.full_like(timeseries_for_metrics[0, 0, :, :], np.nan)
+        for metric in metrics["metric"].values:
+            xa_dataset = xr.Dataset()
+            for band in metrics["band"].values:
+                out_metric = metrics.sel(metric=metric, band=band)
+                # NOTE: This takes non-null values between each raster so `out_raster` (the full AOI) must be all null
+                merged = out_metric.combine_first(out_raster)
+                xa_dataset[str(band)] = merged
+                try:
+                    out_name = f"{metric!s}.tif"
+                    xa_dataset.rio.to_raster(raster_path=out_name)
+                except CPLE_AppDefinedError as exc:
+                    raise PermissionError(
+                        f"Could not write output to {out_name} because a TIF already"
+                        " exists and could not be overwritten, likely because"
+                        " it's open elsewhere. Is the existing TIF open in an"
+                        " application (e.g QGIS)? If so, try closing it before your"
+                        " next run to avoid this error."
+                    ) from None
     return metrics
 
 
 if __name__ == "__main__":
     from dask.distributed import Client, LocalCluster, progress
 
-    rest_year = pd.to_datetime("2012")
-    reference_year = pd.to_datetime("2008")
+    rest_year = pd.to_datetime("2010")
+    reference_year = pd.to_datetime("2007")
 
-    print("Tool currently only supports Landsat data. Please ensure any rasters passed in `timeseries_dic` are Landsat-derived.\n")
+    print(
+        "Tool currently only supports Landsat data. Please ensure any rasters passed in"
+        " `timeseries_dic` are Landsat-derived.\n"
+    )
 
-    # NOTE: a distributed cluster that works locally is recommneded by Dask over a local cluster
     with LocalCluster() as cluster, Client(cluster) as client:
         metrics = spectral_recovery(
             timeseries_dict={
-                Index.ndvi: "test_recovered.tif",
-                Index.tcw: "test_recovered.tif",
+                Index.ndvi: "test_500.tif",
+                Index.tcw: "test_500.tif",
             },
-            timeseries_range=["2008", "2019"],
-            restoration_poly="1p_test.gpkg",
+            timeseries_range=["2006", "2019"],
+            restoration_poly="test_200.gpkg",
             restoration_year=rest_year,
             reference_range=reference_year,
             # indices_list=[Index.ndvi, Index.sr],
@@ -106,7 +132,8 @@ if __name__ == "__main__":
                 Metric.recovery_indicator,
                 Metric.dNBR,
             ],
+            write=True,
         )
         # TODO: figure out how to display progress to users
         # progress(metrics)
-        print(metrics)
+        print(metrics.compute())
