@@ -8,6 +8,9 @@ class BandCommon(Enum):
     nir = "NIR"
     swir1 = "SWIR1"
     swir2 = "SWIR2"
+    
+    def __str__(self) -> str:
+        return self.value
 
 
 class Index(Enum):

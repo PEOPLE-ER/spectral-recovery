@@ -47,7 +47,7 @@ class ReferenceSystem:
         self,
         reference_polygons: gpd.GeoDataFrame,
         reference_range: Union[int, List[int]],
-        baseline_method: Callable = None,
+        baseline_method: Optional[Callable] = None,
         variation_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
