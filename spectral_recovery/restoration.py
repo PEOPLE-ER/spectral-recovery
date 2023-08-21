@@ -46,24 +46,41 @@ class ReferenceSystem:
     def __init__(
         self,
         reference_polygons: gpd.GeoDataFrame,
+        reference_stack: xr.DataArray,
         reference_range: Union[int, List[int]],
         baseline_method: Optional[Callable] = None,
-        variation_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
         self.reference_polygons = reference_polygons
         self.reference_range = to_datetime(reference_range)
         self.baseline_method = baseline_method or historic_average
-        self.variation_method = variation_method
+        if not self._within(reference_stack):
+            raise ValueError(
+                f"Not contained! Better message soon!"
+            )
+        else:
+            self.reference_stack = reference_stack.rio.clip(self.reference_polygons.geometry.values)
 
     def baseline(self, stack):
         # TODO: replace return dicts with named tuple
         """Get the baseline/recovery target for a reference system"""
-        baseline = self.baseline_method(stack, self.reference_range)
-        if self.variation_method is not None:
-            variation = self.variation_method(stack, self.reference_range)
-            return {"baseline": baseline, "variation": variation}
+        baseline = self.baseline_method(self.reference_stack, self.reference_range)
         return {"baseline": baseline}
+    # TODO:
+    def _within(self, stack: xr.DataArray) -> bool:
+        """Check if within a DataArray
+
+        Determines whether an RestorationArea's spatial (polygons) and temporal
+        (reference and event years) attributes are contained within a
+        stack of yearly composite images.
+
+        """
+        if not (
+            stack.yearcomp.contains_spatial(self.reference_polygons)
+            and stack.yearcomp.contains_temporal(self.reference_range)
+        ):
+            return False
+        return True
 
 
 class RestorationArea:
@@ -97,7 +114,7 @@ class RestorationArea:
         restoration_year: str | datetime,
         reference_system: int | List[int] | ReferenceSystem,
         composite_stack: xr.DataArray,
-        end_year: Optional[str | datetime] = None,
+                end_year: Optional[str | datetime] = None,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
@@ -119,7 +136,9 @@ class RestorationArea:
 
         if not isinstance(reference_system, ReferenceSystem):
             historic_reference = ReferenceSystem(
-                reference_polygons=restoration_polygon, reference_range=reference_system
+                reference_polygons=restoration_polygon,
+                reference_stack=composite_stack,
+                reference_range=reference_system
             )
             self.reference_system = historic_reference
         else:
@@ -127,7 +146,7 @@ class RestorationArea:
 
         if not self._within(composite_stack):
             raise ValueError(
-                f"RestorationArea not contained by stack. Better message soon!"
+                f"Not contained! Better message soon!"
             )
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
         if not end_year:
@@ -173,6 +192,7 @@ class RestorationArea:
                 case Metric.percent_recovered:
                     curr = self.stack.sel(time=self.end_year)
                     baseline = self.reference_system.baseline(self.stack)
+                    print(baseline["baseline"].data.compute())
                     event = self.stack.sel(time=self.restoration_year)
                     metrics_dict[metric] = percent_recovered(
                         eval_stack=curr, baseline=baseline["baseline"], event_obs=event

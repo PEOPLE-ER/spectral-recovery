@@ -10,7 +10,7 @@ from typing import Union, List, Dict
 from rasterio import merge
 from spectral_recovery.timeseries import _stack_from_user_input
 from spectral_recovery.enums import Index, Metric, BandCommon
-from spectral_recovery.restoration import RestorationArea
+from spectral_recovery.restoration import ReferenceSystem, RestorationArea
 from rasterio._err import CPLE_AppDefinedError
 
 
@@ -20,6 +20,7 @@ def spectral_recovery(
     restoration_poly: gpd.GeoDataFrame | str,
     restoration_year: int,
     reference_range: Union[int, List[int]],
+    reference_poly: gpd.GeoDataFrame | str,
     metrics_list: List[Metric],
     indices_list: List[Index] = None,
     timeseries_range: List[str] = None,
@@ -73,11 +74,19 @@ def spectral_recovery(
         timeseries_for_metrics = timeseries.yearcomp.indices(indices_list)
     else:
         timeseries_for_metrics = timeseries
-
+    if reference_poly is not None:
+        ref_sys = ReferenceSystem(
+            reference_polygons=reference_poly,
+            reference_range=reference_range,
+            baseline_method=None,
+            variation_method=None
+        )
+    else:
+        ref_sys = reference_range
     metrics = RestorationArea(
         restoration_polygon=restoration_poly,
         restoration_year=restoration_year,
-        reference_system=reference_range,
+        reference_system=ref_sys,
         composite_stack=timeseries_for_metrics,
     ).metrics(metrics_list)
 
@@ -124,6 +133,7 @@ if __name__ == "__main__":
             timeseries_range=["2006", "2019"],
             restoration_poly="test_200.gpkg",
             restoration_year=rest_year,
+            # reference_poly="reference_polys_3.gpkg",
             reference_range=reference_year,
             # indices_list=[Index.ndvi, Index.sr],
             metrics_list=[
