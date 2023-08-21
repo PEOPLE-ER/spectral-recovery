@@ -130,7 +130,7 @@ class TestRestorationAreaInit:
             resto_poly = gpd.read_file(resto_poly)
             with pytest.raises(
                 ValueError,
-                match="RestorationArea not contained by stack. Better message soon!",
+                match="Not contained! Better message soon!",
             ):
                 resto_a = RestorationArea(
                     restoration_polygon=resto_poly,
@@ -290,69 +290,44 @@ class TestReferenceSystem:
     def reference_date(self):
         return pd.to_datetime("2008")
 
-    def test_init(self, gdf, reference_date):
-        rs = ReferenceSystem(
-            reference_polygons=gdf,
-            reference_range=reference_date,
-            baseline_method=None,
-            variation_method=None
-        )
-        assert_geodataframe_equal(rs.reference_polygons, gdf, check_geom_type=True)
-        assert rs.reference_range == reference_date
-        assert rs.baseline_method == historic_average
-        assert rs.variation_method == None
-
-
-    def test_init_baseline_method(gdf, reference_date, simple_callable):
-        rs = ReferenceSystem(
-            reference_polygons=gdf,
-            reference_range=reference_date,
-            baseline_method=simple_callable,
-            variation_method=None,
-        )
-        assert rs.baseline_method == simple_callable
-        assert rs.variation_method == None
-
-    def test_init_both_variation_and_baseline(gdf, reference_date, simple_callable):
-        rs = ReferenceSystem(
-            reference_polygons=gdf,
-            reference_range=reference_date,
-            baseline_method=simple_callable,
-            variation_method=simple_callable,
-        )
-        assert rs.baseline_method == simple_callable
-        assert rs.variation_method == simple_callable
-
     @pytest.fixture()
     def test_stack(self):
         test_stack = xr.DataArray(np.ones((3, 3, 10, 10))*0, dims=["time","band","y","x"])
         return test_stack
 
+    def test_init(self, gdf, reference_date, test_stack):
+        rs = ReferenceSystem(
+            reference_polygons=gdf,
+            reference_stack=test_stack, 
+            reference_range=reference_date,
+            baseline_method=None,
+        )
+        assert_geodataframe_equal(rs.reference_polygons, gdf, check_geom_type=True)
+        assert rs.reference_range == reference_date
+        assert rs.baseline_method == historic_average
+
+
+    def test_init_baseline_method(gdf, reference_date, test_stack, simple_callable):
+        rs = ReferenceSystem(
+            reference_polygons=gdf,
+            reference_stack=test_stack,
+            reference_range=reference_date,
+            baseline_method=simple_callable,
+        )
+        assert rs.baseline_method == simple_callable
+
+
     def test_no_variation(self, gdf, reference_date, test_stack, simple_callable):
         expected = {"baseline": 0}
         rs = ReferenceSystem(
             reference_polygons=gdf,
+            reference_stack=test_stack,
             reference_range=reference_date,
             baseline_method=None,
-            variation_method=None,
         )
         # TODO: this line could be replace with a monkeypatch?
         rs.baseline_method = simple_callable
-        out = rs.baseline(test_stack)
-        assert out == expected
-
-    def test_with_variation(self, gdf, reference_date, test_stack, simple_callable):
-        expected = {"baseline": 0, "variation": 0}
-        rs = ReferenceSystem(
-            reference_polygons=gdf,
-            reference_range=reference_date,
-            baseline_method=None,
-            variation_method=None,
-        )
-        # TODO: this line could be replace with a monkeypatch?
-        rs.baseline_method = simple_callable
-        rs.variation_method = simple_callable
-        out = rs.baseline(test_stack)
+        out = rs.baseline()
         assert out == expected
 
     # @patch("spectral_recovery.restoration.variation_method")
