@@ -35,6 +35,7 @@ class Metric(Enum):
     years_to_recovery = 2
     recovery_indicator = 3
     dNBR = 4
+    P80R = 5
 
     # def __str__(self) -> str:
     #     return self.name
