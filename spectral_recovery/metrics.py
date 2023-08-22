@@ -2,6 +2,7 @@ from ast import Str
 import xarray as xr
 import numpy as np
 import dask.array as da
+import pandas as pd
 
 from enum import Enum
 from datetime import datetime
@@ -30,9 +31,50 @@ def percent_recovered(
         from. x and y dimensions must match `eval_stack`.
 
     """
-    total_change = abs(baseline - event_obs)  # 90
-    recovered = abs(eval_stack - event_obs)  #
+    total_change = abs(baseline - event_obs)  
+    recovered = abs(eval_stack - event_obs)     
     return recovered / total_change
+
+@maintain_spatial_attrs
+def P80R(
+    image_stack: xr.DataArray,
+    rest_start: str,
+    trajectory_func: Optional[Callable] = None,
+) -> xr.DataArray:
+    """ Extent (percent) that trajectory has reached 80% of pre-disturbance value.
+
+    Modified metric from Y2R. Value equal to 1 indicates 80% has been reached and value more or less than 1
+    indicates more or less than 80% has been reached.
+
+    
+    """
+    dist_start = str((int(rest_start) - 1))
+    pre_rest = [date < pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
+    post_rest = [date >= pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
+    pre_rest_avg = image_stack.sel(time=pre_rest).mean(dim=["y", "x"])
+    post_rest_max = image_stack.sel(time=post_rest).max(dim=["y", "x"])
+
+    return post_rest_max / (0.8 * pre_rest_avg)
+
+
+@maintain_spatial_attrs
+def YrYr(
+    image_stack: xr.DataArray,
+    rest_start: str,
+    trajectory_func: Optional[Callable] = None,
+):
+    if trajectory_func is not None:
+        # Fit timeseries to trajectory and use fitted values for formula
+        # fit trajectory here!
+        raise NotImplementedError
+    
+    dist_start = str((int(rest_start) - 1))
+    dist_post_5 = str(int(dist_start) + 5)
+
+    dist_post_5_val = image_stack.sel(time=dist_post_5)
+    dist_val = image_stack.sel(time=dist_start)
+
+    return dist_post_5_val - dist_val
 
 
 @maintain_spatial_attrs
@@ -172,3 +214,27 @@ def recovery_indicator(
         )
     ).squeeze("time")
     return RI
+
+
+@maintain_spatial_attrs
+def NBRRegrowth(
+    image_stack: xr.DataArray,
+    rest_start: str,
+    time_interval: int,
+    trajectory_func: Optional[Callable] = None,
+):
+    
+    if trajectory_func is not None:
+        # Fit timeseries to trajectory and use fitted values for formula
+        # fit trajectory here!
+        raise NotImplementedError
+
+    rest_post_5 = str(int(rest_start) + 5)
+    interval_end = str(int(rest_start) + time_interval)
+    interval_dates = [((date < pd.to_datetime(interval_end)) and date > pd.to_datetime(rest_start)) for date in image_stack.coords["time"].values]
+    interval_avg = image_stack.sel(time=interval_dates).mean(dim=["y", "x"])
+    # NOTE: no averaging happening because multi-year disturbances are not implemented yet
+    dist_avg = image_stack.sel(time=rest_start).mean(dim=["y", "x"])
+
+    
+    return 
