@@ -76,6 +76,8 @@ class ReferenceSystem:
         stack of yearly composite images.
 
         """
+        print(self.reference_polygons)
+        print("\n\n\n\n")
         if not (
             stack.yearcomp.contains_spatial(self.reference_polygons)
             and stack.yearcomp.contains_temporal(self.reference_range)
@@ -191,7 +193,6 @@ class RestorationArea:
                 case Metric.percent_recovered:
                     curr = self.stack.sel(time=self.end_year)
                     baseline = self.reference_system.baseline()
-                    print(baseline["baseline"].data.compute())
                     event = self.stack.sel(time=self.restoration_year)
                     metrics_dict[metric] = percent_recovered(
                         eval_stack=curr, baseline=baseline["baseline"], event_obs=event
