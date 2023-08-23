@@ -79,7 +79,7 @@ def spectral_recovery(
             reference_polygons=reference_poly,
             reference_range=reference_range,
             baseline_method=None,
-            variation_method=None
+            variation_method=None,
         )
     else:
         ref_sys = reference_range
@@ -127,13 +127,13 @@ if __name__ == "__main__":
     with LocalCluster() as cluster, Client(cluster) as client:
         metrics = spectral_recovery(
             timeseries_dict={
-                Index.ndvi: "test_500.tif",
-                Index.tcw: "test_500.tif",
+                Index.ndvi: "test_200.tif",
+                Index.tcw: "test_200.tif",
             },
             timeseries_range=["2006", "2019"],
-            restoration_poly="test_200.gpkg",
+            restoration_poly="1p_test.gpkg",
             restoration_year=rest_year,
-            # reference_poly="reference_polys_3.gpkg",
+            reference_poly="reference_polys_3.gpkg",
             reference_range=reference_year,
             # indices_list=[Index.ndvi, Index.sr],
             metrics_list=[

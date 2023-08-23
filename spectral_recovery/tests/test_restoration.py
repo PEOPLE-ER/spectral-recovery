@@ -12,8 +12,12 @@ from geopandas.testing import assert_geodataframe_equal
 from spectral_recovery.restoration import ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
 
+# TODO: move test data into their own folders, create temp dirs so individual tests
+# don't conflict while reading the data
+# https://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
 
 DATETIME_FREQ = "YS"  # TODO: should this be kept somewhere else in the project? Seem wrong that it's defined again here and in timeseries
+
 
 class TestRestorationAreaInit:
     # This might need some set-up and tear down
@@ -72,7 +76,6 @@ class TestRestorationAreaInit:
                 resto_poly.geometry
             ).all()
             assert resto_a.reference_system.reference_range == ref_sys
-
 
     # check fro bad resto year, bad reference year, bad spatial location
     @pytest.mark.parametrize(
@@ -142,7 +145,6 @@ class TestRestorationAreaInit:
 
 
 class TestRestorationAreaMetrics:
-
     @pytest.fixture()
     def valid_resto_area(self):
         polygon = "1p_test.gpkg"
@@ -201,9 +203,7 @@ class TestRestorationAreaMetrics:
         assert mock_stack.call_count == 1
 
     @patch("spectral_recovery.restoration._stack_bands")
-    def test_multiple_metrics(
-        self, mock_stack, valid_resto_area, mocker
-    ):
+    def test_multiple_metrics(self, mock_stack, valid_resto_area, mocker):
         metrics_list = [
             Metric.percent_recovered,
             Metric.years_to_recovery,
@@ -270,67 +270,98 @@ class TestRestorationAreaMetrics:
         result = valid_resto_area.metrics(metric)
         assert result.equals(expected_result)
 
-class TestReferenceSystem:
 
-    @pytest.fixture()
-    def gdf(self):
-        p1 = Polygon([(0, 0), (1, 0), (1, 1)])
-        p2 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-        g = gpd.GeoSeries([p1, p2])
-        gdf = gpd.GeoDataFrame(geometry=g)
-        return gdf
-    
+class TestReferenceSystemInit:
+    # @pytest.fixture()
+    # def gdf(self):
+    #     p1 = Polygon([(0, 0), (1, 0), (1, 1)])
+    #     p2 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+    #     g = gpd.GeoSeries([p1, p2])
+    #     gdf = gpd.GeoDataFrame(geometry=g)
+    #     return gdf
+
     @pytest.fixture()
     def simple_callable(self):
         def simple_callable(stack, dates):
             return 0
+
         return simple_callable
 
-    @pytest.fixture()
-    def reference_date(self):
-        return pd.to_datetime("2008")
+    # @pytest.fixture()
+    # def reference_date(self):
+    #     return pd.to_datetime("2008")
 
     @pytest.fixture()
-    def test_stack(self):
-        test_stack = xr.DataArray(np.ones((3, 3, 10, 10))*0, dims=["time","band","y","x"])
+    def test_stack_1(self):
+        test_stack = xr.DataArray(
+            np.ones((3, 3, 10, 10)) * 0,
+            dims=["time", "band", "y", "x"],
+            coords={
+                "time": [0, 1, 2],
+                "band": [0, 1, 2],
+                "y": np.arange(0, 10),
+                "x": np.arange(0, 10),
+            },
+        )
+        return test_stack
+    
+    @pytest.fixture()
+    def image_stack(self):
+        test_raster = "../../../test_average.tif"
+        with rioxarray.open_rasterio(test_raster, chunks="auto") as data:
+            test_stack = data
+            test_stack = test_stack.rename({"band": "time"})
+            print(test_stack)
+            test_stack = test_stack.assign_coords(
+                time=(pd.date_range("2007", "2009", freq=DATETIME_FREQ))
+            )
         return test_stack
 
-    def test_init(self, gdf, reference_date, test_stack):
+    def test_init(self, image_stack):
+        reference_polys = gpd.read_file("1p_test.gpkg")
+        reference_date = pd.to_datetime("2008")
+
         rs = ReferenceSystem(
-            reference_polygons=gdf,
-            reference_stack=test_stack, 
+            reference_polygons=reference_polys,
+            reference_stack=image_stack,
             reference_range=reference_date,
             baseline_method=None,
         )
-        assert_geodataframe_equal(rs.reference_polygons, gdf, check_geom_type=True)
+        assert_geodataframe_equal(rs.reference_polygons, reference_polys, check_geom_type=True)
         assert rs.reference_range == reference_date
         assert rs.baseline_method == historic_average
+        assert rs.reference_stack.count() == 3
+    
+    def test_init_multi_poly(self, image_stack):
+        reference_polys = gpd.read_file("../../../test_reference_poly.gpkg")
+        reference_date = pd.to_datetime("2008")
 
-
-    def test_init_baseline_method(gdf, reference_date, test_stack, simple_callable):
         rs = ReferenceSystem(
-            reference_polygons=gdf,
-            reference_stack=test_stack,
+            reference_polygons=reference_polys,
+            reference_stack=image_stack,
+            reference_range=reference_date,
+            baseline_method=None,
+        )
+        print(rs.reference_stack.data.compute())
+        assert_geodataframe_equal(rs.reference_polygons, reference_polys, check_geom_type=True)
+        assert rs.reference_range == reference_date
+        assert rs.baseline_method == historic_average
+        assert rs.reference_stack.count() == 9
+
+    def test_baseline_is_called_with_args(self, image_stack, simple_callable):
+        reference_polys = gpd.read_file("1p_test.gpkg")
+        reference_date = pd.to_datetime("2008")
+        expected = {"baseline": 0}
+        
+        rs = ReferenceSystem(
+            reference_polygons=reference_polys,
+            reference_stack=image_stack,
             reference_range=reference_date,
             baseline_method=simple_callable,
         )
+        # TODO: mock and make sure the callable is passed the stack
         assert rs.baseline_method == simple_callable
-
-
-    def test_no_variation(self, gdf, reference_date, test_stack, simple_callable):
-        expected = {"baseline": 0}
-        rs = ReferenceSystem(
-            reference_polygons=gdf,
-            reference_stack=test_stack,
-            reference_range=reference_date,
-            baseline_method=None,
-        )
-        # TODO: this line could be replace with a monkeypatch?
-        rs.baseline_method = simple_callable
-        out = rs.baseline()
+        out = rs.baseline(image_stack)
         assert out == expected
-
-    # @patch("spectral_recovery.restoration.variation_method")
-    # def test_with_variation(self, mock_variation_method):
-    #     pass
-
+    
+    # def test_stack_clip(self, gdf, reference_date, test_stack_2)
