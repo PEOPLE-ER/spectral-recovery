@@ -61,7 +61,7 @@ class ReferenceSystem:
         else:
             self.reference_stack = reference_stack.rio.clip(self.reference_polygons.geometry.values)
 
-    def baseline(self, stack):
+    def baseline(self):
         # TODO: replace return dicts with named tuple
         """Get the baseline/recovery target for a reference system"""
         baseline = self.baseline_method(self.reference_stack, self.reference_range)
@@ -191,7 +191,7 @@ class RestorationArea:
             match metric:
                 case Metric.percent_recovered:
                     curr = self.stack.sel(time=self.end_year)
-                    baseline = self.reference_system.baseline(self.stack)
+                    baseline = self.reference_system.baseline()
                     print(baseline["baseline"].data.compute())
                     event = self.stack.sel(time=self.restoration_year)
                     metrics_dict[metric] = percent_recovered(
@@ -201,7 +201,7 @@ class RestorationArea:
                     filtered_stack = self.stack.sel(
                         time=slice(self.restoration_year, self.end_year)
                     )
-                    baseline = self.reference_system.baseline(self.stack)
+                    baseline = self.reference_system.baseline()
                     metrics_dict[metric] = years_to_recovery(
                         image_stack=filtered_stack,
                         baseline=baseline["baseline"],
