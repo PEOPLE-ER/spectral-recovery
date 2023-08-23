@@ -65,7 +65,8 @@ def spectral_recovery(
     """
     # TODO: check that the out file names don't already exist... abort early if they do
     if isinstance(restoration_poly, str):
-        restoration_poly = gpd.read_file(restoration_poly)
+        restoration_poly_gdf = gpd.read_file(restoration_poly)
+
     timeseries = _stack_from_user_input(timeseries_dict, data_mask, timeseries_range)
     if not timeseries.yearcomp.valid:
         raise ValueError("Stack is not a valid yearly composite stack.")
@@ -75,16 +76,18 @@ def spectral_recovery(
     else:
         timeseries_for_metrics = timeseries
     if reference_poly is not None:
+        if isinstance(restoration_poly, str):
+            reference_poly_gdf = gpd.read_file(reference_poly)
         ref_sys = ReferenceSystem(
-            reference_polygons=reference_poly,
+            reference_polygons=reference_poly_gdf,
+            reference_stack=timeseries_for_metrics,
             reference_range=reference_range,
             baseline_method=None,
-            variation_method=None,
         )
     else:
         ref_sys = reference_range
     metrics = RestorationArea(
-        restoration_polygon=restoration_poly,
+        restoration_polygon=restoration_poly_gdf,
         restoration_year=restoration_year,
         reference_system=ref_sys,
         composite_stack=timeseries_for_metrics,
@@ -116,7 +119,7 @@ def spectral_recovery(
 if __name__ == "__main__":
     from dask.distributed import Client, LocalCluster, progress
 
-    rest_year = pd.to_datetime("2010")
+    rest_year = pd.to_datetime("2008")
     reference_year = pd.to_datetime("2007")
 
     print(
@@ -127,22 +130,20 @@ if __name__ == "__main__":
     with LocalCluster() as cluster, Client(cluster) as client:
         metrics = spectral_recovery(
             timeseries_dict={
-                Index.ndvi: "test_200.tif",
-                Index.tcw: "test_200.tif",
+                Index.ndvi: "spectral_recovery/tests/test_data/time17_xy2_epsg3005.tif",
+                Index.tcw: "spectral_recovery/tests/test_data/time17_xy2_epsg3005.tif",
             },
-            timeseries_range=["2006", "2019"],
-            restoration_poly="1p_test.gpkg",
+            timeseries_range=["2005", "2021"],
+            restoration_poly="spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg",
             restoration_year=rest_year,
-            reference_poly="reference_polys_3.gpkg",
+            reference_poly="spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg",
             reference_range=reference_year,
             # indices_list=[Index.ndvi, Index.sr],
             metrics_list=[
                 Metric.percent_recovered,
                 Metric.years_to_recovery,
-                Metric.recovery_indicator,
-                Metric.dNBR,
             ],
-            write=True,
+            write=False,
         )
         # TODO: figure out how to display progress to users
         # progress(metrics)
