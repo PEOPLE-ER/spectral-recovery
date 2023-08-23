@@ -55,17 +55,18 @@ class ReferenceSystem:
         self.reference_range = to_datetime(reference_range)
         self.baseline_method = baseline_method or historic_average
         if not self._within(reference_stack):
-            raise ValueError(
-                f"Not contained! Better message soon!"
-            )
+            raise ValueError(f"Not contained! Better message soon!")
         else:
-            self.reference_stack = reference_stack.rio.clip(self.reference_polygons.geometry.values)
+            self.reference_stack = reference_stack.rio.clip(
+                self.reference_polygons.geometry.values
+            )
 
     def baseline(self):
         # TODO: replace return dicts with named tuple
         """Get the baseline/recovery target for a reference system"""
         baseline = self.baseline_method(self.reference_stack, self.reference_range)
         return {"baseline": baseline}
+
     # TODO:
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
@@ -114,7 +115,7 @@ class RestorationArea:
         restoration_year: str | datetime,
         reference_system: int | List[int] | ReferenceSystem,
         composite_stack: xr.DataArray,
-                end_year: Optional[str | datetime] = None,
+        end_year: Optional[str | datetime] = None,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
@@ -138,16 +139,14 @@ class RestorationArea:
             historic_reference = ReferenceSystem(
                 reference_polygons=restoration_polygon,
                 reference_stack=composite_stack,
-                reference_range=reference_system
+                reference_range=reference_system,
             )
             self.reference_system = historic_reference
         else:
             self.reference_system = reference_system
 
         if not self._within(composite_stack):
-            raise ValueError(
-                f"Not contained! Better message soon!"
-            )
+            raise ValueError(f"Not contained! Better message soon!")
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
         if not end_year:
             # TODO: there's a more xarray-enabled way to do this via DatetimeIndex.

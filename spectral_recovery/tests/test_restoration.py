@@ -295,36 +295,44 @@ class TestReferenceSystemInit:
             },
         )
         return test_stack
-    
+
     @pytest.fixture()
     def image_stack(self):
         test_raster = "spectral_recovery/tests/test_data/time3_xy2_epsg3005.tif"
         with rioxarray.open_rasterio(test_raster) as data:
             test_stack = data
             test_stack = test_stack.rename({"band": "time"})
-            test_stack = test_stack.astype(np.float64) # NOTE: if this conversion doesn't happen, test with count will fail. Filtered ints become 0.
+            test_stack = test_stack.astype(
+                np.float64
+            )  # NOTE: if this conversion doesn't happen, test with count will fail. Filtered ints become 0.
             test_stack = test_stack.assign_coords(
                 time=(pd.date_range("2007", "2009", freq=DATETIME_FREQ))
             )
         return test_stack
 
     def test_init(self, image_stack):
-        reference_polys = gpd.read_file("spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg")
+        reference_polys = gpd.read_file(
+            "spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg"
+        )
         reference_date = pd.to_datetime("2008")
 
         rs = ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
-            baseline_method=None
+            baseline_method=None,
         )
-        assert_geodataframe_equal(rs.reference_polygons, reference_polys, check_geom_type=True)
+        assert_geodataframe_equal(
+            rs.reference_polygons, reference_polys, check_geom_type=True
+        )
         assert rs.reference_range == reference_date
         assert rs.baseline_method == historic_average
         assert rs.reference_stack.count() == 3
-    
+
     def test_init_multi_poly(self, image_stack):
-        reference_polys = gpd.read_file("spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg")
+        reference_polys = gpd.read_file(
+            "spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+        )
         reference_date = pd.to_datetime("2008")
 
         rs = ReferenceSystem(
@@ -338,71 +346,80 @@ class TestReferenceSystemInit:
 
     # NOTE: some of these test might be redundant? Might already be covered by testing of the Accessor contains methods?
     def test_not_contained_error_outbounds(self, image_stack):
-        reference_polys = gpd.read_file("spectral_recovery/tests/test_data/polygon_outbound_epsg3005.gpkg")
+        reference_polys = gpd.read_file(
+            "spectral_recovery/tests/test_data/polygon_outbound_epsg3005.gpkg"
+        )
         reference_date = pd.to_datetime("2008")
 
         with pytest.raises(
-                ValueError,
-                match="Not contained! Better message soon!",
-            ):
-                rs = ReferenceSystem(
-                    reference_polygons=reference_polys,
-                    reference_stack=image_stack,
-                    reference_range=reference_date,
-                    baseline_method=None,
-                )
+            ValueError,
+            match="Not contained! Better message soon!",
+        ):
+            rs = ReferenceSystem(
+                reference_polygons=reference_polys,
+                reference_stack=image_stack,
+                reference_range=reference_date,
+                baseline_method=None,
+            )
 
     def test_not_contained_error_overlap(self, image_stack):
-        reference_poly_overlap = gpd.read_file("spectral_recovery/tests/test_data/polygon_overlap_epsg3005.gpkg")
+        reference_poly_overlap = gpd.read_file(
+            "spectral_recovery/tests/test_data/polygon_overlap_epsg3005.gpkg"
+        )
         reference_date = pd.to_datetime("2008")
 
         with pytest.raises(
-                ValueError,
-                match="Not contained! Better message soon!",
-            ):
-                rs = ReferenceSystem(
-                    reference_polygons=reference_poly_overlap,
-                    reference_stack=image_stack,
-                    reference_range=reference_date,
-                    baseline_method=None,
-                )
+            ValueError,
+            match="Not contained! Better message soon!",
+        ):
+            rs = ReferenceSystem(
+                reference_polygons=reference_poly_overlap,
+                reference_stack=image_stack,
+                reference_range=reference_date,
+                baseline_method=None,
+            )
 
     def test_not_contained_error_multi_in_and_out(self, image_stack):
-        reference_polys_multi = gpd.read_file("spectral_recovery/tests/test_data/polygon_multi_inoutbound_epsg3005.gpkg")
+        reference_polys_multi = gpd.read_file(
+            "spectral_recovery/tests/test_data/polygon_multi_inoutbound_epsg3005.gpkg"
+        )
         reference_date = pd.to_datetime("2008")
 
         with pytest.raises(
-                ValueError,
-                match="Not contained! Better message soon!",
-            ):
-                rs = ReferenceSystem(
-                    reference_polygons=reference_polys_multi,
-                    reference_stack=image_stack,
-                    reference_range=reference_date,
-                    baseline_method=None,
-                )
+            ValueError,
+            match="Not contained! Better message soon!",
+        ):
+            rs = ReferenceSystem(
+                reference_polygons=reference_polys_multi,
+                reference_stack=image_stack,
+                reference_range=reference_date,
+                baseline_method=None,
+            )
 
     def test_not_contained_error_time(self, image_stack):
-        reference_polys = gpd.read_file("spectral_recovery/tests/test_data/polygon_outbound_epsg3005.gpkg")
+        reference_polys = gpd.read_file(
+            "spectral_recovery/tests/test_data/polygon_outbound_epsg3005.gpkg"
+        )
         reference_date = pd.to_datetime("2020")
 
         with pytest.raises(
-                ValueError,
-                match="Not contained! Better message soon!",
-            ):
-                rs = ReferenceSystem(
-                    reference_polygons=reference_polys,
-                    reference_stack=image_stack,
-                    reference_range=reference_date,
-                    baseline_method=None,
-                )
+            ValueError,
+            match="Not contained! Better message soon!",
+        ):
+            rs = ReferenceSystem(
+                reference_polygons=reference_polys,
+                reference_stack=image_stack,
+                reference_range=reference_date,
+                baseline_method=None,
+            )
+
 
 class TestReferenceSystemBaseline:
-
     class TestingReferenceSystem(ReferenceSystem):
-        """ Sub-class ReferenceSystem and overwrite __init__ to isolate `baseline` method. """
+        """Sub-class ReferenceSystem and overwrite __init__ to isolate `baseline` method."""
+
         def __init__(self, baseline, stack, date):
-            """ Set only attributes that are required by `baseline`, assume arb. types"""
+            """Set only attributes that are required by `baseline`, assume arb. types"""
             self.baseline_method = baseline
             self.reference_stack = stack
             self.reference_range = date
