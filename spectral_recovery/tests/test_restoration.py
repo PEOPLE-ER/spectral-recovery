@@ -1,5 +1,4 @@
 import pytest
-from spectral_recovery.baselines import historic_average
 import xarray as xr
 import numpy as np
 import rioxarray
@@ -9,6 +8,8 @@ import pandas as pd
 from mock import patch
 from unittest.mock import MagicMock
 from geopandas.testing import assert_geodataframe_equal
+
+from spectral_recovery.baselines import historic_average
 from spectral_recovery.restoration import ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
 
@@ -160,6 +161,7 @@ class TestRestorationAreaMetrics:
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
+            stack = xr.concat([stack, stack], dim=pd.Index([0,1], name="band"))
             resto_area = RestorationArea(
                 restoration_polygon=resto_poly,
                 restoration_year=restoration_year,
@@ -271,16 +273,6 @@ class TestRestorationAreaMetrics:
 
 
 class TestReferenceSystemInit:
-    # @pytest.fixture()
-    # def gdf(self):
-    #     p1 = Polygon([(0, 0), (1, 0), (1, 1)])
-    #     p2 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-    #     g = gpd.GeoSeries([p1, p2])
-    #     gdf = gpd.GeoDataFrame(geometry=g)
-    #     return gdf
-    # @pytest.fixture()
-    # def reference_date(self):
-    #     return pd.to_datetime("2008")
 
     @pytest.fixture()
     def test_stack_1(self):
@@ -415,7 +407,8 @@ class TestReferenceSystemInit:
 
 
 class TestReferenceSystemBaseline:
-    class TestingReferenceSystem(ReferenceSystem):
+
+    class SimpleReferenceSystem(ReferenceSystem):
         """Sub-class ReferenceSystem and overwrite __init__ to isolate `baseline` method."""
 
         def __init__(self, baseline, stack, date):
@@ -427,7 +420,7 @@ class TestReferenceSystemBaseline:
     def test_baseline_is_called_with_args(self):
         mock_value = 3.0
         mock_baseline = MagicMock(return_value=mock_value)
-        rs = self.TestingReferenceSystem(mock_baseline, 1.0, 2.0)
+        rs = self.SimpleReferenceSystem(mock_baseline, 1.0, 2.0)
         output = rs.baseline()
         expected = {"baseline": mock_value}
         assert output == expected
