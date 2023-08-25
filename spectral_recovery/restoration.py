@@ -1,5 +1,6 @@
 import xarray as xr
 import geopandas as gpd
+from pandas import Index
 
 from typing import Callable, Optional, Union, List
 from datetime import datetime
@@ -36,11 +37,6 @@ class ReferenceSystem:
         within the reference system. Must be able to operate on
         4D (band, time, y, x) DataArrays.
 
-    variation_method : Callable, optional
-        The method for reporting/determing reference value variation
-        (e.g 2 std). Default is None.
-        TODO: this might be replaced with a simple named/str param
-
     """
 
     def __init__(
@@ -57,9 +53,13 @@ class ReferenceSystem:
         if not self._within(reference_stack):
             raise ValueError(f"Not contained! Better message soon!")
         else:
-            self.reference_stack = reference_stack.rio.clip(
-                self.reference_polygons.geometry.values
-            )
+            clipped_stacks = {}
+            # TODO: Maybe handle MultiPolygons here. Otherwise force everything to Polygon in pre-processing.
+            for i, row in reference_polygons.iterrows():
+                polygon_stack = reference_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
+                clipped_stacks[i] = polygon_stack
+            self.reference_stack = xr.concat(clipped_stacks.values(), dim=Index(clipped_stacks.keys(), name="poly_id"))
+            print(self.reference_stack)
 
     def baseline(self):
         # TODO: replace return dicts with named tuple
@@ -67,7 +67,6 @@ class ReferenceSystem:
         baseline = self.baseline_method(self.reference_stack, self.reference_range)
         return {"baseline": baseline}
 
-    # TODO:
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
 
@@ -76,8 +75,6 @@ class ReferenceSystem:
         stack of yearly composite images.
 
         """
-        print(self.reference_polygons)
-        print("\n\n\n\n")
         if not (
             stack.yearcomp.contains_spatial(self.reference_polygons)
             and stack.yearcomp.contains_temporal(self.reference_range)

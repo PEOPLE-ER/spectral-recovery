@@ -119,7 +119,7 @@ def spectral_recovery(
 if __name__ == "__main__":
     from dask.distributed import Client, LocalCluster, progress
 
-    rest_year = pd.to_datetime("2008")
+    rest_year = pd.to_datetime("2009")
     reference_year = pd.to_datetime("2007")
 
     print(
