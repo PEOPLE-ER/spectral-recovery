@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.8.1" />
-<title>spectral_recovery.utils API documentation</title>
+<title>spectral_recovery.trajectory API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
@@ -17,68 +17,60 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>spectral_recovery.utils</code></h1>
+<h1 class="title">Module <code>spectral_recovery.trajectory</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import functools
+<pre><code class="python">import xarray as xr
+import numpy as np
 
-import pandas as pd
-
-from datetime import datetime, timezone
-from typing import List, Union, Tuple
-
-
-def to_datetime(value: Union[str, List[str], datetime, pd.Timestamp]):
-    &#34;&#34;&#34;Format year and year ranges to UTC datetime.&#34;&#34;&#34;
-    # TODO
-    # convert to UTC if not in UTC, if no timezone then assume UTC
-    # Convert a year range from X to Y as start-of-year X to end-of-year Y
-    return value
+from scipy import stats
+from typing import List
 
 
-def maintain_rio_attrs(func):
-    &#34;&#34;&#34;A wrapper for maintaining rioxarray crs/encoding info.
+def per_pixel_theil_sen(data_array: xr.DataArray, time: List[int]):
+    &#34;&#34;&#34;Apply theil_sen slope regression across time over each pixel
 
-    Rioxarray information (nodata, CRS, etc.) is lost through
-    operations that create new instances of an xarray object
-    because new accessors (e.g rio) are created for every instance.
+    Parameters
+    ----------
+    data_array : xr.DataArray
+        Data to compute per-pixel theil-sen values for. DataArray must
+        contain &#34;time&#34;, &#34;y&#34;, and &#34;x&#34; coordinate dimensions.
 
-    This method ensures that a returned xarray object has the
-    same rio CRS and encoding as the input xarray object.
+    time : list of int
+        Time values. Length must be equal to the length of &#34;time&#34; 
+        dimension on `data_array`.
+
+    Returns
+    -------
+    ts_reg : xr.DataArray
+        3D (parameter, y, x) DataArray of  theil-sen slope and intercept 
+        parameters for each pixel. Parameter dimension will contain both
+        slope and intercept t-s values for each pixel.
 
     &#34;&#34;&#34;
+    ts_dim_name = &#34;parameter&#34;
+    ts_reg = xr.apply_ufunc(
+        _new_linregress,
+        data_array,
+        time,
+        input_core_dims=[[&#34;time&#34;], [&#34;time&#34;]],
+        output_core_dims=[[ts_dim_name]],
+        vectorize=True,
+        dask=&#34;parallelized&#34;,
+        output_dtypes=[&#34;float64&#34;],
+        dask_gufunc_kwargs={&#34;output_sizes&#34;: {ts_dim_name: 2}},
+    )
+    ts_reg = ts_reg.assign_coords({&#34;parameter&#34;: [&#34;slope&#34;, &#34;intercept&#34;]})
+    return ts_reg
 
-    @functools.wraps(func)
-    def wrapper_maintain_rio_attrs(*args, **kwargs):
-        &#34;&#34;&#34;
-        Returns
-        --------
-        indice : xr.DataArray
-            DataArray object returned by func with spatial attrs
-
-        Notes
-        -----
-        The first argument passed to a wrapped function (keyword or
-        non-keyword) must be the xarray DataArray whose rio info
-        is to be maintained.
-
-        &#34;&#34;&#34;
-        # Take the first argument
-        if args:
-            xarray_obj = args[0]
-        else:
-            # NOTE: this only works for Python 3.6+ where dicts keep insertion order by default
-            xarray_obj = next(iter(kwargs.values()))
-        indice = func(*args, **kwargs)
-        indice.rio.write_crs(xarray_obj.rio.crs, inplace=True)
-        indice.rio.update_encoding(xarray_obj.encoding, inplace=True)
-        return indice
-
-    return wrapper_maintain_rio_attrs</code></pre>
+def _new_linregress(y, x):
+    &#34;&#34;&#34;Wrapper around mstats.theilslopes for apply_ufunc usage&#34;&#34;&#34;
+    slope, intercept, low_slope, high_slope = stats.mstats.theilslopes(y, x)
+    return np.array([slope, intercept])</code></pre>
 </details>
 </section>
 <section>
@@ -88,76 +80,67 @@ def maintain_rio_attrs(func):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="spectral_recovery.utils.maintain_rio_attrs"><code class="name flex">
-<span>def <span class="ident">maintain_rio_attrs</span></span>(<span>func)</span>
+<dt id="spectral_recovery.trajectory.per_pixel_theil_sen"><code class="name flex">
+<span>def <span class="ident">per_pixel_theil_sen</span></span>(<span>data_array: xarray.core.dataarray.DataArray, time: List[int])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A wrapper for maintaining rioxarray crs/encoding info.</p>
-<p>Rioxarray information (nodata, CRS, etc.) is lost through
-operations that create new instances of an xarray object
-because new accessors (e.g rio) are created for every instance.</p>
-<p>This method ensures that a returned xarray object has the
-same rio CRS and encoding as the input xarray object.</p></div>
+<div class="desc"><p>Apply theil_sen slope regression across time over each pixel</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data_array</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>Data to compute per-pixel theil-sen values for. DataArray must
+contain "time", "y", and "x" coordinate dimensions.</dd>
+<dt><strong><code>time</code></strong> :&ensp;<code>list</code> of <code>int</code></dt>
+<dd>Time values. Length must be equal to the length of "time"
+dimension on <code>data_array</code>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ts_reg</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>3D (parameter, y, x) DataArray of
+theil-sen slope and intercept
+parameters for each pixel. Parameter dimension will contain both
+slope and intercept t-s values for each pixel.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def maintain_rio_attrs(func):
-    &#34;&#34;&#34;A wrapper for maintaining rioxarray crs/encoding info.
+<pre><code class="python">def per_pixel_theil_sen(data_array: xr.DataArray, time: List[int]):
+    &#34;&#34;&#34;Apply theil_sen slope regression across time over each pixel
 
-    Rioxarray information (nodata, CRS, etc.) is lost through
-    operations that create new instances of an xarray object
-    because new accessors (e.g rio) are created for every instance.
+    Parameters
+    ----------
+    data_array : xr.DataArray
+        Data to compute per-pixel theil-sen values for. DataArray must
+        contain &#34;time&#34;, &#34;y&#34;, and &#34;x&#34; coordinate dimensions.
 
-    This method ensures that a returned xarray object has the
-    same rio CRS and encoding as the input xarray object.
+    time : list of int
+        Time values. Length must be equal to the length of &#34;time&#34; 
+        dimension on `data_array`.
+
+    Returns
+    -------
+    ts_reg : xr.DataArray
+        3D (parameter, y, x) DataArray of  theil-sen slope and intercept 
+        parameters for each pixel. Parameter dimension will contain both
+        slope and intercept t-s values for each pixel.
 
     &#34;&#34;&#34;
-
-    @functools.wraps(func)
-    def wrapper_maintain_rio_attrs(*args, **kwargs):
-        &#34;&#34;&#34;
-        Returns
-        --------
-        indice : xr.DataArray
-            DataArray object returned by func with spatial attrs
-
-        Notes
-        -----
-        The first argument passed to a wrapped function (keyword or
-        non-keyword) must be the xarray DataArray whose rio info
-        is to be maintained.
-
-        &#34;&#34;&#34;
-        # Take the first argument
-        if args:
-            xarray_obj = args[0]
-        else:
-            # NOTE: this only works for Python 3.6+ where dicts keep insertion order by default
-            xarray_obj = next(iter(kwargs.values()))
-        indice = func(*args, **kwargs)
-        indice.rio.write_crs(xarray_obj.rio.crs, inplace=True)
-        indice.rio.update_encoding(xarray_obj.encoding, inplace=True)
-        return indice
-
-    return wrapper_maintain_rio_attrs</code></pre>
-</details>
-</dd>
-<dt id="spectral_recovery.utils.to_datetime"><code class="name flex">
-<span>def <span class="ident">to_datetime</span></span>(<span>value: Union[str, List[str], datetime.datetime, pandas._libs.tslibs.timestamps.Timestamp])</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Format year and year ranges to UTC datetime.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def to_datetime(value: Union[str, List[str], datetime, pd.Timestamp]):
-    &#34;&#34;&#34;Format year and year ranges to UTC datetime.&#34;&#34;&#34;
-    # TODO
-    # convert to UTC if not in UTC, if no timezone then assume UTC
-    # Convert a year range from X to Y as start-of-year X to end-of-year Y
-    return value</code></pre>
+    ts_dim_name = &#34;parameter&#34;
+    ts_reg = xr.apply_ufunc(
+        _new_linregress,
+        data_array,
+        time,
+        input_core_dims=[[&#34;time&#34;], [&#34;time&#34;]],
+        output_core_dims=[[ts_dim_name]],
+        vectorize=True,
+        dask=&#34;parallelized&#34;,
+        output_dtypes=[&#34;float64&#34;],
+        dask_gufunc_kwargs={&#34;output_sizes&#34;: {ts_dim_name: 2}},
+    )
+    ts_reg = ts_reg.assign_coords({&#34;parameter&#34;: [&#34;slope&#34;, &#34;intercept&#34;]})
+    return ts_reg</code></pre>
 </details>
 </dd>
 </dl>
@@ -178,8 +161,7 @@ same rio CRS and encoding as the input xarray object.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="spectral_recovery.utils.maintain_rio_attrs" href="#spectral_recovery.utils.maintain_rio_attrs">maintain_rio_attrs</a></code></li>
-<li><code><a title="spectral_recovery.utils.to_datetime" href="#spectral_recovery.utils.to_datetime">to_datetime</a></code></li>
+<li><code><a title="spectral_recovery.trajectory.per_pixel_theil_sen" href="#spectral_recovery.trajectory.per_pixel_theil_sen">per_pixel_theil_sen</a></code></li>
 </ul>
 </li>
 </ul>
