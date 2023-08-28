@@ -3,7 +3,7 @@ import xarray as xr
 from typing import Union, Tuple
 from datetime import datetime
 
-""" Methods for computing baselines for reference """
+""" Methods for computing recovery targets """
 
 
 def historic_average(
@@ -23,7 +23,7 @@ def historic_average(
 
     Returns
     -------
-    baseline_avg : xr.DataArray
+    historic_average : xr.DataArray
         A 1D DataArray of historic average.
     """
     # TODO: force there to always be a band dimension.
@@ -34,9 +34,9 @@ def historic_average(
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
-    baseline_avg = ranged_stack.mean(dim=dims_to_average_over, skipna=True)
+    historic_average = ranged_stack.mean(dim=dims_to_average_over, skipna=True)
     if "poly_id" in stack.dims:
-        baseline_avg = baseline_avg.mean(dim="poly_id", skipna=True)
+        historic_average = historic_average.mean(dim="poly_id", skipna=True)
     
-    baseline_avg = baseline_avg.assign_coords(band=stack.coords["band"]) # re-assign lost coords.
-    return baseline_avg
+    historic_average = historic_average.assign_coords(band=stack.coords["band"]) # re-assign lost coords.
+    return historic_average

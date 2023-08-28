@@ -56,6 +56,8 @@ def spectral_recovery(
     data_mask : str or xr.DataArray, optional
         Path to or DataArray of mask. Must be broadcastable to dim of size (N,M,y,x)
         where N is # of bands/indices and M is # of timesteps.
+    write : bool, optional
+        Flag for whether to write recovery metrics to raster (TIF) or not.
 
     Returns
     -------
@@ -68,11 +70,11 @@ def spectral_recovery(
         restoration_poly_gdf = gpd.read_file(restoration_poly)
 
     timeseries = _stack_from_user_input(timeseries_dict, data_mask, timeseries_range)
-    if not timeseries.yearcomp.valid:
+    if not timeseries.satts.valid:
         raise ValueError("Stack is not a valid yearly composite stack.")
 
     if indices_list is not None and len(indices_list) != 0:
-        timeseries_for_metrics = timeseries.yearcomp.indices(indices_list)
+        timeseries_for_metrics = timeseries.satts.indices(indices_list)
     else:
         timeseries_for_metrics = timeseries
     if reference_poly is not None:
@@ -82,7 +84,7 @@ def spectral_recovery(
             reference_polygons=reference_poly_gdf,
             reference_stack=timeseries_for_metrics,
             reference_range=reference_range,
-            baseline_method=None,
+            recovery_target_method=None,
         )
     else:
         ref_sys = reference_range
