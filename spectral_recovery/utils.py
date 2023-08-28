@@ -14,7 +14,7 @@ def to_datetime(value: Union[str, List[str], datetime, pd.Timestamp]):
     return value
 
 
-def maintain_spatial_attrs(func):
+def maintain_rio_attrs(func):
     """A wrapper for maintaining rioxarray crs/encoding info.
 
     Rioxarray information (nodata, CRS, etc.) is lost through
@@ -27,7 +27,7 @@ def maintain_spatial_attrs(func):
     """
 
     @functools.wraps(func)
-    def wrapper_maintain_spatial_attrs(*args, **kwargs):
+    def wrapper_maintain_rio_attrs(*args, **kwargs):
         """
         Returns
         --------
@@ -52,4 +52,4 @@ def maintain_spatial_attrs(func):
         indice.rio.update_encoding(xarray_obj.encoding, inplace=True)
         return indice
 
-    return wrapper_maintain_spatial_attrs
+    return wrapper_maintain_rio_attrs

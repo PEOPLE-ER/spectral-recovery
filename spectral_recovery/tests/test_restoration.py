@@ -9,7 +9,7 @@ from mock import patch
 from unittest.mock import MagicMock
 from geopandas.testing import assert_geodataframe_equal
 
-from spectral_recovery.baselines import historic_average
+from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.restoration import ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
 
