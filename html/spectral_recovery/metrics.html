@@ -3,17 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="generator" content="pdoc 0.8.1" />
 <title>spectral_recovery.metrics API documentation</title>
 <meta name="description" content="" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 </head>
 <body>
 <main>
@@ -26,47 +24,53 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from ast import Str
-import xarray as xr
+<pre><code class="python">import xarray as xr
 import numpy as np
-import dask.array as da
 
-from enum import Enum
-from datetime import datetime
-from spectral_recovery.utils import maintain_spatial_attrs
-from scipy import stats
+
 from typing import Callable, Optional
 
+from spectral_recovery.trajectory import per_pixel_theil_sen
+from spectral_recovery.utils import maintain_rio_attrs
 
-@maintain_spatial_attrs
+
+# TODO: generalize to take image_stack, rest_start, and baseline. Get event_obs within func.
+@maintain_rio_attrs
 def percent_recovered(
-    eval_stack: xr.DataArray, baseline: xr.DataArray, event_obs: xr.DataArray
+    image_stack: xr.DataArray, recovery_target: xr.DataArray, event_obs: xr.DataArray
 ) -&gt; xr.DataArray:
     &#34;&#34;&#34;Per-pixel percent recovery
 
     Parameters
     ----------
-    eval_stack : xr.DataArray
-        The stack of images to evaluate percent recovered over.
-
-    baseline : xr.DataArray
-        The baseline for recovery. Dimensions must be able to broadcast
-        to `eval_stack` and `event_obs`.
-
+    image_stack : xr.DataArray
+        The 4D DataArray (time, band, y, x) of images over which to
+        evaluate percent recovered.
+    recovery_target : xr.DataArray
+        The DataArray containing the recovery targets. Dimensions
+        must be able to broadcast to `eval_stack` and `event_obs`.
     event_obs : xr.DataArray
-        The image/values of the event which we are measuring recovery
-        from. x and y dimensions must match `eval_stack`.
+        The DataArray of images for the restoration event (indexed from 
+        `image_stack`) from which we are measuring recovery.
+
+    Returns
+    -------
+    P80R : xr.DataArray
+        3D (band, y, x) DataArray containing Y2R for each pixel. The band 
+        coordinate will contain &#34;Y2R&#34; label. Will either be predictive Y2R
+        or non-predictive Y2R. For non-predictive Y2R, nan values represents
+        pixels that have not hit percent recovered yet.
 
     &#34;&#34;&#34;
-    total_change = abs(baseline - event_obs)  # 90
-    recovered = abs(eval_stack - event_obs)  #
+    total_change = abs(recovery_target - event_obs) 
+    recovered = abs(image_stack - event_obs) 
     return recovered / total_change
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def years_to_recovery(
     image_stack: xr.DataArray,
-    baseline: xr.DataArray,
+    recovery_target: xr.DataArray,
     percent: int = 80,
     predictive: bool = False,
 ) -&gt; xr.DataArray:
@@ -75,21 +79,32 @@ def years_to_recovery(
     Parameters
     ----------
     image_stack : xr.DataArray
-        Timeseries of images to compute years-to-recovery across.
+        4D (time, band, y, x) stack of images to compute Y2R over.
+    recovery_target : xr.DataArray
+        1D (band) DataArray containing target recovery values for each band.
+    percent : int
+        The percent of `recovery_target` to consider &#34;recovered&#34;.
+    predictive : 
+        A boolean indicating whether or not to use predictive Y2R. If True, 
+        predictive Y2R is used. If False, traditional Y2R is used.
 
-    # TODO: faster implementation located in `metrics_playground` module
-    # TODO: decide on &#34;undetermined&#34; value (e.g not recovered, negative recovery)
-    # NOTE: re #5: If current observations are not recovered but at a previous timestep
-    # an observation reached the recovered state... do we report the # of years to the
-    # previous step? or report nan?
+    Returns
+    -------
+    Y2R : xr.DataArray
+        3D (band, y, x) DataArray containing Y2R for each pixel. The band 
+        coordinate will contain &#34;Y2R&#34; label. Will either be predictive Y2R
+        or non-predictive Y2R. For non-predictive Y2R, nan values represents
+        pixels that have not hit percent recovered yet.
+
     &#34;&#34;&#34;
-    reco_80 = baseline * (percent / 100)
+    # TODO: generalize this for multiple trajectory methods
+    reco_80 = recovery_target * (percent / 100)
     # _theil_sen calls apply_ufunc along the time dimension so stack&#39;s
     # chunks need to contain the entire timestack before being passed
     y_vals = image_stack.chunk(dict(time=-1))
     x_vals = image_stack.time.dt.year
 
-    ts = _theil_sen(y=y_vals, x=x_vals)
+    ts = per_pixel_theil_sen(data_array=y_vals, time=x_vals)
     y2r = (reco_80 - ts.sel(parameter=&#34;intercept&#34;)) / ts.sel(parameter=&#34;slope&#34;)
 
     predictive_y2r = y2r - x_vals[0]
@@ -103,48 +118,10 @@ def years_to_recovery(
         return non_predictive_y2r.drop_vars(&#34;time&#34;)
 
 
-def _new_linregress(y, x):
-    &#34;&#34;&#34;Wrapper around mstats.theilslopes for apply_ufunc usage&#34;&#34;&#34;
-    slope, intercept, low_slope, high_slope = stats.mstats.theilslopes(y, x)
-    return np.array([slope, intercept])
 
-
-def _theil_sen(y, x):
-    &#34;&#34;&#34;Apply theil_sen slope regression across time on each pixel
-
-    Parameters
-    ----------
-    y : xr.DataArray
-
-    x : list of int
-
-    Returns
-    -------
-    ts_reg : xr.DataArray
-        DataArray of  theil-sen slope and intercept parameters for each
-        pixel. 3D DataArray with &#34;parameter&#34;, &#34;y&#34; and &#34;x&#34; labelled
-        dimensions where &#34;y&#34; and &#34;x&#34; match input &#34;y&#34; and &#34;x&#34;.
-
-    &#34;&#34;&#34;
-    ts_dim_name = &#34;parameter&#34;
-    ts_reg = xr.apply_ufunc(
-        _new_linregress,
-        y,
-        x,
-        input_core_dims=[[&#34;time&#34;], [&#34;time&#34;]],
-        output_core_dims=[[ts_dim_name]],
-        vectorize=True,
-        dask=&#34;parallelized&#34;,
-        output_dtypes=[&#34;float64&#34;],
-        dask_gufunc_kwargs={&#34;output_sizes&#34;: {ts_dim_name: 2}},
-    )
-    ts_reg = ts_reg.assign_coords({&#34;parameter&#34;: [&#34;slope&#34;, &#34;intercept&#34;]})
-    return ts_reg
-
-
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def dNBR(
-    restoration_stack: xr.DataArray,
+    image_stack: xr.DataArray,
     rest_start: str,
     trajectory_func: Optional[Callable] = None,
 ) -&gt; xr.DataArray:
@@ -152,34 +129,64 @@ def dNBR(
 
     Parameters
     ----------
-    restoration_stack :
+    image_stack : xr.DataArray
+        4D (time, band, y, x) stack of images to compute dNBR over.
+    rest_start : xr.DataArray
+        Date of restoration event. Value must be within the time dimension
+        coordinates of `image_stack` param.
     trajectory_func : callable, optional
+        The function/method used to compute TS trajectory. Otherwise, 
+        metric method is computed on the raw values available in `image_stack`
 
+    Returns
+    -------
+    dNBR : xr.DataArray
+        3D (band, y, x) DataArray containing dNBR for each pixel. The band 
+        coordinate will contain &#34;dNBR&#34; label.
     &#34;&#34;&#34;
     if trajectory_func is not None:
-        # Fit timeseries to trajectory and use fitted values for formula
-        # fit trajectory here!
+        # Fit timeseries to trajectory and use fitted values for formula.
+        # Something like(?): 
+        # &gt;&gt; image_stack = trajectory_func(...)
         raise NotImplementedError
-
+    # TODO: make this date increment/decrement easier or more reliable.
     rest_post_5 = str(int(rest_start) + 5)
     dNBR = (
-        restoration_stack.sel(time=rest_post_5).drop_vars(&#34;time&#34;)
-        - restoration_stack.sel(time=rest_start).drop_vars(&#34;time&#34;)
+        image_stack.sel(time=rest_post_5).drop_vars(&#34;time&#34;)
+        - image_stack.sel(time=rest_start).drop_vars(&#34;time&#34;)
     ).squeeze(&#34;time&#34;)
     return dNBR
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def recovery_indicator(
     image_stack: xr.DataArray,
     rest_start: str,
     trajectory_func: Optional[Callable] = None,
 ) -&gt; xr.DataArray:
     &#34;&#34;&#34;
+    Parameters
+    ----------
+    image_stack : xr.DataArray
+        4D (time, band, y, x) stack of images to compute RI over.
+    rest_start : xr.DataArray
+        Date of restoration event. Value must be within the time dimension
+        coordinates of `image_stack` param.
+    trejectory_func : callable, optional
+        The function/method used to compute TS trajectory. Otherwise, 
+        metric method is computed on the raw values available in `image_stack`.
+
+    Returns
+    -------
+    RI : xr.DataArray
+        3D (band, y, x) DataArray containing RI for each pixel. The band 
+        coordinate will contain &#34;RI&#34; label.
     Notes
     -----
     This implementation currently assumes that the disturbance period is 1 year long.
-    TODO: allow for multi-year disturbances?
+    Meaning, the parameter `rest_start` is the start of the restoration and the
+    start of the disturbance is exactly one-year prior.
+
     &#34;&#34;&#34;
     if trajectory_func is not None:
         # Fit timeseries to trajectory and use fitted values for formula
@@ -210,23 +217,34 @@ def recovery_indicator(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="spectral_recovery.metrics.dNBR"><code class="name flex">
-<span>def <span class="ident">dNBR</span></span>(<span>restoration_stack: xarray.core.dataarray.DataArray, rest_start: str, trajectory_func: Optional[Callable] = None) ‑> xarray.core.dataarray.DataArray</span>
+<span>def <span class="ident">dNBR</span></span>(<span>image_stack: xarray.core.dataarray.DataArray, rest_start: str, trajectory_func: Optional[Callable] = None) -> xarray.core.dataarray.DataArray</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Delta-NBR</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt>restoration_stack :</dt>
+<dt><strong><code>image_stack</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>4D (time, band, y, x) stack of images to compute dNBR over.</dd>
+<dt><strong><code>rest_start</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>Date of restoration event. Value must be within the time dimension
+coordinates of <code>image_stack</code> param.</dd>
 <dt><strong><code>trajectory_func</code></strong> :&ensp;<code>callable</code>, optional</dt>
-<dd>&nbsp;</dd>
+<dd>The function/method used to compute TS trajectory. Otherwise,
+metric method is computed on the raw values available in <code>image_stack</code></dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dNBR</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>3D (band, y, x) DataArray containing dNBR for each pixel. The band
+coordinate will contain "dNBR" label.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@maintain_spatial_attrs
+<pre><code class="python">@maintain_rio_attrs
 def dNBR(
-    restoration_stack: xr.DataArray,
+    image_stack: xr.DataArray,
     rest_start: str,
     trajectory_func: Optional[Callable] = None,
 ) -&gt; xr.DataArray:
@@ -234,90 +252,154 @@ def dNBR(
 
     Parameters
     ----------
-    restoration_stack :
+    image_stack : xr.DataArray
+        4D (time, band, y, x) stack of images to compute dNBR over.
+    rest_start : xr.DataArray
+        Date of restoration event. Value must be within the time dimension
+        coordinates of `image_stack` param.
     trajectory_func : callable, optional
+        The function/method used to compute TS trajectory. Otherwise, 
+        metric method is computed on the raw values available in `image_stack`
 
+    Returns
+    -------
+    dNBR : xr.DataArray
+        3D (band, y, x) DataArray containing dNBR for each pixel. The band 
+        coordinate will contain &#34;dNBR&#34; label.
     &#34;&#34;&#34;
     if trajectory_func is not None:
-        # Fit timeseries to trajectory and use fitted values for formula
-        # fit trajectory here!
+        # Fit timeseries to trajectory and use fitted values for formula.
+        # Something like(?): 
+        # &gt;&gt; image_stack = trajectory_func(...)
         raise NotImplementedError
-
+    # TODO: make this date increment/decrement easier or more reliable.
     rest_post_5 = str(int(rest_start) + 5)
     dNBR = (
-        restoration_stack.sel(time=rest_post_5).drop_vars(&#34;time&#34;)
-        - restoration_stack.sel(time=rest_start).drop_vars(&#34;time&#34;)
+        image_stack.sel(time=rest_post_5).drop_vars(&#34;time&#34;)
+        - image_stack.sel(time=rest_start).drop_vars(&#34;time&#34;)
     ).squeeze(&#34;time&#34;)
     return dNBR</code></pre>
 </details>
 </dd>
 <dt id="spectral_recovery.metrics.percent_recovered"><code class="name flex">
-<span>def <span class="ident">percent_recovered</span></span>(<span>eval_stack: xarray.core.dataarray.DataArray, baseline: xarray.core.dataarray.DataArray, event_obs: xarray.core.dataarray.DataArray) ‑> xarray.core.dataarray.DataArray</span>
+<span>def <span class="ident">percent_recovered</span></span>(<span>image_stack: xarray.core.dataarray.DataArray, recovery_target: xarray.core.dataarray.DataArray, event_obs: xarray.core.dataarray.DataArray) -> xarray.core.dataarray.DataArray</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Per-pixel percent recovery</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>eval_stack</code></strong> :&ensp;<code>xr.DataArray</code></dt>
-<dd>The stack of images to evaluate percent recovered over.</dd>
-<dt><strong><code>baseline</code></strong> :&ensp;<code>xr.DataArray</code></dt>
-<dd>The baseline for recovery. Dimensions must be able to broadcast
-to <code>eval_stack</code> and <code>event_obs</code>.</dd>
+<dt><strong><code>image_stack</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>The 4D DataArray (time, band, y, x) of images over which to
+evaluate percent recovered.</dd>
+<dt><strong><code>recovery_target</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>The DataArray containing the recovery targets. Dimensions
+must be able to broadcast to <code>eval_stack</code> and <code>event_obs</code>.</dd>
 <dt><strong><code>event_obs</code></strong> :&ensp;<code>xr.DataArray</code></dt>
-<dd>The image/values of the event which we are measuring recovery
-from. x and y dimensions must match <code>eval_stack</code>.</dd>
+<dd>The DataArray of images for the restoration event (indexed from
+<code>image_stack</code>) from which we are measuring recovery.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>P80R</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>3D (band, y, x) DataArray containing Y2R for each pixel. The band
+coordinate will contain "Y2R" label. Will either be predictive Y2R
+or non-predictive Y2R. For non-predictive Y2R, nan values represents
+pixels that have not hit percent recovered yet.</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@maintain_spatial_attrs
+<pre><code class="python">@maintain_rio_attrs
 def percent_recovered(
-    eval_stack: xr.DataArray, baseline: xr.DataArray, event_obs: xr.DataArray
+    image_stack: xr.DataArray, recovery_target: xr.DataArray, event_obs: xr.DataArray
 ) -&gt; xr.DataArray:
     &#34;&#34;&#34;Per-pixel percent recovery
 
     Parameters
     ----------
-    eval_stack : xr.DataArray
-        The stack of images to evaluate percent recovered over.
-
-    baseline : xr.DataArray
-        The baseline for recovery. Dimensions must be able to broadcast
-        to `eval_stack` and `event_obs`.
-
+    image_stack : xr.DataArray
+        The 4D DataArray (time, band, y, x) of images over which to
+        evaluate percent recovered.
+    recovery_target : xr.DataArray
+        The DataArray containing the recovery targets. Dimensions
+        must be able to broadcast to `eval_stack` and `event_obs`.
     event_obs : xr.DataArray
-        The image/values of the event which we are measuring recovery
-        from. x and y dimensions must match `eval_stack`.
+        The DataArray of images for the restoration event (indexed from 
+        `image_stack`) from which we are measuring recovery.
+
+    Returns
+    -------
+    P80R : xr.DataArray
+        3D (band, y, x) DataArray containing Y2R for each pixel. The band 
+        coordinate will contain &#34;Y2R&#34; label. Will either be predictive Y2R
+        or non-predictive Y2R. For non-predictive Y2R, nan values represents
+        pixels that have not hit percent recovered yet.
 
     &#34;&#34;&#34;
-    total_change = abs(baseline - event_obs)  # 90
-    recovered = abs(eval_stack - event_obs)  #
+    total_change = abs(recovery_target - event_obs) 
+    recovered = abs(image_stack - event_obs) 
     return recovered / total_change</code></pre>
 </details>
 </dd>
 <dt id="spectral_recovery.metrics.recovery_indicator"><code class="name flex">
-<span>def <span class="ident">recovery_indicator</span></span>(<span>image_stack: xarray.core.dataarray.DataArray, rest_start: str, trajectory_func: Optional[Callable] = None) ‑> xarray.core.dataarray.DataArray</span>
+<span>def <span class="ident">recovery_indicator</span></span>(<span>image_stack: xarray.core.dataarray.DataArray, rest_start: str, trajectory_func: Optional[Callable] = None) -> xarray.core.dataarray.DataArray</span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="notes">Notes</h2>
+<div class="desc"><h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>image_stack</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>4D (time, band, y, x) stack of images to compute RI over.</dd>
+<dt><strong><code>rest_start</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>Date of restoration event. Value must be within the time dimension
+coordinates of <code>image_stack</code> param.</dd>
+<dt><strong><code>trejectory_func</code></strong> :&ensp;<code>callable</code>, optional</dt>
+<dd>The function/method used to compute TS trajectory. Otherwise,
+metric method is computed on the raw values available in <code>image_stack</code>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>RI</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>3D (band, y, x) DataArray containing RI for each pixel. The band
+coordinate will contain "RI" label.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
 <p>This implementation currently assumes that the disturbance period is 1 year long.
-TODO: allow for multi-year disturbances?</p></div>
+Meaning, the parameter <code>rest_start</code> is the start of the restoration and the
+start of the disturbance is exactly one-year prior.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@maintain_spatial_attrs
+<pre><code class="python">@maintain_rio_attrs
 def recovery_indicator(
     image_stack: xr.DataArray,
     rest_start: str,
     trajectory_func: Optional[Callable] = None,
 ) -&gt; xr.DataArray:
     &#34;&#34;&#34;
+    Parameters
+    ----------
+    image_stack : xr.DataArray
+        4D (time, band, y, x) stack of images to compute RI over.
+    rest_start : xr.DataArray
+        Date of restoration event. Value must be within the time dimension
+        coordinates of `image_stack` param.
+    trejectory_func : callable, optional
+        The function/method used to compute TS trajectory. Otherwise, 
+        metric method is computed on the raw values available in `image_stack`.
+
+    Returns
+    -------
+    RI : xr.DataArray
+        3D (band, y, x) DataArray containing RI for each pixel. The band 
+        coordinate will contain &#34;RI&#34; label.
     Notes
     -----
     This implementation currently assumes that the disturbance period is 1 year long.
-    TODO: allow for multi-year disturbances?
+    Meaning, the parameter `rest_start` is the start of the restoration and the
+    start of the disturbance is exactly one-year prior.
+
     &#34;&#34;&#34;
     if trajectory_func is not None:
         # Fit timeseries to trajectory and use fitted values for formula
@@ -341,28 +423,38 @@ def recovery_indicator(
 </details>
 </dd>
 <dt id="spectral_recovery.metrics.years_to_recovery"><code class="name flex">
-<span>def <span class="ident">years_to_recovery</span></span>(<span>image_stack: xarray.core.dataarray.DataArray, baseline: xarray.core.dataarray.DataArray, percent: int = 80, predictive: bool = False) ‑> xarray.core.dataarray.DataArray</span>
+<span>def <span class="ident">years_to_recovery</span></span>(<span>image_stack: xarray.core.dataarray.DataArray, recovery_target: xarray.core.dataarray.DataArray, percent: int = 80, predictive: bool = False) -> xarray.core.dataarray.DataArray</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Per-pixel years-to-recovery</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>image_stack</code></strong> :&ensp;<code>xr.DataArray</code></dt>
-<dd>Timeseries of images to compute years-to-recovery across.</dd>
+<dd>4D (time, band, y, x) stack of images to compute Y2R over.</dd>
+<dt><strong><code>recovery_target</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>1D (band) DataArray containing target recovery values for each band.</dd>
+<dt><strong><code>percent</code></strong> :&ensp;<code>int</code></dt>
+<dd>The percent of <code>recovery_target</code> to consider "recovered".</dd>
+<dt><strong><code>predictive</code></strong></dt>
+<dd>A boolean indicating whether or not to use predictive Y2R. If True,
+predictive Y2R is used. If False, traditional Y2R is used.</dd>
 </dl>
-<h1 id="todo-faster-implementation-located-in-metrics_playground-module">TODO: faster implementation located in <code>metrics_playground</code> module</h1>
-<h1 id="todo-decide-on-undetermined-value-eg-not-recovered-negative-recovery">TODO: decide on "undetermined" value (e.g not recovered, negative recovery)</h1>
-<h1 id="note-re-5-if-current-observations-are-not-recovered-but-at-a-previous-timestep">NOTE: re #5: If current observations are not recovered but at a previous timestep</h1>
-<h1 id="an-observation-reached-the-recovered-state-do-we-report-the-of-years-to-the">an observation reached the recovered state&hellip; do we report the # of years to the</h1>
-<h1 id="previous-step-or-report-nan">previous step? or report nan?</h1></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Y2R</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>3D (band, y, x) DataArray containing Y2R for each pixel. The band
+coordinate will contain "Y2R" label. Will either be predictive Y2R
+or non-predictive Y2R. For non-predictive Y2R, nan values represents
+pixels that have not hit percent recovered yet.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@maintain_spatial_attrs
+<pre><code class="python">@maintain_rio_attrs
 def years_to_recovery(
     image_stack: xr.DataArray,
-    baseline: xr.DataArray,
+    recovery_target: xr.DataArray,
     percent: int = 80,
     predictive: bool = False,
 ) -&gt; xr.DataArray:
@@ -371,21 +463,32 @@ def years_to_recovery(
     Parameters
     ----------
     image_stack : xr.DataArray
-        Timeseries of images to compute years-to-recovery across.
+        4D (time, band, y, x) stack of images to compute Y2R over.
+    recovery_target : xr.DataArray
+        1D (band) DataArray containing target recovery values for each band.
+    percent : int
+        The percent of `recovery_target` to consider &#34;recovered&#34;.
+    predictive : 
+        A boolean indicating whether or not to use predictive Y2R. If True, 
+        predictive Y2R is used. If False, traditional Y2R is used.
 
-    # TODO: faster implementation located in `metrics_playground` module
-    # TODO: decide on &#34;undetermined&#34; value (e.g not recovered, negative recovery)
-    # NOTE: re #5: If current observations are not recovered but at a previous timestep
-    # an observation reached the recovered state... do we report the # of years to the
-    # previous step? or report nan?
+    Returns
+    -------
+    Y2R : xr.DataArray
+        3D (band, y, x) DataArray containing Y2R for each pixel. The band 
+        coordinate will contain &#34;Y2R&#34; label. Will either be predictive Y2R
+        or non-predictive Y2R. For non-predictive Y2R, nan values represents
+        pixels that have not hit percent recovered yet.
+
     &#34;&#34;&#34;
-    reco_80 = baseline * (percent / 100)
+    # TODO: generalize this for multiple trajectory methods
+    reco_80 = recovery_target * (percent / 100)
     # _theil_sen calls apply_ufunc along the time dimension so stack&#39;s
     # chunks need to contain the entire timestack before being passed
     y_vals = image_stack.chunk(dict(time=-1))
     x_vals = image_stack.time.dt.year
 
-    ts = _theil_sen(y=y_vals, x=x_vals)
+    ts = per_pixel_theil_sen(data_array=y_vals, time=x_vals)
     y2r = (reco_80 - ts.sel(parameter=&#34;intercept&#34;)) / ts.sel(parameter=&#34;slope&#34;)
 
     predictive_y2r = y2r - x_vals[0]
@@ -427,7 +530,9 @@ def years_to_recovery(
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
 </footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
 </body>
 </html>
