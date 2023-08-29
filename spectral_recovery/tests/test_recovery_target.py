@@ -1,14 +1,9 @@
-import pytest
-import rioxarray
-
 import numpy as np
-import geopandas as gpd
 import xarray as xr
 
-from shapely import Polygon
 
 from xarray.testing import assert_equal
-from spectral_recovery.baselines import historic_average
+from spectral_recovery.recovery_target import historic_average
 
 
 
@@ -104,7 +99,7 @@ class TestHistoricAverage():
         out_stack = historic_average(test_stack, (0, 1))
         assert_equal(out_stack, expected_stack)
     
-    def test_multi_poly_returns_correct_avg(self):
+    def test_multi_poly_averages_individual_polygon(self):
         test_data = [
             [
                 [

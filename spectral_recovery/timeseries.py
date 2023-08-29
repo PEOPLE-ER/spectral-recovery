@@ -5,7 +5,6 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from enum import Enum, auto
 from typing import Union, Tuple
 from datetime import datetime
 from shapely.geometry import box
@@ -122,13 +121,10 @@ def datetime_to_index(
     return dt_range.to_list()
 
 
-# TODO: Generelize this to "timeseries accessor" or something similar
-@xr.register_dataarray_accessor("yearcomp")
-class YearlyCompositeAccessor:
-    """A DataArray accessor for annual composite operations.
-
-    For methods related to yearly composite timeseries as well as
-    general image stack operations.
+@xr.register_dataarray_accessor("satts")
+class SatelliteTimeSeries:
+    """A DataArray accessor for timeseries util operations and methods
+    for data values from satellite images.
 
     See "Extending xarray using accessors" for more information:
     https://docs.xarray.dev/en/stable/internals/extending-xarray.html
@@ -183,6 +179,7 @@ class YearlyCompositeAccessor:
                 return False
         return True
 
+    # NOTE: conceptually, does having this method in this class work?
     def indices(self, indices_list) -> xr.DataArray:
         """Compute indices
 
