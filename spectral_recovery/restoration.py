@@ -1,8 +1,10 @@
 import xarray as xr
 import geopandas as gpd
+from pandas import Index
 
 from typing import Callable, Optional, Union, List
 from datetime import datetime
+from pandas import Timestamp
 from spectral_recovery.timeseries import _stack_bands
 from spectral_recovery.baselines import historic_average
 from spectral_recovery.utils import to_datetime
@@ -35,34 +37,50 @@ class ReferenceSystem:
         within the reference system. Must be able to operate on
         4D (band, time, y, x) DataArrays.
 
-    variation_method : Callable, optional
-        The method for reporting/determing reference value variation
-        (e.g 2 std). Default is None.
-        TODO: this might be replaced with a simple named/str param
-
     """
 
     def __init__(
         self,
         reference_polygons: gpd.GeoDataFrame,
+        reference_stack: xr.DataArray,
         reference_range: Union[int, List[int]],
-        baseline_method: Callable = None,
-        variation_method: Optional[Callable] = None,
+        baseline_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
         self.reference_polygons = reference_polygons
         self.reference_range = to_datetime(reference_range)
         self.baseline_method = baseline_method or historic_average
-        self.variation_method = variation_method
+        if not self._within(reference_stack):
+            raise ValueError(f"Not contained! Better message soon!")
+        else:
+            clipped_stacks = {}
+            # TODO: Maybe handle MultiPolygons here. Otherwise force everything to Polygon in pre-processing.
+            for i, row in reference_polygons.iterrows():
+                polygon_stack = reference_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
+                clipped_stacks[i] = polygon_stack
+            self.reference_stack = xr.concat(clipped_stacks.values(), dim=Index(clipped_stacks.keys(), name="poly_id"))
+            print(self.reference_stack)
 
-    def baseline(self, stack):
+    def baseline(self):
         # TODO: replace return dicts with named tuple
         """Get the baseline/recovery target for a reference system"""
-        baseline = self.baseline_method(stack, self.reference_range)
-        if self.variation_method is not None:
-            variation = self.variation_method(stack, self.reference_range)
-            return {"baseline": baseline, "variation": variation}
+        baseline = self.baseline_method(self.reference_stack, self.reference_range)
         return {"baseline": baseline}
+
+    def _within(self, stack: xr.DataArray) -> bool:
+        """Check if within a DataArray
+
+        Determines whether an RestorationArea's spatial (polygons) and temporal
+        (reference and event years) attributes are contained within a
+        stack of yearly composite images.
+
+        """
+        if not (
+            stack.yearcomp.contains_spatial(self.reference_polygons)
+            and stack.yearcomp.contains_temporal(self.reference_range)
+        ):
+            return False
+        return True
 
 
 class RestorationArea:
@@ -103,22 +121,31 @@ class RestorationArea:
                 f"restoration_polygons contains more than one Polygon."
                 f"A RestorationArea instance can only contain one Polygon."
             )
-
         self.restoration_polygon = restoration_polygon
-        self.restoration_year = to_datetime(restoration_year)
+
+        try:
+            _ = len(restoration_year)
+            raise TypeError(
+                "Iterable passed to restoration_year, but restoration_year must be a Timestamp."
+            )
+        except:
+            if type(restoration_year) is Timestamp:
+                self.restoration_year = restoration_year
+            else:
+                self.restoration_year = to_datetime(restoration_year)
 
         if not isinstance(reference_system, ReferenceSystem):
             historic_reference = ReferenceSystem(
-                reference_polygons=restoration_polygon, reference_range=reference_system
+                reference_polygons=restoration_polygon,
+                reference_stack=composite_stack,
+                reference_range=reference_system,
             )
             self.reference_system = historic_reference
         else:
             self.reference_system = reference_system
 
         if not self._within(composite_stack):
-            raise ValueError(
-                f"RestorationArea not contained by stack. Better message soon!"
-            )
+            raise ValueError(f"Not contained! Better message soon!")
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
         if not end_year:
             # TODO: there's a more xarray-enabled way to do this via DatetimeIndex.
@@ -141,14 +168,12 @@ class RestorationArea:
             return False
         return True
 
-    # NOTE: the jury (me) is still out on this implementation of metric calls.
-    # The design is not set in stone but it works for now.
     def metrics(self, metrics: List[str]) -> xr.DataArray:
         """Generate recovery metrics over a Restoration Area
 
         Parameters
         ----------
-        metrics : list of str
+        metrics : list of Index
             A list of metrics to generate.
 
         Returns
@@ -161,40 +186,34 @@ class RestorationArea:
         metrics_dict = {}
         for metrics_input in metrics:
             metric = Metric(metrics_input)
-            try:
-                metric_func = getattr(self, f"_{metric.name}")
-            except Exception:  # TODO: Catch a more specific error than this
-                raise ValueError(f"{metric} not implemented")
-            metrics_dict[metric] = metric_func()
-            metrics_stack = _stack_bands(
-                metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
-            )
+            match metric:
+                case Metric.percent_recovered:
+                    curr = self.stack.sel(time=self.end_year)
+                    baseline = self.reference_system.baseline()
+                    event = self.stack.sel(time=self.restoration_year)
+                    metrics_dict[metric] = percent_recovered(
+                        eval_stack=curr, baseline=baseline["baseline"], event_obs=event
+                    )
+                case Metric.years_to_recovery:
+                    filtered_stack = self.stack.sel(
+                        time=slice(self.restoration_year, self.end_year)
+                    )
+                    baseline = self.reference_system.baseline()
+                    metrics_dict[metric] = years_to_recovery(
+                        image_stack=filtered_stack,
+                        baseline=baseline["baseline"],
+                    )
+                case Metric.dNBR:
+                    metrics_dict[metric] = dNBR(
+                        restoration_stack=self.stack,
+                        rest_start=str(self.restoration_year.year),
+                    )
+                case Metric.recovery_indicator:
+                    metrics_dict[metric] = recovery_indicator(
+                        image_stack=self.stack,
+                        rest_start=str(self.restoration_year.year),
+                    )
+        metrics_stack = _stack_bands(
+            metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
+        )
         return metrics_stack
-
-    def _percent_recovered(self) -> xr.DataArray:
-        curr = self.stack.sel(time=self.end_year)
-        baseline = self.reference_system.baseline(self.stack)
-        event = self.stack.sel(time=self.restoration_year)
-        return percent_recovered(
-            eval_stack=curr, baseline=baseline["baseline"], event_obs=event
-        )
-
-    def _years_to_recovery(self) -> xr.DataArray:
-        filtered_stack = self.stack.sel(
-            time=slice(self.restoration_year, self.end_year)
-        )
-        baseline = self.reference_system.baseline(self.stack)
-        return years_to_recovery(
-            image_stack=filtered_stack,
-            baseline=baseline["baseline"],
-        )
-
-    def _dNBR(self) -> xr.DataArray:
-        return dNBR(
-            restoration_stack=self.stack, rest_start=str(self.restoration_year.year)
-        )
-
-    def _recovery_indicator(self) -> xr.DataArray:
-        return recovery_indicator(
-            image_stack=self.stack, rest_start=str(self.restoration_year.year)
-        )
