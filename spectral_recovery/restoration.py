@@ -6,7 +6,7 @@ from typing import Callable, Optional, Union, List
 from datetime import datetime
 from pandas import Timestamp
 from spectral_recovery.timeseries import _stack_bands
-from spectral_recovery.baselines import historic_average
+from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.utils import to_datetime
 from spectral_recovery.metrics import (
     percent_recovered,
@@ -16,40 +16,42 @@ from spectral_recovery.metrics import (
 )
 from spectral_recovery.enums import Metric
 
-
-# TODO: change all useage of "baselines" to "recovery target" or "reference target"; baseline and reference are curr used interchangably.
 # TODO: split date into start and end dates.
+# TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
 class ReferenceSystem:
 
-    """Encapsulates data and methods related to reference areas.
+    """A Reference System.
 
     Attributes
     -----------
-    polygons : gpd.GeoDataframe
-        A GeoDataframe containing at least one Polygon. Polygons
-        represent areas that are considered to be references.
-
+    reference_polygons : gpd.GeoDataframe
+        The spatial deliniation of the reference areas. GeoDataframe
+        must contain at least one geometry and must be
+        of type shapely.Polygon or shapely.MultiPolygon
+    reference_stack: xr.DataArray
+        A 4D (band, time, y, x) DataArray of images from which indices and
+        metrics will be computed. The spatial bounds of the DataArray must 
+        contain `restoration_polygon` and (optional) `reference_polygons`, 
+        and the temporal bounds must contain `restoration_year`.
     reference_years : Tuple of datetimes
-        The year or range of years to consider as reference
-
-    baseline_method : Callable
-        A function for computing the the reference target value
-        within the reference system. Must be able to operate on
+        The year or range of years from which to get values for computing
+        the recovery target.
+    recovery_target_method : Callable
+        The method for computing the recovery target value. Must operate on
         4D (band, time, y, x) DataArrays.
 
     """
-
     def __init__(
         self,
         reference_polygons: gpd.GeoDataFrame,
         reference_stack: xr.DataArray,
         reference_range: Union[int, List[int]],
-        baseline_method: Optional[Callable] = None,
+        recovery_target_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
         self.reference_polygons = reference_polygons
         self.reference_range = to_datetime(reference_range)
-        self.baseline_method = baseline_method or historic_average
+        self.recovery_target_method = recovery_target_method or historic_average
         if not self._within(reference_stack):
             raise ValueError(f"Not contained! Better message soon!")
         else:
@@ -59,13 +61,12 @@ class ReferenceSystem:
                 polygon_stack = reference_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
                 clipped_stacks[i] = polygon_stack
             self.reference_stack = xr.concat(clipped_stacks.values(), dim=Index(clipped_stacks.keys(), name="poly_id"))
-            print(self.reference_stack)
 
-    def baseline(self):
+    def recovery_target(self):
         # TODO: replace return dicts with named tuple
-        """Get the baseline/recovery target for a reference system"""
-        baseline = self.baseline_method(self.reference_stack, self.reference_range)
-        return {"baseline": baseline}
+        """Get the recovery target for a reference system"""
+        recovery_target = self.recovery_target_method(self.reference_stack, self.reference_range)
+        return {"recovery_target": recovery_target}
 
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
@@ -76,45 +77,44 @@ class ReferenceSystem:
 
         """
         if not (
-            stack.yearcomp.contains_spatial(self.reference_polygons)
-            and stack.yearcomp.contains_temporal(self.reference_range)
+            stack.satts.contains_spatial(self.reference_polygons)
+            and stack.satts.contains_temporal(self.reference_range)
         ):
             return False
         return True
 
-
+# TODO: split reference_system param to reference_polygon and reference_date params
+# and then allow the reference polygons to be passed directly to RestorationArea.
+# This will pass make RestorationArea the sole object responsible for instatiated a ReferenceSystem
 class RestorationArea:
-    """Encapsulates data and methods related to restoration areas.
+    """A Restoration Area (RA).
 
     Attributes
     -----------
     restoration_polygon : GeoDataFrame
-        Dataframe containing the spatial deliniation of the
-        restoration event. Assumed to be Polygon.
+        The spatial deliniation of the restoration event. There 
+        must only be one geometry in the GeoDataframe and it must be
+        of type shapely.Polygon or shapely.MultiPolygon.
     restoration_year : str or datetime
-        The start year of the restoration event.
-    reference_system : int or list of int of ReferenceSystem
-        The reference system to compute the recovery target value.
-        If year or year(s) are provided then a historic reference
-        system will be used[TODO], if a ReferenceSystem object is
-        provided then target values will be based on reference polygons.
+        The start year of the restoration event. Value must be within 
+        the time dimension coordinates of `composite_stack` param.
+    reference_polygons : int or list of int or ReferenceSystem
+        The reference system for the restoration area. If ints, then
+        a ref sys will created as a Historic Reference System and 
+        will reference the dates indicated by ints as the reference times. 
     composite_stack : xr.DataArray
-        A 4D (band, time, y, x) DataArray containing spectral or
-        index data. The time dimension is expected to be
-    end_year : str or datetime
-        The final year of the restoration period. If not given, the
-        the final timestep along the time dimension of `composite_stack`
-        is assumed to be the final year of the restoration period.
+        A 4D (band, time, y, x) DataArray of images from which indices and
+        metrics will be computed. The spatial bounds of the DataArray must 
+        contain `restoration_polygon` and (optional) `reference_polygons`, 
+        and the temporal bounds must contain `restoration_year`.
 
     """
-
     def __init__(
         self,
         restoration_polygon: gpd.GeoDataFrame,
         restoration_year: str | datetime,
         reference_system: int | List[int] | ReferenceSystem,
         composite_stack: xr.DataArray,
-        end_year: Optional[str | datetime] = None,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
@@ -147,10 +147,7 @@ class RestorationArea:
         if not self._within(composite_stack):
             raise ValueError(f"Not contained! Better message soon!")
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
-        if not end_year:
-            # TODO: there's a more xarray-enabled way to do this via DatetimeIndex.
-            # I know it in my bones. Might not matter though.
-            self.end_year = self.stack["time"].max()
+        self.end_year = self.stack["time"].max()
 
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
@@ -161,9 +158,9 @@ class RestorationArea:
 
         """
         if not (
-            stack.yearcomp.contains_spatial(self.restoration_polygon)
-            and stack.yearcomp.contains_temporal(self.restoration_year)
-            and stack.yearcomp.contains_temporal(self.reference_system.reference_range)
+            stack.satts.contains_spatial(self.restoration_polygon)
+            and stack.satts.contains_temporal(self.restoration_year)
+            and stack.satts.contains_temporal(self.reference_system.reference_range)
         ):
             return False
         return True
@@ -173,14 +170,15 @@ class RestorationArea:
 
         Parameters
         ----------
-        metrics : list of Index
-            A list of metrics to generate.
+        metrics : list of str
+            A list containing the names of metrics to generate.
 
         Returns
         -------
         metrics_stack : xr.DataArray
-            A 3D (metric, y, x) DataArray with metrics
-            values stacked along `metric` dimension.
+            A 3D (metric, y, x) DataArray, computed metrics values are 
+            located along the `metric` dimension. Coordinates of metrics
+            are the related enums.Metric.
 
         """
         metrics_dict = {}
@@ -189,19 +187,19 @@ class RestorationArea:
             match metric:
                 case Metric.percent_recovered:
                     curr = self.stack.sel(time=self.end_year)
-                    baseline = self.reference_system.baseline()
+                    recovery_target = self.reference_system.recovery_target()
                     event = self.stack.sel(time=self.restoration_year)
                     metrics_dict[metric] = percent_recovered(
-                        eval_stack=curr, baseline=baseline["baseline"], event_obs=event
+                        image_stack=curr, recovery_target=recovery_target["recovery_target"], event_obs=event
                     )
                 case Metric.years_to_recovery:
                     filtered_stack = self.stack.sel(
                         time=slice(self.restoration_year, self.end_year)
                     )
-                    baseline = self.reference_system.baseline()
+                    recovery_target = self.reference_system.recovery_target()
                     metrics_dict[metric] = years_to_recovery(
                         image_stack=filtered_stack,
-                        baseline=baseline["baseline"],
+                        recovery_target=recovery_target["recovery_target"],
                     )
                 case Metric.dNBR:
                     metrics_dict[metric] = dNBR(

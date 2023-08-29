@@ -1,11 +1,9 @@
-import functools
-from enum import Enum
-from spectral_recovery.utils import maintain_spatial_attrs
+from spectral_recovery.utils import maintain_rio_attrs
 from spectral_recovery.enums import Index, BandCommon
 import xarray as xr
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def ndvi(stack: xr.DataArray):
     nir = stack.sel(band=BandCommon.nir)
     red = stack.sel(band=BandCommon.red)
@@ -13,7 +11,7 @@ def ndvi(stack: xr.DataArray):
     return ndvi
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def nbr(stack):
     nir = stack.sel(band=BandCommon.nir)
     swir2 = stack.sel(band=BandCommon.swir2)
@@ -21,7 +19,7 @@ def nbr(stack):
     return nbr
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def gndvi(stack):
     nir = stack.sel(band=BandCommon.nir)
     green = stack.sel(band=BandCommon.green)
@@ -29,7 +27,7 @@ def gndvi(stack):
     return gndvi
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def evi(stack):
     nir = stack.sel(band=BandCommon.nir)
     red = stack.sel(band=BandCommon.red)
@@ -38,7 +36,7 @@ def evi(stack):
     return evi
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def avi(stack):
     nir = stack.sel(band=BandCommon.nir)
     red = stack.sel(band=BandCommon.red)
@@ -46,7 +44,7 @@ def avi(stack):
     return avi
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def savi(stack):
     nir = stack.sel(band=BandCommon.nir)
     red = stack.sel(band=BandCommon.red)
@@ -54,7 +52,7 @@ def savi(stack):
     return savi
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def ndwi(stack):
     green = stack.sel(band=BandCommon.green)
     nir = stack.sel(band=BandCommon.nir)
@@ -62,7 +60,7 @@ def ndwi(stack):
     return ndwi
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def tcg(stack):
     blue = stack.sel(band=BandCommon.blue)
     green = stack.sel(band=BandCommon.green)
@@ -81,7 +79,7 @@ def tcg(stack):
     return tcg
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def tcw(stack):
     blue = stack.sel(band=BandCommon.blue)
     green = stack.sel(band=BandCommon.green)
@@ -100,7 +98,7 @@ def tcw(stack):
     return tcw
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def tcb(stack):
     blue = stack.sel(band=BandCommon.blue)
     green = stack.sel(band=BandCommon.green)
@@ -119,7 +117,7 @@ def tcb(stack):
     return tcb
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def sr(stack):
     nir = stack.sel(band=BandCommon.nir)
     red = stack.sel(band=BandCommon.red)
@@ -127,7 +125,7 @@ def sr(stack):
     return sr
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def ndmi(stack):
     nir = stack.sel(band=BandCommon.nir)
     swir1 = stack.sel(band=BandCommon.swir1)
@@ -135,7 +133,7 @@ def ndmi(stack):
     return ndmi
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def gci(stack):
     nir = stack.sel(band=BandCommon.nir)
     green = stack.sel(band=BandCommon.green)
@@ -143,7 +141,7 @@ def gci(stack):
     return gci
 
 
-@maintain_spatial_attrs
+@maintain_rio_attrs
 def ndii(stack):
     swir1 = stack.sel(band=BandCommon.swir1)
     nir = stack.sel(band=BandCommon.nir)
