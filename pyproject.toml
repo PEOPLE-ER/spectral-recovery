@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spectral_recovery"
+requires-python = ">=3.11"
+authors = [
+    {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"},
+]
+maintainers = [
+  {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"}
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+version = "0.1"
+dependencies = [
+    "geopandas",
+    "rioxarray",
+    "rasterio",
+    "xarray",
+    "numpy",
+    "pandas",
+    "click",
+]
+
+[tool.setuptools.packages.find]
+where = ["spectral_recovery"]
+exclude = ["tests*"]
+
+[project.scripts]
+specrec = "scripts.spectral_recovery:cli"

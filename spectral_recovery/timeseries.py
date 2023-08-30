@@ -111,7 +111,8 @@ def datetime_to_index(
         try:
             if len(value) > 2:
                 raise ValueError(
-                    "Passed value={value} but `datetime` must be a single Timestamp or an iterable with exactly two Timestamps."
+                    "Passed value={value} but `datetime` must be a single Timestamp or"
+                    " an iterable with exactly two Timestamps."
                 )
             dt_range = pd.date_range(start=value[0], end=value[0], freq=DATETIME_FREQ)
         except TypeError:

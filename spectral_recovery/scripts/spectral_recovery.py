@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+import click
 
 os.environ["USE_PYGEOS"] = "0"
 import xarray as xr
@@ -8,36 +10,48 @@ import numpy as np
 
 from typing import Union, List, Dict
 from rasterio import merge
-from spectral_recovery.timeseries import _stack_from_user_input
-from spectral_recovery.enums import Index, Metric, BandCommon
-from spectral_recovery.restoration import ReferenceSystem, RestorationArea
-from rasterio._err import CPLE_AppDefinedError
 
+from spectral_recovery.timeseries import _stack_from_user_input
+from spectral_recovery.enums import Index, Metric
+from spectral_recovery.restoration import ReferenceSystem, RestorationArea
+from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 
 # TODO: generalize "*_list" types to non-Enums.
-def spectral_recovery(
-    timeseries_dict: Dict[str | int, xr.DataArray | str],
-    restoration_poly: gpd.GeoDataFrame | str,
+@click.command()
+@click.argument("tif_dir", type=click.Path(exists=True))
+@click.option("--per-band", is_flag=True)
+@click.option("--per-year", is_flag=True)
+@click.argument("start_year", required=False)
+@click.argument("end_year", required=False)
+@click.argument("restoration_poly")
+@click.argument("restoration_year")
+@click.argumet("reference_poly", required=False)
+@click.argument("reference_dates")
+@click.indices("indices", required=False)
+@click.argument("metrics")
+@click.argument("mask_path", type=click.Path(exists=True), required=False)
+@click.option("--write", is_flag=True, show_default=True, default=True)
+def cli(
+    tif_dir: List[str],
+    per_band,
+    per_year,
+    restoration_poly: str,
     restoration_year: int,
-    reference_range: Union[int, List[int]],
-    reference_poly: gpd.GeoDataFrame | str,
-    metrics_list: List[Metric],
-    indices_list: List[Index] = None,
-    timeseries_range: List[str] = None,
-    data_mask: xr.DataArray = None,
+    reference_dates: Union[int, List[int]],
+    reference_poly: str,
+    metrics: List[str],
+    indices: List[str] = None,
+    start_year: List[str] = None,
+    end_year: List[str] = None,
+    mask_path: xr.DataArray = None,
     write: bool = False,
 ) -> None:
     """The main calling function. Better doc-string is on the TO-DO.
 
     Parameters
     -----------
-    timeseries_dict : Dict of str or xr.DataArray
-        Dictionary of paths to or DataArrays of per-pixel timeseries data.
-        The dictionary is expected to contain band rasters (i.e a single
-        band over time), indices rasters, or year rasters (i.e multiple-bands
-        for a given year), with keys being the respective band name or year for
-        the given raster item. Keys for band rasters must be the common name.
-        Rasters will be stacked along new 4th dimension, so dimensions must match.
+    tif_directory : list of str
+        Directory containing tifs for timeseries.
     restoration_poly :
         Path to vector file containing a Polygon of restoration area.
     restoration_year :
@@ -65,11 +79,16 @@ def spectral_recovery(
         A 3D (metrics, y, x) DataArray of recovery metrics for the restoration
         area and period. NaN values represent data-gaps and/or undetermined metrics.
     """
-    # TODO: check that the out file names don't already exist... abort early if they do
-    if isinstance(restoration_poly, str):
-        restoration_poly_gdf = gpd.read_file(restoration_poly)
-
-    timeseries = _stack_from_user_input(timeseries_dict, data_mask, timeseries_range)
+    
+    p = Path(tif_dir).glob('**/*')
+    tifs = [x for x in p if x.is_file()]
+    timeseries = read_and_stack_tifs(path_to_tifs=tifs,
+                                     per_band=per_band,
+                                     per_year=per_year,
+                                     path_to_mask=data_mask,
+                                     start_year=start_year,
+                                     end_year=end_year
+                                     )
     if not timeseries.satts.valid:
         raise ValueError("Stack is not a valid yearly composite stack.")
 
@@ -83,7 +102,7 @@ def spectral_recovery(
         ref_sys = ReferenceSystem(
             reference_polygons=reference_poly_gdf,
             reference_stack=timeseries_for_metrics,
-            reference_range=reference_range,
+            reference_range=reference_dates,
             recovery_target_method=None,
         )
     else:
@@ -136,9 +155,13 @@ if __name__ == "__main__":
                 Index.tcw: "spectral_recovery/tests/test_data/time17_xy2_epsg3005.tif",
             },
             timeseries_range=["2005", "2021"],
-            restoration_poly="spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg",
+            restoration_poly=(
+                "spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg"
+            ),
             restoration_year=rest_year,
-            reference_poly="spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg",
+            reference_poly=(
+                "spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+            ),
             reference_range=reference_year,
             # indices_list=[Index.ndvi, Index.sr],
             metrics_list=[
@@ -146,7 +169,7 @@ if __name__ == "__main__":
                 Metric.years_to_recovery,
             ],
             write=False,
-        )
+        ).compute()
         # TODO: figure out how to display progress to users
         # progress(metrics)
         print(metrics.compute())

@@ -15,13 +15,13 @@ def per_pixel_theil_sen(data_array: xr.DataArray, time: List[int]):
         contain "time", "y", and "x" coordinate dimensions.
 
     time : list of int
-        Time values. Length must be equal to the length of "time" 
+        Time values. Length must be equal to the length of "time"
         dimension on `data_array`.
 
     Returns
     -------
     ts_reg : xr.DataArray
-        3D (parameter, y, x) DataArray of  theil-sen slope and intercept 
+        3D (parameter, y, x) DataArray of  theil-sen slope and intercept
         parameters for each pixel. Parameter dimension will contain both
         slope and intercept t-s values for each pixel.
 
@@ -40,6 +40,7 @@ def per_pixel_theil_sen(data_array: xr.DataArray, time: List[int]):
     )
     ts_reg = ts_reg.assign_coords({"parameter": ["slope", "intercept"]})
     return ts_reg
+
 
 def _new_linregress(y, x):
     """Wrapper around mstats.theilslopes for apply_ufunc usage"""
