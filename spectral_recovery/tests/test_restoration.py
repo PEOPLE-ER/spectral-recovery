@@ -17,7 +17,9 @@ from spectral_recovery.enums import Metric
 # don't conflict while reading the data
 # https://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
 
-DATETIME_FREQ = "YS"  # TODO: should this be kept somewhere else in the project? Seem wrong that it's defined again here and in timeseries
+DATETIME_FREQ = (  # TODO: should this be kept somewhere else in the project? Seem wrong that it's defined again here and in timeseries
+    "YS"
+)
 
 
 class TestRestorationAreaInit:
@@ -161,7 +163,7 @@ class TestRestorationAreaMetrics:
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
-            stack = xr.concat([stack, stack], dim=pd.Index([0,1], name="band"))
+            stack = xr.concat([stack, stack], dim=pd.Index([0, 1], name="band"))
             resto_area = RestorationArea(
                 restoration_polygon=resto_poly,
                 restoration_year=restoration_year,
@@ -273,7 +275,6 @@ class TestRestorationAreaMetrics:
 
 
 class TestReferenceSystemInit:
-
     @pytest.fixture()
     def test_stack_1(self):
         test_stack = xr.DataArray(
@@ -407,7 +408,6 @@ class TestReferenceSystemInit:
 
 
 class TestReferenceSystemBaseline:
-
     class SimpleReferenceSystem(ReferenceSystem):
         """Sub-class ReferenceSystem and overwrite __init__ to isolate `baseline` method."""
 

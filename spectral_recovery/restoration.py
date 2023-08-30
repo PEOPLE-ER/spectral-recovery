@@ -16,6 +16,7 @@ from spectral_recovery.metrics import (
 )
 from spectral_recovery.enums import Metric
 
+
 # TODO: split date into start and end dates.
 # TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
 class ReferenceSystem:
@@ -30,8 +31,8 @@ class ReferenceSystem:
         of type shapely.Polygon or shapely.MultiPolygon
     reference_stack: xr.DataArray
         A 4D (band, time, y, x) DataArray of images from which indices and
-        metrics will be computed. The spatial bounds of the DataArray must 
-        contain `restoration_polygon` and (optional) `reference_polygons`, 
+        metrics will be computed. The spatial bounds of the DataArray must
+        contain `restoration_polygon` and (optional) `reference_polygons`,
         and the temporal bounds must contain `restoration_year`.
     reference_years : Tuple of datetimes
         The year or range of years from which to get values for computing
@@ -41,6 +42,7 @@ class ReferenceSystem:
         4D (band, time, y, x) DataArrays.
 
     """
+
     def __init__(
         self,
         reference_polygons: gpd.GeoDataFrame,
@@ -58,14 +60,21 @@ class ReferenceSystem:
             clipped_stacks = {}
             # TODO: Maybe handle MultiPolygons here. Otherwise force everything to Polygon in pre-processing.
             for i, row in reference_polygons.iterrows():
-                polygon_stack = reference_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
+                polygon_stack = reference_stack.rio.clip(
+                    gpd.GeoSeries(row.geometry).values
+                )
                 clipped_stacks[i] = polygon_stack
-            self.reference_stack = xr.concat(clipped_stacks.values(), dim=Index(clipped_stacks.keys(), name="poly_id"))
+            self.reference_stack = xr.concat(
+                clipped_stacks.values(),
+                dim=Index(clipped_stacks.keys(), name="poly_id"),
+            )
 
     def recovery_target(self):
         # TODO: replace return dicts with named tuple
         """Get the recovery target for a reference system"""
-        recovery_target = self.recovery_target_method(self.reference_stack, self.reference_range)
+        recovery_target = self.recovery_target_method(
+            self.reference_stack, self.reference_range
+        )
         return {"recovery_target": recovery_target}
 
     def _within(self, stack: xr.DataArray) -> bool:
@@ -83,32 +92,34 @@ class ReferenceSystem:
             return False
         return True
 
+
 # TODO: split reference_system param to reference_polygon and reference_date params
 # and then allow the reference polygons to be passed directly to RestorationArea.
-# This will pass make RestorationArea the sole object responsible for instatiated a ReferenceSystem
+# This will make RestorationArea the sole object responsible for instatiating a ReferenceSystem
 class RestorationArea:
     """A Restoration Area (RA).
 
     Attributes
     -----------
     restoration_polygon : GeoDataFrame
-        The spatial deliniation of the restoration event. There 
+        The spatial deliniation of the restoration event. There
         must only be one geometry in the GeoDataframe and it must be
         of type shapely.Polygon or shapely.MultiPolygon.
     restoration_year : str or datetime
-        The start year of the restoration event. Value must be within 
+        The start year of the restoration event. Value must be within
         the time dimension coordinates of `composite_stack` param.
     reference_polygons : int or list of int or ReferenceSystem
         The reference system for the restoration area. If ints, then
-        a ref sys will created as a Historic Reference System and 
-        will reference the dates indicated by ints as the reference times. 
+        a ref sys will created as a Historic Reference System and
+        will reference the dates indicated by ints as the reference times.
     composite_stack : xr.DataArray
         A 4D (band, time, y, x) DataArray of images from which indices and
-        metrics will be computed. The spatial bounds of the DataArray must 
-        contain `restoration_polygon` and (optional) `reference_polygons`, 
+        metrics will be computed. The spatial bounds of the DataArray must
+        contain `restoration_polygon` and (optional) `reference_polygons`,
         and the temporal bounds must contain `restoration_year`.
 
     """
+
     def __init__(
         self,
         restoration_polygon: gpd.GeoDataFrame,
@@ -126,7 +137,8 @@ class RestorationArea:
         try:
             _ = len(restoration_year)
             raise TypeError(
-                "Iterable passed to restoration_year, but restoration_year must be a Timestamp."
+                "Iterable passed to restoration_year, but restoration_year must be a"
+                " Timestamp."
             )
         except:
             if type(restoration_year) is Timestamp:
@@ -176,7 +188,7 @@ class RestorationArea:
         Returns
         -------
         metrics_stack : xr.DataArray
-            A 3D (metric, y, x) DataArray, computed metrics values are 
+            A 4D (metric, band, y, x) DataArray, computed metrics values are
             located along the `metric` dimension. Coordinates of metrics
             are the related enums.Metric.
 
@@ -190,7 +202,9 @@ class RestorationArea:
                     recovery_target = self.reference_system.recovery_target()
                     event = self.stack.sel(time=self.restoration_year)
                     metrics_dict[metric] = percent_recovered(
-                        image_stack=curr, recovery_target=recovery_target["recovery_target"], event_obs=event
+                        image_stack=curr,
+                        recovery_target=recovery_target["recovery_target"],
+                        event_obs=event,
                     )
                 case Metric.years_to_recovery:
                     filtered_stack = self.stack.sel(

@@ -6,20 +6,17 @@ from xarray.testing import assert_equal
 from spectral_recovery.recovery_target import historic_average
 
 
-
-class TestHistoricAverage():
-
+class TestHistoricAverage:
     def test_no_nan_returns_avg_over_time(self):
         test_data = [
             [
-                [[1.0]], # Time 1, band 1
-                [[1.0]], # Time 1, band 2
+                [[1.0]],  # Time 1, band 1
+                [[1.0]],  # Time 1, band 2
             ],
             [
-                [[3.0]], # Time 2, band 1
-                [[5.0]], # Time 2, band 2
-            ]
-
+                [[3.0]],  # Time 2, band 1
+                [[5.0]],  # Time 2, band 2
+            ],
         ]
         test_stack = xr.DataArray(
             test_data,
@@ -33,12 +30,12 @@ class TestHistoricAverage():
             expected_data,
             dims=["band"],
             coords={
-                "band": [0,1],
+                "band": [0, 1],
             },
         )
         out_stack = historic_average(test_stack, (0, 1))
         assert_equal(out_stack, expected_stack)
-    
+
     def test_nan_timeseries_is_nan(self):
         test_data = [
             [
@@ -48,8 +45,7 @@ class TestHistoricAverage():
             [
                 [[np.nan]],
                 [[5.0]],
-            ]
-
+            ],
         ]
         test_stack = xr.DataArray(
             test_data,
@@ -68,7 +64,7 @@ class TestHistoricAverage():
         )
         out_stack = historic_average(test_stack, (0, 1))
         assert_equal(out_stack, expected_stack)
-    
+
     def test_nan_in_timeseries_ignored(self):
         test_data = [
             [
@@ -78,8 +74,7 @@ class TestHistoricAverage():
             [
                 [[9.0]],
                 [[5.0]],
-            ]
-
+            ],
         ]
         test_stack = xr.DataArray(
             test_data,
@@ -98,40 +93,25 @@ class TestHistoricAverage():
         )
         out_stack = historic_average(test_stack, (0, 1))
         assert_equal(out_stack, expected_stack)
-    
+
     def test_multi_poly_averages_individual_polygon(self):
         test_data = [
             [
                 [
-                    [
-                        [1.0, 1.0], # y 1, x1
-                        [np.nan, np.nan] # y 2, x1
-                    ], # band 1
+                    [[1.0, 1.0], [np.nan, np.nan]],  # y 1, x1  # y 2, x1  # band 1
                 ],
                 [
-                    [
-                        [3.0, 6.0], # y 1
-                        [np.nan, np.nan]
-                    ], # band 1
-                ]
-
+                    [[3.0, 6.0], [np.nan, np.nan]],  # y 1  # band 1
+                ],
             ],
             [
-                
                 [
-                    [
-                        [np.nan, np.nan], # y 1, x1
-                        [np.nan, 2.0] # y 2, x1
-                    ], # band 1
+                    [[np.nan, np.nan], [np.nan, 2.0]],  # y 1, x1  # y 2, x1  # band 1
                 ],
                 [
-                    [
-                        [np.nan, np.nan], # y 1
-                        [np.nan, 6.0]
-                    ], # band 1
-                ]
-
-            ]
+                    [[np.nan, np.nan], [np.nan, 6.0]],  # y 1  # band 1
+                ],
+            ],
         ]
         test_stack = xr.DataArray(
             test_data,
@@ -140,7 +120,7 @@ class TestHistoricAverage():
                 "time": [0, 1],
             },
         )
-        expected_data = [3.375] 
+        expected_data = [3.375]
         expected_stack = xr.DataArray(
             expected_data,
             dims=["band"],
@@ -150,4 +130,3 @@ class TestHistoricAverage():
         )
         out_stack = historic_average(test_stack, (0, 1))
         assert_equal(out_stack, expected_stack)
-

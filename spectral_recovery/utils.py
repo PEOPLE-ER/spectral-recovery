@@ -3,7 +3,7 @@ import functools
 import pandas as pd
 
 from datetime import datetime, timezone
-from typing import List, Union, Tuple
+from typing import List, Union
 
 
 def to_datetime(value: Union[str, List[str], datetime, pd.Timestamp]):

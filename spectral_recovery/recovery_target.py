@@ -37,6 +37,8 @@ def historic_average(
     historic_average = ranged_stack.mean(dim=dims_to_average_over, skipna=True)
     if "poly_id" in stack.dims:
         historic_average = historic_average.mean(dim="poly_id", skipna=True)
-    
-    historic_average = historic_average.assign_coords(band=stack.coords["band"]) # re-assign lost coords.
+
+    historic_average = historic_average.assign_coords(
+        band=stack.coords["band"]
+    )  # re-assign lost coords.
     return historic_average

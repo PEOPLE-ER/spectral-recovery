@@ -24,20 +24,20 @@ def percent_recovered(
         The DataArray containing the recovery targets. Dimensions
         must be able to broadcast to `eval_stack` and `event_obs`.
     event_obs : xr.DataArray
-        The DataArray of images for the restoration event (indexed from 
+        The DataArray of images for the restoration event (indexed from
         `image_stack`) from which we are measuring recovery.
 
     Returns
     -------
     P80R : xr.DataArray
-        3D (band, y, x) DataArray containing Y2R for each pixel. The band 
+        3D (band, y, x) DataArray containing Y2R for each pixel. The band
         coordinate will contain "Y2R" label. Will either be predictive Y2R
         or non-predictive Y2R. For non-predictive Y2R, nan values represents
         pixels that have not hit percent recovered yet.
 
     """
-    total_change = abs(recovery_target - event_obs) 
-    recovered = abs(image_stack - event_obs) 
+    total_change = abs(recovery_target - event_obs)
+    recovered = abs(image_stack - event_obs)
     return recovered / total_change
 
 
@@ -58,14 +58,14 @@ def years_to_recovery(
         1D (band) DataArray containing target recovery values for each band.
     percent : int
         The percent of `recovery_target` to consider "recovered".
-    predictive : 
-        A boolean indicating whether or not to use predictive Y2R. If True, 
+    predictive :
+        A boolean indicating whether or not to use predictive Y2R. If True,
         predictive Y2R is used. If False, traditional Y2R is used.
 
     Returns
     -------
     Y2R : xr.DataArray
-        3D (band, y, x) DataArray containing Y2R for each pixel. The band 
+        3D (band, y, x) DataArray containing Y2R for each pixel. The band
         coordinate will contain "Y2R" label. Will either be predictive Y2R
         or non-predictive Y2R. For non-predictive Y2R, nan values represents
         pixels that have not hit percent recovered yet.
@@ -92,7 +92,6 @@ def years_to_recovery(
         return non_predictive_y2r.drop_vars("time")
 
 
-
 @maintain_rio_attrs
 def dNBR(
     image_stack: xr.DataArray,
@@ -109,18 +108,18 @@ def dNBR(
         Date of restoration event. Value must be within the time dimension
         coordinates of `image_stack` param.
     trajectory_func : callable, optional
-        The function/method used to compute TS trajectory. Otherwise, 
+        The function/method used to compute TS trajectory. Otherwise,
         metric method is computed on the raw values available in `image_stack`
 
     Returns
     -------
     dNBR : xr.DataArray
-        3D (band, y, x) DataArray containing dNBR for each pixel. The band 
+        3D (band, y, x) DataArray containing dNBR for each pixel. The band
         coordinate will contain "dNBR" label.
     """
     if trajectory_func is not None:
         # Fit timeseries to trajectory and use fitted values for formula.
-        # Something like(?): 
+        # Something like(?):
         # >> image_stack = trajectory_func(...)
         raise NotImplementedError
     # TODO: make this date increment/decrement easier or more reliable.
@@ -147,13 +146,13 @@ def recovery_indicator(
         Date of restoration event. Value must be within the time dimension
         coordinates of `image_stack` param.
     trejectory_func : callable, optional
-        The function/method used to compute TS trajectory. Otherwise, 
+        The function/method used to compute TS trajectory. Otherwise,
         metric method is computed on the raw values available in `image_stack`.
 
     Returns
     -------
     RI : xr.DataArray
-        3D (band, y, x) DataArray containing RI for each pixel. The band 
+        3D (band, y, x) DataArray containing RI for each pixel. The band
         coordinate will contain "RI" label.
     Notes
     -----
