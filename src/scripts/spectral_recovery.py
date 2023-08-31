@@ -15,9 +15,7 @@ from spectral_recovery.restoration import ReferenceSystem, RestorationArea
 from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 
 INDEX_CHOICE = [i.value for i in Index]
-METRIC_CHOICE = [m.value for m in Metric]
-
-print(INDEX_CHOICE, METRIC_CHOICE)
+METRIC_CHOICE = [str(m) for m in Metric]
 
 @click.command()
 @click.argument("tif_dir", type=click.Path(exists=True, path_type=Path))
@@ -53,39 +51,7 @@ def cli(
     indices: List[str] = None,
     mask: xr.DataArray = None,
 ) -> None:
-    """The main calling function. Better doc-string is on the TO-DO.
-
-    Parameters
-    -----------
-    tif_directory : list of str
-        Directory containing tifs for timeseries.
-    restoration_poly :
-        Path to vector file containing a Polygon of restoration area.
-    restoration_year :
-        Year of restoration event.
-    reference_range :
-        Year or year(s) from which to derive the reference/recovery target value.
-    metrics_list : str
-        List of recovery metrics to compute.
-    indices_list : list of str, optional
-        List of indices to compute with the data provided in `timeseries_dict`.
-        If given, recovery metrics will be compute over all indices. If not, then
-        recovery metrics are computed using the data passed with `timeseries_dict`.
-    timeseries_range : list of str, optional
-        The year range of the timeseries data in `timeseries_dict`. Must be provided
-        if `timeseries_dict` contains per-band/indice data.
-    data_mask : str or xr.DataArray, optional
-        Path to or DataArray of mask. Must be broadcastable to dim of size (N,M,y,x)
-        where N is # of bands/indices and M is # of timesteps.
-    write : bool, optional
-        Flag for whether to write recovery metrics to raster (TIF) or not.
-
-    Returns
-    -------
-    metrics : xr.DataArray
-        A 3D (metrics, y, x) DataArray of recovery metrics for the restoration
-        area and period. NaN values represent data-gaps and/or undetermined metrics.
-    """
+    """ CLI-tool for determining recovery metrics over a desired restoration area. """
     start_year, end_year = years
 
     start_year = pd.to_datetime(start_year)
