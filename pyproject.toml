@@ -29,7 +29,8 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["spectral_recovery"]
+where = ["src"]
+include = ["spectral_recovery*", "scripts*"]
 exclude = ["tests*"]
 
 [project.scripts]
