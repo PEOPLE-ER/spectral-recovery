@@ -39,5 +39,5 @@ class Metric(Enum):
     recovery_indicator = 3
     dNBR = 4
 
-    # def __str__(self) -> str:
-    #     return self.name
+    def __str__(self) -> str:
+        return self.name
