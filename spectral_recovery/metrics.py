@@ -2,10 +2,10 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 
-from spectral_recovery.utils import maintain_rio_attrs
+from spectral_recovery.utils import maintain_spatial_attrs
 
 
-@maintain_rio_attrs
+@maintain_spatial_attrs
 def percent_recovered(
     eval_stack: xr.DataArray, baseline: xr.DataArray, event_obs: xr.DataArray
 ) -> xr.DataArray:
@@ -30,7 +30,7 @@ def percent_recovered(
     return recovered / total_change
 
 #TODO: P80R should be using a target recovery value like the others
-@maintain_rio_attrs
+@maintain_spatial_attrs
 def P80R(
     image_stack: xr.DataArray,
     rest_start: str,
@@ -51,7 +51,7 @@ def P80R(
     return post_rest_max / (0.8 * pre_rest_avg)
 
 
-@maintain_rio_attrs
+@maintain_spatial_attrs
 def YrYr(
     image_stack: xr.DataArray,
     rest_start: str,
@@ -66,7 +66,7 @@ def YrYr(
     return dist_post_5_val - dist_val
 
 
-@maintain_rio_attrs
+@maintain_spatial_attrs
 def Y2R(
     image_stack: xr.DataArray,
     baseline: xr.DataArray,
@@ -105,7 +105,7 @@ def Y2R(
     return Y2R
 
 
-@maintain_rio_attrs
+@maintain_spatial_attrs
 def dNBR(
     restoration_stack: xr.DataArray,
     rest_start: str,
@@ -126,7 +126,7 @@ def dNBR(
     return dNBR
 
 
-@maintain_rio_attrs
+@maintain_spatial_attrs
 def RI(
     image_stack: xr.DataArray,
     rest_start: str,
@@ -153,7 +153,7 @@ def RI(
     return RI
 
 
-@maintain_rio_attrs
+@maintain_spatial_attrs
 def NBRRegrowth(
     image_stack: xr.DataArray,
     rest_start: str,

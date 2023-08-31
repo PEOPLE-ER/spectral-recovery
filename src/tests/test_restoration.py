@@ -33,17 +33,17 @@ class TestRestorationAreaInit:
                 "1p_test.gpkg",
                 pd.to_datetime("2011"),
                 pd.to_datetime("2010"),
-                "test_recovered.tif",
+                "src/tests/test_data/time17_xy2_epsg3005.tif",
                 None,
-                [str(x) for x in np.arange(2010, 2022)],
+                [str(x) for x in np.arange(2010, 2027)],
             ),
             (
                 "1p_test.gpkg",
                 pd.to_datetime("2014"),
                 (pd.to_datetime("2010"), pd.to_datetime("2013")),
-                "test_recovered.tif",
+                "src/tests/test_data/time17_xy2_epsg3005.tif",
                 None,
-                [str(x) for x in np.arange(2010, 2022)],
+                [str(x) for x in np.arange(2010, 2027)],
             ),
         ],
     )
@@ -85,36 +85,36 @@ class TestRestorationAreaInit:
         ("resto_poly", "resto_year", "ref_sys", "raster", "end_year", "time_range"),
         [
             (
-                "1p_test.gpkg",
-                pd.to_datetime("2023"),
+                "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
+                pd.to_datetime("2028"),
                 pd.to_datetime("2012"),
-                "test_recovered.tif",
+                "src/tests/test_data/time17_xy2_epsg3005.tif",
                 None,
-                [str(x) for x in np.arange(2010, 2022)],
+                [str(x) for x in np.arange(2010, 2027)],
             ),
             (
-                "1p_test.gpkg",
+                "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
                 pd.to_datetime("2010"),
                 pd.to_datetime("2009"),
-                "test_recovered.tif",
+                "src/tests/test_data/time17_xy2_epsg3005.tif",
                 None,
-                [str(x) for x in np.arange(2010, 2022)],
+                [str(x) for x in np.arange(2010, 2027)],
             ),
             (
-                "no_overlap.gpkg",
+                "src/tests/test_data/polygon_outbound_epsg3005.gpkg",
                 pd.to_datetime("2015"),
                 pd.to_datetime("2012"),
-                "test_recovered.tif",
+                "src/tests/test_data/time17_xy2_epsg3005.tif",
                 None,
-                [str(x) for x in np.arange(2010, 2022)],
+                [str(x) for x in np.arange(2010, 2027)],
             ),
             (
-                "not_fully_contained.gpkg",
+                "src/tests/test_data/polygon_overlap_epsg3005.gpkg",
                 pd.to_datetime("2015"),
                 pd.to_datetime("2012"),
-                "test_recovered.tif",
+                "src/tests/test_data/time17_xy2_epsg3005.tif",
                 None,
-                [str(x) for x in np.arange(2010, 2022)],
+                [str(x) for x in np.arange(2010, 2027)],
             ),
         ],
     )
@@ -181,12 +181,12 @@ class TestRestorationAreaMetrics:
                 "percent_recovered",
             ),
             (
-                [Metric.years_to_recovery],
-                "years_to_recovery",
+                [Metric.Y2R],
+                "Y2R",
             ),
             (
-                [Metric.recovery_indicator],
-                "recovery_indicator",
+                [Metric.RI],
+                "RI",
             ),
             (
                 [Metric.dNBR],
@@ -209,14 +209,14 @@ class TestRestorationAreaMetrics:
     def test_multiple_metrics(self, mock_stack, valid_resto_area, mocker):
         metrics_list = [
             Metric.percent_recovered,
-            Metric.years_to_recovery,
-            Metric.recovery_indicator,
+            Metric.Y2R,
+            Metric.RI,
             Metric.dNBR,
         ]
         methods_list = [
             "percent_recovered",
-            "years_to_recovery",
-            "recovery_indicator",
+            "Y2R",
+            "RI",
             "dNBR",
         ]
 
@@ -291,7 +291,7 @@ class TestReferenceSystemInit:
 
     @pytest.fixture()
     def image_stack(self):
-        test_raster = "spectral_recovery/tests/test_data/time3_xy2_epsg3005.tif"
+        test_raster = "src/tests/test_data/time3_xy2_epsg3005.tif"
         with rioxarray.open_rasterio(test_raster) as data:
             test_stack = data
             test_stack = test_stack.rename({"band": "time"})
@@ -305,7 +305,7 @@ class TestReferenceSystemInit:
 
     def test_init(self, image_stack):
         reference_polys = gpd.read_file(
-            "spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg"
+            "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
         )
         reference_date = pd.to_datetime("2008")
 
@@ -313,18 +313,18 @@ class TestReferenceSystemInit:
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
-            baseline_method=None,
+            recovery_target_method=None,
         )
         assert_geodataframe_equal(
             rs.reference_polygons, reference_polys, check_geom_type=True
         )
         assert rs.reference_range == reference_date
-        assert rs.baseline_method == historic_average
+        assert rs.recovery_target_method == historic_average
         assert rs.reference_stack.count() == 3
 
     def test_init_multi_poly(self, image_stack):
         reference_polys = gpd.read_file(
-            "spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+            "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
         )
         reference_date = pd.to_datetime("2008")
 
@@ -332,7 +332,7 @@ class TestReferenceSystemInit:
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
-            baseline_method=None,
+            recovery_target_method=None,
         )
         # assert_geodataframe_equal(rs.reference_polygons, reference_polys, check_geom_type=True)
         assert rs.reference_stack.count() == 6
@@ -340,7 +340,7 @@ class TestReferenceSystemInit:
     # NOTE: some of these test might be redundant? Might already be covered by testing of the Accessor contains methods?
     def test_not_contained_error_outbounds(self, image_stack):
         reference_polys = gpd.read_file(
-            "spectral_recovery/tests/test_data/polygon_outbound_epsg3005.gpkg"
+            "src/tests/test_data/polygon_outbound_epsg3005.gpkg"
         )
         reference_date = pd.to_datetime("2008")
 
@@ -352,12 +352,12 @@ class TestReferenceSystemInit:
                 reference_polygons=reference_polys,
                 reference_stack=image_stack,
                 reference_range=reference_date,
-                baseline_method=None,
+                recovery_target_method=None,
             )
 
     def test_not_contained_error_overlap(self, image_stack):
         reference_poly_overlap = gpd.read_file(
-            "spectral_recovery/tests/test_data/polygon_overlap_epsg3005.gpkg"
+            "src/tests/test_data/polygon_overlap_epsg3005.gpkg"
         )
         reference_date = pd.to_datetime("2008")
 
@@ -369,12 +369,12 @@ class TestReferenceSystemInit:
                 reference_polygons=reference_poly_overlap,
                 reference_stack=image_stack,
                 reference_range=reference_date,
-                baseline_method=None,
+                recovery_target_method=None,
             )
 
     def test_not_contained_error_multi_in_and_out(self, image_stack):
         reference_polys_multi = gpd.read_file(
-            "spectral_recovery/tests/test_data/polygon_multi_inoutbound_epsg3005.gpkg"
+            "src/tests/test_data/polygon_multi_inoutbound_epsg3005.gpkg"
         )
         reference_date = pd.to_datetime("2008")
 
@@ -386,12 +386,12 @@ class TestReferenceSystemInit:
                 reference_polygons=reference_polys_multi,
                 reference_stack=image_stack,
                 reference_range=reference_date,
-                baseline_method=None,
+                recovery_target_method=None,
             )
 
     def test_not_contained_error_time(self, image_stack):
         reference_polys = gpd.read_file(
-            "spectral_recovery/tests/test_data/polygon_outbound_epsg3005.gpkg"
+            "src/tests/test_data/polygon_outbound_epsg3005.gpkg"
         )
         reference_date = pd.to_datetime("2020")
 
@@ -403,24 +403,25 @@ class TestReferenceSystemInit:
                 reference_polygons=reference_polys,
                 reference_stack=image_stack,
                 reference_range=reference_date,
-                baseline_method=None,
+                recovery_target_method=None,
             )
 
 
-class TestReferenceSystemBaseline:
-    class SimpleReferenceSystem(ReferenceSystem):
-        """Sub-class ReferenceSystem and overwrite __init__ to isolate `baseline` method."""
+class TestReferenceSystemrecovery_target:
 
-        def __init__(self, baseline, stack, date):
-            """Set only attributes that are required by `baseline`, assume arb. types"""
-            self.baseline_method = baseline
+    class SimpleReferenceSystem(ReferenceSystem):
+        """Sub-class ReferenceSystem and overwrite __init__ to isolate `recovery_target` method."""
+
+        def __init__(self, recovery_target, stack, date):
+            """Set only attributes that are required by `recovery_target`, assume arb. types"""
+            self.recovery_target_method = recovery_target
             self.reference_stack = stack
             self.reference_range = date
 
-    def test_baseline_is_called_with_args(self):
+    def test_recovery_target_is_called_with_args(self):
         mock_value = 3.0
-        mock_baseline = MagicMock(return_value=mock_value)
-        rs = self.SimpleReferenceSystem(mock_baseline, 1.0, 2.0)
-        output = rs.baseline()
-        expected = {"baseline": mock_value}
+        mock_recovery_target = MagicMock(return_value=mock_value)
+        rs = self.SimpleReferenceSystem(mock_recovery_target, 1.0, 2.0)
+        output = rs.recovery_target()
+        expected = {"recovery_target": mock_value}
         assert output == expected

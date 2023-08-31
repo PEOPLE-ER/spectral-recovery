@@ -10,9 +10,9 @@ from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.utils import to_datetime
 from spectral_recovery.metrics import (
     percent_recovered,
-    years_to_recovery,
+    Y2R,
     dNBR,
-    recovery_indicator,
+    RI,
 )
 from spectral_recovery.enums import Metric
 
@@ -211,9 +211,11 @@ class RestorationArea:
                         time=slice(self.restoration_year, self.end_year)
                     )
                     recovery_target = self.reference_system.recovery_target()
-                    metrics_dict[metric] = years_to_recovery(
+                    metrics_dict[metric] = Y2R(
                         image_stack=filtered_stack,
                         recovery_target=recovery_target["recovery_target"],
+                        rest_start=str(self.restoration_year.year),
+                        rest_end=str(self.end_year.year),
                     )
                 case Metric.dNBR:
                     metrics_dict[metric] = dNBR(
@@ -221,7 +223,7 @@ class RestorationArea:
                         rest_start=str(self.restoration_year.year),
                     )
                 case Metric.recovery_indicator:
-                    metrics_dict[metric] = recovery_indicator(
+                    metrics_dict[metric] = RI(
                         image_stack=self.stack,
                         rest_start=str(self.restoration_year.year),
                     )
