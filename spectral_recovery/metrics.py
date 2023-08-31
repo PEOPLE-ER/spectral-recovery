@@ -1,14 +1,8 @@
-from ast import Str
 import xarray as xr
 import numpy as np
-import dask.array as da
 import pandas as pd
 
-from enum import Enum
-from datetime import datetime
 from spectral_recovery.utils import maintain_spatial_attrs
-from scipy import stats
-from typing import Callable, Optional
 
 
 @maintain_spatial_attrs
@@ -35,11 +29,11 @@ def percent_recovered(
     recovered = abs(eval_stack - event_obs)     
     return recovered / total_change
 
+#TODO: P80R should be using a target recovery value like the others
 @maintain_spatial_attrs
 def P80R(
     image_stack: xr.DataArray,
     rest_start: str,
-    trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
     """ Extent (percent) that trajectory has reached 80% of pre-disturbance value.
 
@@ -61,12 +55,7 @@ def P80R(
 def YrYr(
     image_stack: xr.DataArray,
     rest_start: str,
-    trajectory_func: Optional[Callable] = None,
 ):
-    if trajectory_func is not None:
-        # Fit timeseries to trajectory and use fitted values for formula
-        # fit trajectory here!
-        raise NotImplementedError
     
     dist_start = str((int(rest_start) - 1))
     dist_post_5 = str(int(dist_start) + 5)
@@ -78,11 +67,12 @@ def YrYr(
 
 
 @maintain_spatial_attrs
-def years_to_recovery(
+def Y2R(
     image_stack: xr.DataArray,
     baseline: xr.DataArray,
+    rest_start: str,
+    rest_end: str,
     percent: int = 80,
-    predictive: bool = False,
 ) -> xr.DataArray:
     """Per-pixel years-to-recovery
 
@@ -91,76 +81,34 @@ def years_to_recovery(
     image_stack : xr.DataArray
         Timeseries of images to compute years-to-recovery across.
 
-    # TODO: faster implementation located in `metrics_playground` module
-    # TODO: decide on "undetermined" value (e.g not recovered, negative recovery)
-    # NOTE: re #5: If current observations are not recovered but at a previous timestep
-    # an observation reached the recovered state... do we report the # of years to the
-    # previous step? or report nan?
     """
-    reco_80 = baseline * (percent / 100)
-    # _theil_sen calls apply_ufunc along the time dimension so stack's
-    # chunks need to contain the entire timestack before being passed
-    y_vals = image_stack.chunk(dict(time=-1))
-    x_vals = image_stack.time.dt.year
+    reco_target = baseline * (percent / 100)
+    post_recovery = image_stack.sel(time=slice(rest_start, rest_end))
+  
 
-    ts = _theil_sen(y=y_vals, x=x_vals)
-    y2r = (reco_80 - ts.sel(parameter="intercept")) / ts.sel(parameter="slope")
+    years = image_stack.time
+    possible_years_to_recovery = np.arange(len(years))
 
-    predictive_y2r = y2r - x_vals[0]
-    total_years_recovering = len(x_vals) - 1
-    if predictive:
-        return predictive_y2r
-    else:
-        non_predictive_y2r = xr.where(
-            predictive_y2r > total_years_recovering, np.nan, predictive_y2r
-        )
-        return non_predictive_y2r.drop_vars("time")
+    recovered_pixels = post_recovery.where(image_stack >= reco_target)
+    # NOTE: the following code was my best attempt to get "find the first year that recovered"
+    # working with xarray. Likely not the best way to do it, but can't figure anything else out now.
+    year_of_recovery = recovered_pixels.idxmax(dim="time")
 
+    Y2R = xr.full_like(recovered_pixels.mean(dim="time"), fill_value=np.nan)
+    for i, recovery_time in enumerate(possible_years_to_recovery):
+        Y2R_t = year_of_recovery
+        Y2R_t = Y2R_t.where(Y2R_t == years[i]).notnull()
+        Y2R_mask = Y2R.where(Y2R_t, False)
+        Y2R = xr.where(Y2R_mask, recovery_time, Y2R)
 
-def _new_linregress(y, x):
-    """Wrapper around mstats.theilslopes for apply_ufunc usage"""
-    slope, intercept, low_slope, high_slope = stats.mstats.theilslopes(y, x)
-    return np.array([slope, intercept])
-
-
-def _theil_sen(y, x):
-    """Apply theil_sen slope regression across time on each pixel
-
-    Parameters
-    ----------
-    y : xr.DataArray
-
-    x : list of int
-
-    Returns
-    -------
-    ts_reg : xr.DataArray
-        DataArray of  theil-sen slope and intercept parameters for each
-        pixel. 3D DataArray with "parameter", "y" and "x" labelled
-        dimensions where "y" and "x" match input "y" and "x".
-
-    """
-    ts_dim_name = "parameter"
-    ts_reg = xr.apply_ufunc(
-        _new_linregress,
-        y,
-        x,
-        input_core_dims=[["time"], ["time"]],
-        output_core_dims=[[ts_dim_name]],
-        vectorize=True,
-        dask="parallelized",
-        output_dtypes=["float64"],
-        dask_gufunc_kwargs={"output_sizes": {ts_dim_name: 2}},
-    )
-    ts_reg = ts_reg.assign_coords({"parameter": ["slope", "intercept"]})
-    return ts_reg
+    Y2R = Y2R.drop_vars("time")
+    return Y2R
 
 
 @maintain_spatial_attrs
 def dNBR(
     restoration_stack: xr.DataArray,
     rest_start: str,
-    trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
     """Delta-NBR
 
@@ -170,11 +118,6 @@ def dNBR(
     trajectory_func : callable, optional
 
     """
-    if trajectory_func is not None:
-        # Fit timeseries to trajectory and use fitted values for formula
-        # fit trajectory here!
-        raise NotImplementedError
-
     rest_post_5 = str(int(rest_start) + 5)
     dNBR = (
         restoration_stack.sel(time=rest_post_5).drop_vars("time")
@@ -184,10 +127,9 @@ def dNBR(
 
 
 @maintain_spatial_attrs
-def recovery_indicator(
+def RI(
     image_stack: xr.DataArray,
     rest_start: str,
-    trajectory_func: Optional[Callable] = None,
 ) -> xr.DataArray:
     """
     Notes
@@ -195,11 +137,6 @@ def recovery_indicator(
     This implementation currently assumes that the disturbance period is 1 year long.
     TODO: allow for multi-year disturbances?
     """
-    if trajectory_func is not None:
-        # Fit timeseries to trajectory and use fitted values for formula
-        # fit trajectory here!
-        raise NotImplementedError
-
     rest_post_5 = str(int(rest_start) + 5)
     dist_start = str(int(rest_start) - 1)
     dist_end = rest_start
@@ -221,14 +158,8 @@ def NBRRegrowth(
     image_stack: xr.DataArray,
     rest_start: str,
     time_interval: int,
-    trajectory_func: Optional[Callable] = None,
 ):
-    
-    if trajectory_func is not None:
-        # Fit timeseries to trajectory and use fitted values for formula
-        # fit trajectory here!
-        raise NotImplementedError
-
+    raise NotImplementedError
     rest_post_5 = str(int(rest_start) + 5)
     interval_end = str(int(rest_start) + time_interval)
     interval_dates = [((date < pd.to_datetime(interval_end)) and date > pd.to_datetime(rest_start)) for date in image_stack.coords["time"].values]
