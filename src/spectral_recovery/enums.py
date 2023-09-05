@@ -34,11 +34,12 @@ class Index(Enum):
 
 
 class Metric(Enum):
-    percent_recovered = 1
-    Y2R = 2
-    RI = 3
-    dNBR = 4
-    P80R = 5
+    percent_recovered = "percent_recovered"
+    Y2R = "Y2R"
+    RI = "RI"
+    dNBR = "dNBR"
+    P80R = "P80R"
+    YrYr = "YrYr"
 
     def __str__(self) -> str:
-        return self.name
+        return self.value

@@ -30,7 +30,7 @@ def historic_average(
     dims_to_average_over = tuple(
         item for item in stack.dims if (item != "band" and item != "poly_id")
     )
-    if isinstance(reference_date, tuple):
+    if isinstance(reference_date, list):
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))

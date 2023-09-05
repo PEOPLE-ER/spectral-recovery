@@ -4,10 +4,10 @@ import pandas as pd
 
 from spectral_recovery.utils import maintain_rio_attrs
 
-
+# NOTE: percent_recovered will likely be removed before publishing
 @maintain_rio_attrs
 def percent_recovered(
-    eval_stack: xr.DataArray, baseline: xr.DataArray, event_obs: xr.DataArray
+    eval_stack: xr.DataArray, recovery_target: xr.DataArray, event_obs: xr.DataArray
 ) -> xr.DataArray:
     """Per-pixel percent recovery
 
@@ -25,7 +25,7 @@ def percent_recovered(
         from. x and y dimensions must match `eval_stack`.
 
     """
-    total_change = abs(baseline - event_obs)  
+    total_change = abs(recovery_target - event_obs)  
     recovered = abs(eval_stack - event_obs)     
     return recovered / total_change
 
@@ -45,6 +45,7 @@ def P80R(
     dist_start = str((int(rest_start) - 1))
     pre_rest = [date < pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
     post_rest = [date >= pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
+    print(pre_rest, post_rest)
     pre_rest_avg = image_stack.sel(time=pre_rest).mean(dim=["y", "x"])
     post_rest_max = image_stack.sel(time=post_rest).max(dim=["y", "x"])
 
@@ -69,7 +70,7 @@ def YrYr(
 @maintain_rio_attrs
 def Y2R(
     image_stack: xr.DataArray,
-    baseline: xr.DataArray,
+    recovery_target: xr.DataArray,
     rest_start: str,
     rest_end: str,
     percent: int = 80,
@@ -82,22 +83,21 @@ def Y2R(
         Timeseries of images to compute years-to-recovery across.
 
     """
-    reco_target = baseline * (percent / 100)
-    post_recovery = image_stack.sel(time=slice(rest_start, rest_end))
-  
+    reco_target = recovery_target * (percent / 100)
+    print(rest_start, rest_end)
+    post_rest = image_stack.sel(time=slice(rest_start, rest_end))
+    post_rest_years = post_rest["time"].values
+    possible_years_to_recovery = np.arange(len(post_rest_years))
 
-    years = image_stack.time
-    possible_years_to_recovery = np.arange(len(years))
-
-    recovered_pixels = post_recovery.where(image_stack >= reco_target)
+    recovered_pixels = post_rest.where(image_stack >= reco_target)
     # NOTE: the following code was my best attempt to get "find the first year that recovered"
     # working with xarray. Likely not the best way to do it, but can't figure anything else out now.
     year_of_recovery = recovered_pixels.idxmax(dim="time")
 
-    Y2R = xr.full_like(recovered_pixels.mean(dim="time"), fill_value=np.nan)
+    Y2R = xr.full_like(recovered_pixels[:,0,:,:], fill_value=np.nan)
     for i, recovery_time in enumerate(possible_years_to_recovery):
         Y2R_t = year_of_recovery
-        Y2R_t = Y2R_t.where(Y2R_t == years[i]).notnull()
+        Y2R_t = Y2R_t.where(Y2R_t == post_rest_years[i]).notnull()
         Y2R_mask = Y2R.where(Y2R_t, False)
         Y2R = xr.where(Y2R_mask, recovery_time, Y2R)
 
