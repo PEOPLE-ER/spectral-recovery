@@ -33,7 +33,7 @@ class TestHistoricAverage:
                 "band": [0, 1],
             },
         )
-        out_stack = historic_average(test_stack, (0, 1))
+        out_stack = historic_average(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
 
     def test_nan_timeseries_is_nan(self):
@@ -62,7 +62,7 @@ class TestHistoricAverage:
                 "band": [0, 1],
             },
         )
-        out_stack = historic_average(test_stack, (0, 1))
+        out_stack = historic_average(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
 
     def test_nan_in_timeseries_ignored(self):
@@ -91,7 +91,7 @@ class TestHistoricAverage:
                 "band": [0, 1],
             },
         )
-        out_stack = historic_average(test_stack, (0, 1))
+        out_stack = historic_average(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
 
     def test_multi_poly_averages_individual_polygon(self):
@@ -128,5 +128,5 @@ class TestHistoricAverage:
                 "band": [0],
             },
         )
-        out_stack = historic_average(test_stack, (0, 1))
+        out_stack = historic_average(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)

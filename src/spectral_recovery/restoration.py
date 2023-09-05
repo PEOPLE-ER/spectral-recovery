@@ -13,6 +13,8 @@ from spectral_recovery.metrics import (
     Y2R,
     dNBR,
     RI,
+    P80R,
+    YrYr,
 )
 from spectral_recovery.enums import Metric
 
@@ -159,7 +161,7 @@ class RestorationArea:
         if not self._within(composite_stack):
             raise ValueError(f"Not contained! Better message soon!")
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
-        self.end_year = self.stack["time"].max()
+        self.end_year = pd.to_datetime(self.stack["time"].data[-1])
 
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
@@ -202,11 +204,11 @@ class RestorationArea:
                     recovery_target = self.reference_system.recovery_target()
                     event = self.stack.sel(time=self.restoration_year)
                     metrics_dict[metric] = percent_recovered(
-                        image_stack=curr,
+                        eval_stack=curr,
                         recovery_target=recovery_target["recovery_target"],
                         event_obs=event,
                     )
-                case Metric.years_to_recovery:
+                case Metric.Y2R:
                     filtered_stack = self.stack.sel(
                         time=slice(self.restoration_year, self.end_year)
                     )
@@ -215,14 +217,14 @@ class RestorationArea:
                         image_stack=filtered_stack,
                         recovery_target=recovery_target["recovery_target"],
                         rest_start=str(self.restoration_year.year),
-                        rest_end=str(self.end_year.year),
+                        rest_end=str(self.end_year.year)
                     )
                 case Metric.dNBR:
                     metrics_dict[metric] = dNBR(
                         restoration_stack=self.stack,
                         rest_start=str(self.restoration_year.year),
                     )
-                case Metric.recovery_indicator:
+                case Metric.RI:
                     metrics_dict[metric] = RI(
                         image_stack=self.stack,
                         rest_start=str(self.restoration_year.year),

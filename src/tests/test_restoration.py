@@ -23,26 +23,21 @@ DATETIME_FREQ = (  # TODO: should this be kept somewhere else in the project? Se
 
 
 class TestRestorationAreaInit:
-    # This might need some set-up and tear down
-    # https://stackoverflow.com/questions/26405380/how-do-i-correctly-setup-and-teardown-for-my-pytest-class-with-tests
-    # TODO: test that RA contains the clipped data for a polygon, not the entire AOI
     @pytest.mark.parametrize(
-        ("resto_poly", "resto_year", "ref_sys", "raster", "end_year", "time_range"),
+        ("resto_poly", "resto_year", "ref_sys", "raster", "time_range"),
         [
             (
-                "1p_test.gpkg",
+                "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
                 pd.to_datetime("2011"),
                 pd.to_datetime("2010"),
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
-                None,
                 [str(x) for x in np.arange(2010, 2027)],
             ),
             (
-                "1p_test.gpkg",
+                "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
                 pd.to_datetime("2014"),
                 (pd.to_datetime("2010"), pd.to_datetime("2013")),
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
-                None,
                 [str(x) for x in np.arange(2010, 2027)],
             ),
         ],
@@ -53,7 +48,6 @@ class TestRestorationAreaInit:
         resto_year,
         ref_sys,
         raster,
-        end_year,
         time_range,
     ):
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
@@ -62,13 +56,12 @@ class TestRestorationAreaInit:
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
-            resto_poly = gpd.read_file("1p_test.gpkg")
+            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
             resto_a = RestorationArea(
                 restoration_polygon=resto_poly,
                 restoration_year=resto_year,
                 reference_system=ref_sys,
                 composite_stack=stack,
-                end_year=end_year,
             )
             assert isinstance(resto_a.restoration_year, pd.Timestamp)
             assert (
@@ -82,14 +75,13 @@ class TestRestorationAreaInit:
 
     # check fro bad resto year, bad reference year, bad spatial location
     @pytest.mark.parametrize(
-        ("resto_poly", "resto_year", "ref_sys", "raster", "end_year", "time_range"),
+        ("resto_poly", "resto_year", "ref_sys", "raster", "time_range"),
         [
             (
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
                 pd.to_datetime("2028"),
                 pd.to_datetime("2012"),
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
-                None,
                 [str(x) for x in np.arange(2010, 2027)],
             ),
             (
@@ -97,7 +89,6 @@ class TestRestorationAreaInit:
                 pd.to_datetime("2010"),
                 pd.to_datetime("2009"),
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
-                None,
                 [str(x) for x in np.arange(2010, 2027)],
             ),
             (
@@ -105,7 +96,6 @@ class TestRestorationAreaInit:
                 pd.to_datetime("2015"),
                 pd.to_datetime("2012"),
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
-                None,
                 [str(x) for x in np.arange(2010, 2027)],
             ),
             (
@@ -113,7 +103,6 @@ class TestRestorationAreaInit:
                 pd.to_datetime("2015"),
                 pd.to_datetime("2012"),
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
-                None,
                 [str(x) for x in np.arange(2010, 2027)],
             ),
         ],
@@ -124,7 +113,6 @@ class TestRestorationAreaInit:
         resto_year,
         ref_sys,
         raster,
-        end_year,
         time_range,
     ):
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
@@ -143,18 +131,17 @@ class TestRestorationAreaInit:
                     restoration_year=resto_year,
                     reference_system=ref_sys,
                     composite_stack=stack,
-                    end_year=end_year,
                 )
 
 
 class TestRestorationAreaMetrics:
     @pytest.fixture()
     def valid_resto_area(self):
-        polygon = "1p_test.gpkg"
+        polygon = "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
         restoration_year = pd.to_datetime("2015")
         reference_year = pd.to_datetime("2012")
-        raster = "test_recovered.tif"
-        time_range = [str(x) for x in np.arange(2010, 2022)]
+        raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
+        time_range = [str(x) for x in np.arange(2010, 2027)]
 
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             resto_poly = gpd.read_file(polygon)
@@ -169,7 +156,6 @@ class TestRestorationAreaMetrics:
                 restoration_year=restoration_year,
                 reference_system=reference_year,
                 composite_stack=stack,
-                end_year=None,
             )
         return resto_area
 

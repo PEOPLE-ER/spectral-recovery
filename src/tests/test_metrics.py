@@ -15,7 +15,7 @@ from spectral_recovery.metrics import (
 
 
 @pytest.mark.parametrize(
-    ("baseline", "curr", "event", "expected"),
+    ("recovery_target", "curr", "event", "expected"),
     [
         # TODO: make a func to construct xr dataarray to simplify parametrize call
         # see Xarray project testing modules for reference
@@ -66,15 +66,15 @@ from spectral_recovery.metrics import (
         ),
     ],
 )
-def test_correct_percent_recovered(baseline, curr, event, expected):
+def test_correct_percent_recovered(recovery_target, curr, event, expected):
     assert percent_recovered(
-        eval_stack=curr, baseline=baseline, event_obs=event
+        eval_stack=curr, recovery_target=recovery_target, event_obs=event
     ).equals(expected)
 
 
 # TODO: revisit case #4
 @pytest.mark.parametrize(
-    ("baseline", "obs", "percent", "expected"),
+    ("recovery_target", "obs", "percent", "expected"),
     [
         (
             xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
@@ -152,9 +152,9 @@ def test_correct_percent_recovered(baseline, curr, event, expected):
         ),
     ],
 )
-def test_correct_y2r(baseline, obs, percent, expected):
+def test_correct_y2r(recovery_target, obs, percent, expected):
     assert Y2R(
-        image_stack=obs, baseline=baseline, percent=percent, rest_start="2020", rest_end="2022"
+        image_stack=obs, recovery_target=recovery_target, percent=percent, rest_start="2020", rest_end="2022",
     ).equals(expected)
 
 
