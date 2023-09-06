@@ -17,30 +17,33 @@ from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 INDEX_CHOICE = [i.value for i in Index]
 METRIC_CHOICE = [str(m) for m in Metric]
 
+# TODO: simplify this function by grouping commands across multiple (3-4) smaller functions. 
 @click.command()
 @click.argument("tif_dir", type=click.Path(exists=True, path_type=Path))
-@click.option("--years", type=click.DateTime(formats=["%Y"]), nargs=2, required=True)
-@click.option("--per-band", is_flag=True)
-@click.option("--per-year", is_flag=True)
-@click.option("-rest", "--rest-poly",type=click.Path(exists=True, path_type=Path), required=True)
-@click.option("--rest-year", type=click.DateTime(formats=["%Y"]), nargs=1, required=False)
-@click.option("-ref","--ref-poly", type=click.Path(exists=True, path_type=Path), required=False)
-@click.option("--ref-years", type=click.DateTime(formats=["%Y"]), nargs=2, required=True)
+@click.option("--years", type=click.DateTime(formats=["%Y"]), nargs=2, required=True, help="Start and end year of tifs in 'TIF_DIR'")
+@click.option("--per-band", is_flag=True, help="If tifs are stored per-band (e.g a tif for Blue band, containing years 2010-2022)")
+@click.option("--per-year", is_flag=True, help="If tifs are stored per-year (e.g a tif for 2010, containing bands Blue, NIR, and SWIR)")
+@click.option("-rest", "--rest-poly",type=click.Path(exists=True, path_type=Path), required=True, help="Path to restoration area polygon")
+@click.option("--rest-year", type=click.DateTime(formats=["%Y"]), nargs=1, required=False, help="Year of restoration event")
+@click.option("-ref","--ref-poly", type=click.Path(exists=True, path_type=Path), required=False, help="Path to reference polygon(s)")
+@click.option("--ref-years", type=click.DateTime(formats=["%Y"]), nargs=2, required=True, help="Start and end year from which to derive reference recovery target. If only using one year, set start and end year to same year.")
 @click.option("-i","--indices", type=click.Choice(
     INDEX_CHOICE, 
     case_sensitive=False,
 ),
 multiple=True,
-required=False)
+required=False,
+help="The indices on which to compute recovery metrics.")
 @click.option("-m","--metrics", 
 type=click.Choice(
     METRIC_CHOICE, 
     case_sensitive=False,
 ),
 multiple=True,
-required=True)
-@click.option("--mask", type=click.Path(exists=True, path_type=Path), required=False)
-@click.option("--out", type=click.Path(path_type=Path), required=True)
+required=True,
+help="The recovery metrics to compute.")
+@click.option("--mask", type=click.Path(exists=True, path_type=Path), required=False, help="A data mask.")
+@click.option("--out", type=click.Path(path_type=Path), required=True, help="Directory to write output rasters.")
 def cli(
     tif_dir: List[str],
     years,
@@ -103,11 +106,6 @@ def cli(
         else:
             ref_sys = ref_years
         
-        try:
-            valid_metrics = [Metric[name] for name in metrics]
-        except ValueError as e:
-            raise e from None
-        
         rest_poly_gdf = gpd.read_file(rest_poly)
         metrics_array = RestorationArea(
             restoration_polygon=rest_poly_gdf,
@@ -122,41 +120,3 @@ def cli(
             out_dir=out,
         )
     return metrics
-
-
-# if __name__ == "__main__":
-#     , progress
-
-#     rest_year = pd.to_datetime("2009")
-#     reference_year = pd.to_datetime("2007")
-
-#     print(
-#         "Tool currently only supports Landsat data. Please ensure any rasters passed in"
-#         " `timeseries_dic` are Landsat-derived.\n"
-#     )
-
-#     with LocalCluster() as cluster, Client(cluster) as client:
-#         metrics = spectral_recovery(
-#             timeseries_dict={
-#                 Index.ndvi: "spectral_recovery/tests/test_data/time17_xy2_epsg3005.tif",
-#                 Index.tcw: "spectral_recovery/tests/test_data/time17_xy2_epsg3005.tif",
-#             },
-#             timeseries_range=["2005", "2021"],
-#             restoration_poly=(
-#                 "spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg"
-#             ),
-#             restoration_year=rest_year,
-#             reference_poly=(
-#                 "spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
-#             ),
-#             reference_range=reference_year,
-#             # indices_list=[Index.ndvi, Index.sr],
-#             metrics_list=[
-#                 Metric.percent_recovered,
-#                 Metric.years_to_recovery,
-#             ],
-#             write=False,
-#         ).compute()
-#         # TODO: figure out how to display progress to users
-#         # progress(metrics)
-#         print(metrics.compute())
