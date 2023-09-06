@@ -30,13 +30,15 @@ def historic_average(
     dims_to_average_over = tuple(
         item for item in stack.dims if (item != "band" and item != "poly_id")
     )
-    if isinstance(reference_date, tuple):
+    if isinstance(reference_date, list):
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
     historic_average = ranged_stack.mean(dim=dims_to_average_over, skipna=True)
     if "poly_id" in stack.dims:
         historic_average = historic_average.mean(dim="poly_id", skipna=True)
-    
-    historic_average = historic_average.assign_coords(band=stack.coords["band"]) # re-assign lost coords.
+
+    historic_average = historic_average.assign_coords(
+        band=stack.coords["band"]
+    )  # re-assign lost coords.
     return historic_average
