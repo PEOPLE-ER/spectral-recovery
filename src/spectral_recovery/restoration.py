@@ -1,5 +1,6 @@
 import xarray as xr
 import geopandas as gpd
+import pandas as pd
 from pandas import Index
 
 from typing import Callable, Optional, Union, List
@@ -161,7 +162,7 @@ class RestorationArea:
         if not self._within(composite_stack):
             raise ValueError(f"Not contained! Better message soon!")
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
-        self.end_year = pd.to_datetime(self.stack["time"].data[-1])
+        self.end_year = pd.to_datetime(self.stack["time"].max().data)
 
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
