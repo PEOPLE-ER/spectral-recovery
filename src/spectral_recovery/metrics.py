@@ -45,7 +45,6 @@ def P80R(
     dist_start = str((int(rest_start) - 1))
     pre_rest = [date < pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
     post_rest = [date >= pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
-    print(pre_rest, post_rest)
     pre_rest_avg = image_stack.sel(time=pre_rest).mean(dim=["y", "x"])
     post_rest_max = image_stack.sel(time=post_rest).max(dim=["y", "x"])
 
@@ -84,7 +83,6 @@ def Y2R(
 
     """
     reco_target = recovery_target * (percent / 100)
-    print(rest_start, rest_end)
     post_rest = image_stack.sel(time=slice(rest_start, rest_end))
     post_rest_years = post_rest["time"].values
     possible_years_to_recovery = np.arange(len(post_rest_years))

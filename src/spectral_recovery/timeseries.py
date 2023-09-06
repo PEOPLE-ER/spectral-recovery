@@ -165,7 +165,6 @@ class SatelliteTimeSeries:
         # NOTE: if this changes to looking at individual polygons
         # rather than the bbox of all polygons, consider this algo:
         # https://stackoverflow.com/questions/14697442/
-        print(polygons)
         ext = box(*self._obj.rio.bounds())
         poly_ext = box(*polygons.total_bounds)
         if not ext.contains(poly_ext):
