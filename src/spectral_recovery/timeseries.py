@@ -111,7 +111,8 @@ def datetime_to_index(
         try:
             if len(value) > 2:
                 raise ValueError(
-                    "Passed value={value} but `datetime` must be a single Timestamp or an iterable with exactly two Timestamps."
+                    "Passed value={value} but `datetime` must be a single Timestamp or"
+                    " an iterable with exactly two Timestamps."
                 )
             dt_range = pd.date_range(start=value[0], end=value[0], freq=DATETIME_FREQ)
         except TypeError:
@@ -164,7 +165,6 @@ class SatelliteTimeSeries:
         # NOTE: if this changes to looking at individual polygons
         # rather than the bbox of all polygons, consider this algo:
         # https://stackoverflow.com/questions/14697442/
-        print(polygons)
         ext = box(*self._obj.rio.bounds())
         poly_ext = box(*polygons.total_bounds)
         if not ext.contains(poly_ext):
