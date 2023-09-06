@@ -1,39 +1,131 @@
 # Spectral Recovery Tool 
 
-## Set-up
-
 ### Installation and Environment
 
 First, clone the repository
 
 ```{bash}
-(base) $ git clone https://github.com/PEOPLE-ER/Vegetation-Recovery-Assessment.git
-
+git clone https://github.com/PEOPLE-ER/Vegetation-Recovery-Assessment.git
+cd Vegetation-Recovery-Assessment/
 ```
 
-Then navigate to the project folder and create/activate your conda environment
+#### Installing from Wheel
+
+Build the package and install wheel.
 
 ```{bash}
-(base) $ conda env create -f environment.yml
-(base) $ conda activate people 
+python -m build
+python install dist/spectral_recovery-0.1-py3-none-any.whl
 ```
+The `spectral_recovery` package is now available through import statements and a CLI. See the "Using the Spectral Recovery Tool" notebook for example usage.
+
+#### Installing for Development Mode
+
+To download and perform/test development tasks within the project, enter development mode using an "editable install".
+
+```{bash}
+python -m venv .venv
+pip install --editable .
+```
+
+Now the `spectral_recovery` package is accesible as if it was installed in `.venv` (see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
+
+When done with a development task, you can simply uninstall the package as you normally would using pip, `pip uninstall spectral_recovery`.
 
 ### Running
 
-Run the package with the following command
+#### From CLI
+
+The CLI for the spectral recovery tool can be access using the `specrec` command. Run `specrec --help` for information about the parameters. Below is an example of a run,
 
 ```{bash}
-(people) $ python -m spectral_recovery.spectral_recovery
+specrec path_to_your_tifs/ --years 2010 2022 --per-year --rest-poly path_to_your_restoration/polygon.gpkg --rest-year 2015 --ref-years 2013 2014 -i NBR -i NDVI -i GCI -m Y2R -m RI --out output_dir/
 ```
 
-Arguments to the tool can be changed in the `spectral_recovery` module, inside
-the `if __name__ == '__main__':` function. The module is currently set-up to be 
-run over a simple 1-pixel data set, computes all implemented metrics.
+In more detail, the above command points to a directory ("path_to_your_tifs/") of annumal tifs from 2010 to 2022, a restoration polygon ("path_to_your_restoration/polygon.gpkg") that experienced disturbance in 2015, and indicates that the recovery target/reference should be derived from the years 2013-2014. The run will compute NBR, NDVI, and GCI indices, and for each index will compute the Y2R and RI recovery metrics. One tif for each metrics will be written to "output_dir/".
 
+#### Within Modules
+
+To use the tool within new or exisitng modules, first import the relevant modules from the `spectral_recovery` package.
+
+```{python}
+import geopandas as gpd
+import pandas as from
+
+from spectral_recovery.restoration import RestorationArea, ReferenceSystem
+from spectral_recovery.io import raster
+from spectral_recovery.enums import Metric, Index, BandCommon
+```
+
+Read in your polygon data with geopandas, set the dates of your timeseries, restoration event, and reference years.
+
+```{python}
+# Define years:
+# the years your TIFs cover
+start_year, end_year = [pd.to_datetime("2010"), pd.to_datetime("2022")]
+
+# the year of the restoration event
+restoration_year = pd.to_datetime("2015")
+
+# the years to derive reference/recovery target conditions from
+reference_years = [pd.to_datetime("2013"), pd.to_datetime("2014")]
+
+# All together, this defines a timeseries from 2010-2022 where a restoration 
+# event occured in 2015, and a recovery target can be derived from the 
+# two years prior to the disturbance, 2013-2014.
+
+# Read in polygon:
+restoration_poly = gpd.read_file("path_to_your_restoration/polygon.gpkg")
+
+```
+Next get a well-formated xarray.DataArray using `read_and_stack_tifs`
+
+```{python}
+xr_stack = raster.read_and_stack_tifs(
+    path_to_tifs="path_to_your_tifs/",
+    per_year=True,
+    path_to_mask=None,
+    start_year=start_year_of_tifs,
+    end_year=end_year_of_tifs
+    )
+```
+
+Check that the stack will be accepted in the `spectral_recovery` tool using the custom the `satts` (short for: satellite timeseries) accessor.
+
+```{python}
+print(timeseries.satts.valid)
+```
+
+If the stack is valid, you can then compute the indices. Please ensure you have the required bands for each index in your TIF, otherwise the computation will fail.
+
+```{python}
+indices_to_compute = [Index.NBR, Index.NDVI]
+indices = stack.satts.indices(indices_to_compute)
+```
+Then, initialize a `RestorationArea` object with the indices, dates, and restoration polygon, and compute metrics using the `metrics()` method.
+
+```{python}
+metrics = [Metric.Y2R, Metric.RI]
+metrics_array = RestorationArea(
+            restoration_polygon=restoration_poly,
+            restoration_year=restoration_year,
+            reference_system=reference_years,
+            composite_stack=indices,
+        ).metrics(metrics)
+```
+Finally, if you want to write the metric output, use `metrics_to_tifs`
+
+```{python}
+metrics_to_tifs(
+            metrics_array=metrics_array,
+            out_dir=some_output_directory,
+        )
+```
 ### Tests
 
-Units tests can be run with the following command
+Unit tests can be run with the following command
 
 ```{bash}
-(people) $ pytest
+pytest
+
 ```
