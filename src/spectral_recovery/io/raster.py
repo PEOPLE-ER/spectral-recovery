@@ -132,7 +132,6 @@ def metrics_to_tifs(
         out_dir: str,
         ):
     # NOTE: out_raster MUST be all null otherwise merging of rasters will fail
-    print(metrics_array)
     out_raster = xr.full_like(metrics_array[0, 0, :, :], np.nan)
     for metric in metrics_array["metric"].values:
         xa_dataset = xr.Dataset()
@@ -142,7 +141,6 @@ def metrics_to_tifs(
             merged = out_metric.combine_first(out_raster)
             xa_dataset[str(band)] = merged
             try:
-                print(xa_dataset)
                 filename = f"{out_dir}/{str(metric)}.tif"
                 xa_dataset.rio.to_raster(raster_path=filename)
             except CPLE_AppDefinedError as exc:
