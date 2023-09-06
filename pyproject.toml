@@ -26,6 +26,8 @@ dependencies = [
     "numpy",
     "pandas",
     "click",
+    "dask",
+    "distributed"
 ]
 
 [tool.setuptools.packages.find]
