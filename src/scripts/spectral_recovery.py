@@ -99,7 +99,7 @@ def cli(
     REST_POLY      Path to the restoration area polygon.
     REST_YEAR      Year of the restoration event.
     REF_YEARS      Start and end years over which to derive a recovery target.
-    
+
     """
     # TODO: move user input prep/validation into own function?
     rest_year = pd.to_datetime(rest_year)
@@ -119,7 +119,7 @@ def cli(
 
     with LocalCluster() as cluster, Client(cluster) as client:
         timeseries = read_and_stack_tifs(
-            path_to_tifs=tifs,
+            paths_to_tifs=tifs,
             path_to_mask=mask,
         )
 
