@@ -56,7 +56,9 @@ class TestRestorationAreaInit:
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
-            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            resto_poly = gpd.read_file(
+                "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
+            )
             resto_a = RestorationArea(
                 restoration_polygon=resto_poly,
                 restoration_year=resto_year,
@@ -394,7 +396,6 @@ class TestReferenceSystemInit:
 
 
 class TestReferenceSystemrecovery_target:
-
     class SimpleReferenceSystem(ReferenceSystem):
         """Sub-class ReferenceSystem and overwrite __init__ to isolate `recovery_target` method."""
 
