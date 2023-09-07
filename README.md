@@ -28,7 +28,7 @@ python -m venv .venv
 pip install --editable .
 ```
 
-Now the `spectral_recovery` package is accesible as if it was installed in `.venv` (see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
+Now the `spectral_recovery` package is accesible as if it was installed in `.venv` (WIP: see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
 
 When done with a development task, you can simply uninstall the package as you normally would using pip, `pip uninstall spectral_recovery`.
 
@@ -118,7 +118,7 @@ Finally, if you want to write the metric output, use `metrics_to_tifs`
 ```{python}
 metrics_to_tifs(
             metrics_array=metrics_array,
-            out_dir=some_output_directory,
+            out_dir="some_output_directory/",
         )
 ```
 ### Tests
