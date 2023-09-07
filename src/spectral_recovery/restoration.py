@@ -218,7 +218,7 @@ class RestorationArea:
                         image_stack=filtered_stack,
                         recovery_target=recovery_target["recovery_target"],
                         rest_start=str(self.restoration_year.year),
-                        rest_end=str(self.end_year.year)
+                        rest_end=str(self.end_year.year),
                     )
                 case Metric.dNBR:
                     metrics_dict[metric] = dNBR(

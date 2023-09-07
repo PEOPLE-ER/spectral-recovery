@@ -116,7 +116,7 @@ def test_correct_percent_recovered(recovery_target, curr, event, expected):
             100,
             xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
         ),
-        ( # TODO: check this test with team
+        (  # TODO: check this test with team
             xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
             xr.DataArray(
                 [[[[90]], [[100]], [[95]]]],
@@ -154,7 +154,11 @@ def test_correct_percent_recovered(recovery_target, curr, event, expected):
 )
 def test_correct_y2r(recovery_target, obs, percent, expected):
     assert Y2R(
-        image_stack=obs, recovery_target=recovery_target, percent=percent, rest_start="2020", rest_end="2022",
+        image_stack=obs,
+        recovery_target=recovery_target,
+        percent=percent,
+        rest_start="2020",
+        rest_end="2022",
     ).equals(expected)
 
 
