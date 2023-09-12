@@ -17,9 +17,7 @@ from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 INDEX_CHOICE = [i.value for i in Index]
 METRIC_CHOICE = [str(m) for m in Metric]
 
-
-# TODO: simplify this function by grouping commands across multiple (3-4) smaller functions.
-@click.command()
+@click.group(chain=True)
 @click.argument("tif_dir", type=click.Path(exists=True, path_type=Path))
 @click.argument(
     "rest_poly",
@@ -53,17 +51,17 @@ METRIC_CHOICE = [str(m) for m in Metric]
     required=False,
     help="The indices on which to compute recovery metrics.",
 )
-@click.option(
-    "-m",
-    "--metrics",
-    type=click.Choice(
-        METRIC_CHOICE,
-        case_sensitive=False,
-    ),
-    multiple=True,
-    required=True,
-    help="The recovery metrics to compute.",
-)
+# @click.option(
+#     "-m",
+#     "--metrics",
+#     type=click.Choice(
+#         METRIC_CHOICE,
+#         case_sensitive=False,
+#     ),
+#     multiple=True,
+#     required=True,
+#     help="The recovery metrics to compute.",
+# )
 @click.option(
     "--mask",
     type=click.Path(exists=True, path_type=Path),
@@ -77,13 +75,14 @@ METRIC_CHOICE = [str(m) for m in Metric]
     required=True,
     help="Directory to write output rasters.",
 )
+@click.pass_context
 def cli(
+    ctx,
     tif_dir: List[str],
     rest_poly: Path,
     rest_year: str,
     ref_poly: Path,
     ref_years: str,
-    metrics: List[str],
     out: Path,
     indices: List[str] = None,
     mask: xr.DataArray = None,
@@ -104,11 +103,7 @@ def cli(
     # TODO: move user input prep/validation into own function?
     rest_year = pd.to_datetime(rest_year)
     ref_years = [pd.to_datetime(ref_years[0]), pd.to_datetime(ref_years[1])]
-    try:
-        valid_metrics = [Metric[name] for name in metrics]
-    except KeyError as e:
-        raise e from None
-
+   
     try:
         valid_indices = [Index[name.lower()] for name in indices]
     except KeyError as e:
@@ -142,16 +137,54 @@ def cli(
             ref_sys = ref_years
 
         rest_poly_gdf = gpd.read_file(rest_poly)
-        metrics_array = RestorationArea(
+        ra = RestorationArea(
             restoration_polygon=rest_poly_gdf,
             restoration_year=rest_year,
             reference_system=ref_sys,
             composite_stack=timeseries_for_metrics,
-        ).metrics(valid_metrics)
-
-        out.mkdir(parents=True, exist_ok=True)
-        metrics_to_tifs(
-            metrics_array=metrics_array,
-            out_dir=out,
         )
-    return metrics
+        ctx.obj = ra
+
+@cli.command()
+@click.pass_obj
+@click.option("-t", "--timestep", type=int, required=False)
+def RI(obj, timestep):
+    ri = obj.RI(timestep=timestep)
+    return ri
+
+@cli.command()
+@click.pass_obj
+@click.option("-p", "--percent", type=int, required=False)
+def Y2R(obj, percent):
+    ri = obj.Y2R(percent_of_target=percent)
+    return ri
+
+@cli.command()
+@click.pass_obj
+@click.option("-t", "--timestep", type=int, required=False)
+def YrYr(obj, timestep):
+    ri = obj.YrYr(timestep=timestep)
+    return ri
+
+@cli.command()
+@click.pass_obj
+@click.option("-t", "--timestep", type=int, required=False)
+def dNBR(obj, timestep):
+    ri = obj.dNBR(timestep=timestep)
+    return ri
+
+@cli.command()
+@click.pass_obj
+@click.option("-p", "--percent", type=int, required=False)
+def P80R(obj, percent):
+    p80r = obj.P80R(percent_of_target=percent)
+    return p80r
+
+@cli.result_callback()
+def write_metrics(result, **kwargs):
+    click.echo(f"Writing metrics to {kwargs['out']}")
+    kwargs["out"].mkdir(parents=True, exist_ok=True)
+    metrics_to_tifs(
+        metrics_array=result,
+        out_dir=kwargs["out"],
+    )
