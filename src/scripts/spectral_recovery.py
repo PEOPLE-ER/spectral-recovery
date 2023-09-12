@@ -12,6 +12,7 @@ from dask.distributed import Client, LocalCluster
 
 from spectral_recovery.enums import Index, Metric
 from spectral_recovery.restoration import ReferenceSystem, RestorationArea
+from spectral_recovery.timeseries import _stack_bands
 from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 
 INDEX_CHOICE = [i.value for i in Index]
@@ -107,12 +108,13 @@ def cli(
             ref_sys = ref_years
         
         rest_poly_gdf = gpd.read_file(rest_poly)
-        metrics_array = RestorationArea(
+        ra = RestorationArea(
             restoration_polygon=rest_poly_gdf,
             restoration_year=rest_year,
             reference_system=ref_sys,
             composite_stack=timeseries_for_metrics,
-        ).metrics(valid_metrics)
+        )
+        metrics_array = get_all_metrics(valid_metrics, ra)
 
         out.mkdir(parents=True, exist_ok=True)
         metrics_to_tifs(
@@ -120,3 +122,41 @@ def cli(
             out_dir=out,
         )
     return metrics
+
+
+def get_all_metrics(self, metrics: List[str], ra: RestorationArea) -> xr.DataArray:
+        """Generate recovery metrics over a Restoration Area
+
+        Parameters
+        ----------
+        metrics : list of str
+            A list containing the names of metrics to generate.
+
+        Returns
+        -------
+        metrics_stack : xr.DataArray
+            A 4D (metric, band, y, x) DataArray, computed metrics values are
+            located along the `metric` dimension. Coordinates of metrics
+            are the related enums.Metric.
+
+        """
+        metrics_dict = {}
+        for metrics_input in metrics:
+            metric = Metric(metrics_input)
+            match metric:
+                case Metric.percent_recovered:
+                    metrics_dict[metric] = ra.percent_recovered()
+                case Metric.Y2R:
+                    metrics_dict[metric] = ra.Y2R()
+                case Metric.dNBR:
+                    metrics_dict[metric] = ra.dNBR()
+                case Metric.RI:
+                    metrics_dict[metric] = ra.RI()
+                case Metric.P80R:
+                    metrics_dict[metric] = ra.P80R()
+                case Metric.YrYr:
+                    metrics_dict[metric] = ra.YrYr()
+        metrics_stack = _stack_bands(
+            metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
+        )
+        return metrics_stack
