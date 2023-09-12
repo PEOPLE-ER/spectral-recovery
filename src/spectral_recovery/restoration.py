@@ -13,6 +13,7 @@ from spectral_recovery.enums import Metric
 
 from spectral_recovery import metrics as m
 
+
 # TODO: split date into start and end dates.
 # TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
 class ReferenceSystem:
@@ -183,112 +184,112 @@ class RestorationArea:
             event_obs=event,
         )
         pr = pr.expand_dims(dim={"metric": Metric.percent_recovered})
-        return pr 
-        
+        return pr
+
     def Y2R(self, percent_of_target: int = 80):
         post_restoration = self.stack.sel(
-                        time=slice(self.restoration_year, self.end_year)
-                    )
+            time=slice(self.restoration_year, self.end_year)
+        )
         recovery_target = self.reference_system.recovery_target()
         y2r = m.Y2R(
             image_stack=post_restoration,
             recovery_target=recovery_target["recovery_target"],
             rest_start=str(self.restoration_year.year),
             rest_end=str(self.end_year.year),
-            percent=percent_of_target
+            percent=percent_of_target,
         )
         y2r = y2r.expand_dims(dim={"metric": Metric.Y2R})
         return y2r
-    
+
     def YrYr(self, timestep: int = 5):
         yryr = m.YrYr(
-                        restoration_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                        timestep=timestep,
-                    )
+            restoration_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            timestep=timestep,
+        )
         yryr = yryr.expand_dims(dim={"metric": Metric.YrYr})
         yryr
 
     def dNBR(self, timestep: int = 5):
         dnbr = m.dNBR(
-                        restoration_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                        timestep=timestep,
-                    )
+            restoration_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            timestep=timestep,
+        )
         dnbr = dnbr.expand_dims(dim={"metric": Metric.dNBR})
         return dnbr
-    
+
     def RI(self, timestep: int = 5):
         ri = m.RI(
-                        image_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                        timestep=timestep,
-                    )
+            image_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            timestep=timestep,
+        )
         ri = ri.expand_dims(dim={"metric": Metric.RI})
         return ri
-    
+
     def P80R(self, percent_of_target: int = 80):
         recovery_target = self.reference_system.recovery_target()
         p80r = m.P80R(
-                        image_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                        recovery_target=recovery_target,
-                        percent=percent_of_target,
-                    )
+            image_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            recovery_target=recovery_target,
+            percent=percent_of_target,
+        )
         p80r = p80r.expand_dims(dim={"metric": Metric.P80R})
         return p80r
-    
-    def metrics(self, metrics: List[str]) -> xr.DataArray:
-        """Generate recovery metrics over a Restoration Area
 
-        Parameters
-        ----------
-        metrics : list of str
-            A list containing the names of metrics to generate.
+    # def metrics(self, metrics: List[str]) -> xr.DataArray:
+    #     """Generate recovery metrics over a Restoration Area
 
-        Returns
-        -------
-        metrics_stack : xr.DataArray
-            A 4D (metric, band, y, x) DataArray, computed metrics values are
-            located along the `metric` dimension. Coordinates of metrics
-            are the related enums.Metric.
+    #     Parameters
+    #     ----------
+    #     metrics : list of str
+    #         A list containing the names of metrics to generate.
 
-        """
-        metrics_dict = {}
-        for metrics_input in metrics:
-            metric = Metric(metrics_input)
-            match metric:
-                case Metric.percent_recovered:
-                    curr = self.stack.sel(time=self.end_year)
-                    recovery_target = self.reference_system.recovery_target()
-                    event = self.stack.sel(time=self.restoration_year)
-                    metrics_dict[metric] = percent_recovered(
-                        eval_stack=curr,
-                        recovery_target=recovery_target["recovery_target"],
-                        event_obs=event,
-                    )
-                case Metric.Y2R:
-                    filtered_stack = self.stack.sel(
-                        time=slice(self.restoration_year, self.end_year)
-                    )
-                    recovery_target = self.reference_system.recovery_target()
-                    metrics_dict[metric] = Y2R(
-                        image_stack=filtered_stack,
-                        recovery_target=recovery_target["recovery_target"],
-                        rest_start=str(self.restoration_year.year),
-                        rest_end=str(self.end_year.year)
-                    )
-                case Metric.dNBR:
-                    metrics_dict[metric] = dNBR(
-                        restoration_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                    )
-                case Metric.RI:
-                    metrics_dict[metric] = RI(
-                        image_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                    )
-        metrics_stack = _stack_bands(
-            metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
-        )
-        return metrics_stack
+    #     Returns
+    #     -------
+    #     metrics_stack : xr.DataArray
+    #         A 4D (metric, band, y, x) DataArray, computed metrics values are
+    #         located along the `metric` dimension. Coordinates of metrics
+    #         are the related enums.Metric.
+
+    #     """
+    #     metrics_dict = {}
+    #     for metrics_input in metrics:
+    #         metric = Metric(metrics_input)
+    #         match metric:
+    #             case Metric.percent_recovered:
+    #                 curr = self.stack.sel(time=self.end_year)
+    #                 recovery_target = self.reference_system.recovery_target()
+    #                 event = self.stack.sel(time=self.restoration_year)
+    #                 metrics_dict[metric] = percent_recovered(
+    #                     eval_stack=curr,
+    #                     recovery_target=recovery_target["recovery_target"],
+    #                     event_obs=event,
+    #                 )
+    #             case Metric.Y2R:
+    #                 filtered_stack = self.stack.sel(
+    #                     time=slice(self.restoration_year, self.end_year)
+    #                 )
+    #                 recovery_target = self.reference_system.recovery_target()
+    #                 metrics_dict[metric] = Y2R(
+    #                     image_stack=filtered_stack,
+    #                     recovery_target=recovery_target["recovery_target"],
+    #                     rest_start=str(self.restoration_year.year),
+    #                     rest_end=str(self.end_year.year),
+    #                 )
+    #             case Metric.dNBR:
+    #                 metrics_dict[metric] = dNBR(
+    #                     restoration_stack=self.stack,
+    #                     rest_start=str(self.restoration_year.year),
+    #                 )
+    #             case Metric.RI:
+    #                 metrics_dict[metric] = RI(
+    #                     image_stack=self.stack,
+    #                     rest_start=str(self.restoration_year.year),
+    #                 )
+    #     metrics_stack = _stack_bands(
+    #         metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
+    #     )
+    #     return metrics_stack
