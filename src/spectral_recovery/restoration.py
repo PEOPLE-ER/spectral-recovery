@@ -9,16 +9,9 @@ from pandas import Timestamp
 from spectral_recovery.timeseries import _stack_bands
 from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.utils import to_datetime
-from spectral_recovery.metrics import (
-    percent_recovered,
-    Y2R,
-    dNBR,
-    RI,
-    P80R,
-    YrYr,
-)
 from spectral_recovery.enums import Metric
 
+from spectral_recovery import metrics as m
 
 # TODO: split date into start and end dates.
 # TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
@@ -180,6 +173,71 @@ class RestorationArea:
             return False
         return True
 
+    def percent_recovered(self):
+        curr = self.stack.sel(time=self.end_year)
+        recovery_target = self.reference_system.recovery_target()
+        event = self.stack.sel(time=self.restoration_year)
+        pr = m.percent_recovered(
+            eval_stack=curr,
+            recovery_target=recovery_target["recovery_target"],
+            event_obs=event,
+        )
+        pr = pr.expand_dims(dim={"metric": Metric.percent_recovered})
+        return pr 
+        
+    def Y2R(self, percent_of_target: int = 80):
+        post_restoration = self.stack.sel(
+                        time=slice(self.restoration_year, self.end_year)
+                    )
+        recovery_target = self.reference_system.recovery_target()
+        y2r = m.Y2R(
+            image_stack=post_restoration,
+            recovery_target=recovery_target["recovery_target"],
+            rest_start=str(self.restoration_year.year),
+            rest_end=str(self.end_year.year),
+            percent=percent_of_target
+        )
+        y2r = y2r.expand_dims(dim={"metric": Metric.Y2R})
+        return y2r
+    
+    def YrYr(self, timestep: int = 5):
+        yryr = m.YrYr(
+                        restoration_stack=self.stack,
+                        rest_start=str(self.restoration_year.year),
+                        timestep=timestep,
+                    )
+        yryr = yryr.expand_dims(dim={"metric": Metric.YrYr})
+        yryr
+
+    def dNBR(self, timestep: int = 5):
+        dnbr = m.dNBR(
+                        restoration_stack=self.stack,
+                        rest_start=str(self.restoration_year.year),
+                        timestep=timestep,
+                    )
+        dnbr = dnbr.expand_dims(dim={"metric": Metric.dNBR})
+        return dnbr
+    
+    def RI(self, timestep: int = 5):
+        ri = m.RI(
+                        image_stack=self.stack,
+                        rest_start=str(self.restoration_year.year),
+                        timestep=timestep,
+                    )
+        ri = ri.expand_dims(dim={"metric": Metric.RI})
+        return ri
+    
+    def P80R(self, percent_of_target: int = 80):
+        recovery_target = self.reference_system.recovery_target()
+        p80r = m.P80R(
+                        image_stack=self.stack,
+                        rest_start=str(self.restoration_year.year),
+                        recovery_target=recovery_target,
+                        percent=percent_of_target,
+                    )
+        p80r = p80r.expand_dims(dim={"metric": Metric.P80R})
+        return p80r
+    
     def metrics(self, metrics: List[str]) -> xr.DataArray:
         """Generate recovery metrics over a Restoration Area
 

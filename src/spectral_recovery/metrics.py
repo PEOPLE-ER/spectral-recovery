@@ -34,6 +34,8 @@ def percent_recovered(
 def P80R(
     image_stack: xr.DataArray,
     rest_start: str,
+    recovery_target: xr.DataArray,
+    percent: int
 ) -> xr.DataArray:
     """ Extent (percent) that trajectory has reached 80% of pre-disturbance value.
 
@@ -42,13 +44,10 @@ def P80R(
 
     
     """
-    dist_start = str((int(rest_start) - 1))
-    pre_rest = [date < pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
-    post_rest = [date >= pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
-    pre_rest_avg = image_stack.sel(time=pre_rest).mean(dim=["y", "x"])
+    post_rest = [date >= pd.to_datetime(rest_start) for date in image_stack.coords["time"].values]
     post_rest_max = image_stack.sel(time=post_rest).max(dim=["y", "x"])
 
-    return post_rest_max / (0.8 * pre_rest_avg)
+    return post_rest_max / ((percent / 100) * recovery_target)
 
 
 @maintain_rio_attrs
