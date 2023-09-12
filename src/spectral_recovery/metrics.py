@@ -55,15 +55,16 @@ def P80R(
 def YrYr(
     image_stack: xr.DataArray,
     rest_start: str,
+    timestep: int,
 ):
     
     dist_start = str((int(rest_start) - 1))
-    dist_post_5 = str(int(dist_start) + 5)
+    dist_post_t = str(int(dist_start) + timestep)
 
-    dist_post_5_val = image_stack.sel(time=dist_post_5)
+    dist_post_t_val = image_stack.sel(time=dist_post_t)
     dist_val = image_stack.sel(time=dist_start)
 
-    return dist_post_5_val - dist_val
+    return dist_post_t_val - dist_val
 
 
 @maintain_rio_attrs
@@ -107,6 +108,7 @@ def Y2R(
 def dNBR(
     restoration_stack: xr.DataArray,
     rest_start: str,
+    timestep: int,
 ) -> xr.DataArray:
     """Delta-NBR
 
@@ -116,9 +118,9 @@ def dNBR(
     trajectory_func : callable, optional
 
     """
-    rest_post_5 = str(int(rest_start) + 5)
+    rest_post_t = str(int(rest_start) + timestep)
     dNBR = (
-        restoration_stack.sel(time=rest_post_5).drop_vars("time")
+        restoration_stack.sel(time=rest_post_t).drop_vars("time")
         - restoration_stack.sel(time=rest_start).drop_vars("time")
     ).squeeze("time")
     return dNBR
@@ -128,6 +130,7 @@ def dNBR(
 def RI(
     image_stack: xr.DataArray,
     rest_start: str,
+    timestep: int,
 ) -> xr.DataArray:
     """
     Notes
@@ -135,12 +138,12 @@ def RI(
     This implementation currently assumes that the disturbance period is 1 year long.
     TODO: allow for multi-year disturbances?
     """
-    rest_post_5 = str(int(rest_start) + 5)
+    rest_post_t = str(int(rest_start) + timestep)
     dist_start = str(int(rest_start) - 1)
     dist_end = rest_start
     RI = (
         (
-            image_stack.sel(time=rest_post_5).drop_vars("time")
+            image_stack.sel(time=rest_post_t).drop_vars("time")
             - image_stack.sel(time=rest_start)
         ).drop_vars("time")
         / (
