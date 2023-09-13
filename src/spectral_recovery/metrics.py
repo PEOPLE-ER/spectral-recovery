@@ -108,9 +108,9 @@ def Y2R(
 
 @maintain_rio_attrs
 def dNBR(
-    restoration_stack: xr.DataArray,
+    image_stack: xr.DataArray,
     rest_start: str,
-    timestep: int,
+    timestep: int = 5,
 ) -> xr.DataArray:
     """Delta-NBR
 
@@ -132,7 +132,7 @@ def dNBR(
 def RI(
     image_stack: xr.DataArray,
     rest_start: str,
-    timestep: int,
+    timestep: int = 5,
 ) -> xr.DataArray:
     """
     Notes
