@@ -121,7 +121,8 @@ class RestorationArea:
         self,
         restoration_polygon: gpd.GeoDataFrame,
         restoration_year: str | datetime,
-        reference_system: int | List[int] | ReferenceSystem,
+        reference_polygon: gpd.GeoDataFrame,
+        reference_years: str | List[datetime],
         composite_stack: xr.DataArray,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
@@ -143,15 +144,12 @@ class RestorationArea:
             else:
                 self.restoration_year = to_datetime(restoration_year)
 
-        if not isinstance(reference_system, ReferenceSystem):
-            historic_reference = ReferenceSystem(
-                reference_polygons=restoration_polygon,
+            self.reference_system = ReferenceSystem(
+                reference_polygons=reference_polygon,
+                reference_range=reference_years,
                 reference_stack=composite_stack,
-                reference_range=reference_system,
+                recovery_target_method=None,
             )
-            self.reference_system = historic_reference
-        else:
-            self.reference_system = reference_system
 
         if not self._within(composite_stack):
             raise ValueError(f"Not contained! Better message soon!")
@@ -169,7 +167,6 @@ class RestorationArea:
         if not (
             stack.satts.contains_spatial(self.restoration_polygon)
             and stack.satts.contains_temporal(self.restoration_year)
-            and stack.satts.contains_temporal(self.reference_system.reference_range)
         ):
             return False
         return True

@@ -70,9 +70,9 @@ def cli(
 ) -> None:
     """Compute recovery metrics.
 
-    This script will compute recovery METRICS over the area of REST_POLY
+    This script will compute recovery metrics over the area of REST_POLY
     using spectral data from annual composites in TIF_DIR. Recovery targets
-    will be derived from REF_YEARS and restoration event occurs in REST_YEAR.
+    will be derived over REF_POLYGON for REF_YEARS. 
 
     \b
     TIF_DIR        Path to a directory containing annual composites.
@@ -109,22 +109,14 @@ def cli(
             timeseries_for_metrics = timeseries.satts.indices(valid_indices)
         else:
             timeseries_for_metrics = timeseries
-        if ref_poly is not None:
-            reference_poly_gdf = gpd.read_file(ref_poly)
-            ref_sys = ReferenceSystem(
-                reference_polygons=reference_poly_gdf,
-                reference_stack=timeseries_for_metrics,
-                reference_range=ref_years,
-                recovery_target_method=None,
-            )
-        else:
-            ref_sys = ref_years
 
         rest_poly_gdf = gpd.read_file(rest_poly)
+        ref_poly_gdf = gpd.read_file(ref_poly)
         ra = RestorationArea(
             restoration_polygon=rest_poly_gdf,
             restoration_year=rest_year,
-            reference_system=ref_sys,
+            reference_polygon=ref_poly_gdf,
+            reference_years=ref_years,
             composite_stack=timeseries_for_metrics,
         )
         ctx.obj = ra
@@ -134,7 +126,10 @@ def cli(
 @click.option("-t", "--timestep", type=int, required=False)
 def RI(obj, timestep):
     click.echo(f"Computing RI")
-    ri = obj.RI(timestep=timestep)
+    if timestep:
+        ri = obj.RI(timestep=timestep)
+    else:
+        ri = obj.RI()
     return ri
 
 @cli.command("Y2R")
@@ -142,31 +137,43 @@ def RI(obj, timestep):
 @click.option("-p", "--percent", type=int, required=False)
 def Y2R(obj, percent):
     click.echo(f"Computing Y2R")
-    ri = obj.Y2R(percent_of_target=percent)
-    return ri
+    if percent:
+        y2r = obj.Y2R(percent_of_target=percent)
+    else:
+        y2r = obj.Y2R()
+    return y2r
 
 @cli.command("YrYr")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def YrYr(obj, timestep):
     click.echo(f"Computing YrYr")
-    ri = obj.YrYr(timestep=timestep)
-    return ri
+    if timestep:
+        yryr = obj.YrYr(timestep=timestep)
+    else:
+        yryr = obj.YrYr()
+    return yryr
 
 @cli.command("dNBR")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def dNBR(obj, timestep):
     click.echo(f"Computing dNBR")
-    ri = obj.dNBR(timestep=timestep)
-    return ri
+    if timestep:
+        dnbr = obj.dNBR(timestep=timestep)
+    else: 
+        dnbr = obj.dNBR()
+    return dnbr
 
 @cli.command("P80R")
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
 def P80R(obj, percent):
     click.echo(f"Computing P80R")
-    p80r = obj.P80R(percent_of_target=percent)
+    if percent:
+        p80r = obj.P80R(percent_of_target=percent)
+    else:
+        p80r = obj.P80R()
     return p80r
 
 @cli.result_callback()
