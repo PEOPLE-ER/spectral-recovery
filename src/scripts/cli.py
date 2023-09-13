@@ -20,25 +20,24 @@ METRIC_CHOICE = [str(m) for m in Metric]
 @click.group(chain=True)
 @click.argument("tif_dir", type=click.Path(exists=True, path_type=Path))
 @click.argument(
+    "out",
+    type=click.Path(path_type=Path),
+)
+@click.argument(
     "rest_poly",
     type=click.Path(exists=True, path_type=Path),
 )
 @click.argument(
     "rest_year",
     type=click.DateTime(formats=["%Y"]),
-    nargs=1,
 )
-@click.option(
-    "-ref",
-    "--ref-poly",
+@click.argument(
+    "ref_poly",
     type=click.Path(exists=True, path_type=Path),
-    required=False,
-    help="Path to reference polygon(s).",
 )
 @click.argument(
     "ref_years",
-    type=click.DateTime(formats=["%Y"]),
-    nargs=2,
+    type=(click.DateTime(formats=["%Y"]), click.DateTime(formats=["%Y"])),
 )
 @click.option(
     "-i",
@@ -51,29 +50,11 @@ METRIC_CHOICE = [str(m) for m in Metric]
     required=False,
     help="The indices on which to compute recovery metrics.",
 )
-# @click.option(
-#     "-m",
-#     "--metrics",
-#     type=click.Choice(
-#         METRIC_CHOICE,
-#         case_sensitive=False,
-#     ),
-#     multiple=True,
-#     required=True,
-#     help="The recovery metrics to compute.",
-# )
 @click.option(
     "--mask",
     type=click.Path(exists=True, path_type=Path),
     required=False,
     help="Path to a data mask for annual composites.",
-)
-@click.option(
-    "-o",
-    "--out",
-    type=click.Path(path_type=Path),
-    required=True,
-    help="Directory to write output rasters.",
 )
 @click.pass_context
 def cli(
@@ -95,8 +76,10 @@ def cli(
 
     \b
     TIF_DIR        Path to a directory containing annual composites.
+    OUT            Path to directory to write output rasters.
     REST_POLY      Path to the restoration area polygon.
     REST_YEAR      Year of the restoration event.
+    REF_POLY       Path to reference polygon(s).
     REF_YEARS      Start and end years over which to derive a recovery target.
     
     """
@@ -113,15 +96,16 @@ def cli(
     tifs = [x for x in p if x.is_file()]
 
     with LocalCluster() as cluster, Client(cluster) as client:
+        click.echo(f"\nReading in annual composites from {tif_dir}")
         timeseries = read_and_stack_tifs(
             path_to_tifs=tifs,
             path_to_mask=mask,
         )
-
         if not timeseries.satts.valid:
             raise ValueError("Stack is not a valid yearly composite stack.")
 
         if indices is not None and len(indices) != 0:
+            click.echo(f"Computing indices: {indices}")
             timeseries_for_metrics = timeseries.satts.indices(valid_indices)
         else:
             timeseries_for_metrics = timeseries
@@ -145,46 +129,53 @@ def cli(
         )
         ctx.obj = ra
 
-@cli.command()
+@cli.command("RI")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def RI(obj, timestep):
+    click.echo(f"Computing RI")
     ri = obj.RI(timestep=timestep)
     return ri
 
-@cli.command()
+@cli.command("Y2R")
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
 def Y2R(obj, percent):
+    click.echo(f"Computing Y2R")
     ri = obj.Y2R(percent_of_target=percent)
     return ri
 
-@cli.command()
+@cli.command("YrYr")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def YrYr(obj, timestep):
+    click.echo(f"Computing YrYr")
     ri = obj.YrYr(timestep=timestep)
     return ri
 
-@cli.command()
+@cli.command("dNBR")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def dNBR(obj, timestep):
+    click.echo(f"Computing dNBR")
     ri = obj.dNBR(timestep=timestep)
     return ri
 
-@cli.command()
+@cli.command("P80R")
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
 def P80R(obj, percent):
+    click.echo(f"Computing P80R")
     p80r = obj.P80R(percent_of_target=percent)
     return p80r
 
 @cli.result_callback()
 def write_metrics(result, **kwargs):
+    concated_metrics = xr.concat(result, dim="metric")
     click.echo(f"Writing metrics to {kwargs['out']}")
     kwargs["out"].mkdir(parents=True, exist_ok=True)
     metrics_to_tifs(
-        metrics_array=result,
+        metrics_array=concated_metrics,
         out_dir=kwargs["out"],
     )
+    click.echo(f"Finished.")

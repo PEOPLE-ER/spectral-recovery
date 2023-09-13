@@ -183,7 +183,7 @@ class RestorationArea:
             recovery_target=recovery_target["recovery_target"],
             event_obs=event,
         )
-        pr = pr.expand_dims(dim={"metric": Metric.percent_recovered})
+        pr = pr.expand_dims(dim={"metric": [Metric.percent_recovered]})
         return pr
 
     def Y2R(self, percent_of_target: int = 80):
@@ -198,7 +198,7 @@ class RestorationArea:
             rest_end=str(self.end_year.year),
             percent=percent_of_target,
         )
-        y2r = y2r.expand_dims(dim={"metric": Metric.Y2R})
+        y2r = y2r.expand_dims(dim={"metric": [Metric.Y2R]})
         return y2r
 
     def YrYr(self, timestep: int = 5):
@@ -207,7 +207,7 @@ class RestorationArea:
             rest_start=str(self.restoration_year.year),
             timestep=timestep,
         )
-        yryr = yryr.expand_dims(dim={"metric": Metric.YrYr})
+        yryr = yryr.expand_dims(dim={"metric": [Metric.YrYr]})
         yryr
 
     def dNBR(self, timestep: int = 5):
@@ -216,7 +216,7 @@ class RestorationArea:
             rest_start=str(self.restoration_year.year),
             timestep=timestep,
         )
-        dnbr = dnbr.expand_dims(dim={"metric": Metric.dNBR})
+        dnbr = dnbr.expand_dims(dim={"metric": [Metric.dNBR]})
         return dnbr
 
     def RI(self, timestep: int = 5):
@@ -225,7 +225,7 @@ class RestorationArea:
             rest_start=str(self.restoration_year.year),
             timestep=timestep,
         )
-        ri = ri.expand_dims(dim={"metric": Metric.RI})
+        ri = ri.expand_dims(dim={"metric": [Metric.RI]})
         return ri
 
     def P80R(self, percent_of_target: int = 80):
@@ -236,7 +236,7 @@ class RestorationArea:
             recovery_target=recovery_target,
             percent=percent_of_target,
         )
-        p80r = p80r.expand_dims(dim={"metric": Metric.P80R})
+        p80r = p80r.expand_dims(dim={"metric": [Metric.P80R]})
         return p80r
 
     # def metrics(self, metrics: List[str]) -> xr.DataArray:
