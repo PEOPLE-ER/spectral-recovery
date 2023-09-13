@@ -205,7 +205,7 @@ class RestorationArea:
             timestep=timestep,
         )
         yryr = yryr.expand_dims(dim={"metric": [Metric.YrYr]})
-        yryr
+        return yryr
 
     def dNBR(self, timestep: int = 5):
         dnbr = m.dNBR(
@@ -230,7 +230,7 @@ class RestorationArea:
         p80r = m.P80R(
             image_stack=self.stack,
             rest_start=str(self.restoration_year.year),
-            recovery_target=recovery_target,
+            recovery_target=recovery_target["recovery_target"],
             percent=percent_of_target,
         )
         p80r = p80r.expand_dims(dim={"metric": [Metric.P80R]})
