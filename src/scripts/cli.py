@@ -11,7 +11,7 @@ from typing import List
 from dask.distributed import Client, LocalCluster
 
 from spectral_recovery.enums import Index, Metric
-from spectral_recovery.restoration import ReferenceSystem, RestorationArea
+from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 
 INDEX_CHOICE = [i.value for i in Index]
