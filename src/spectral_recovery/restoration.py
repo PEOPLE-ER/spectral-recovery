@@ -200,7 +200,7 @@ class RestorationArea:
 
     def YrYr(self, timestep: int = 5):
         yryr = m.YrYr(
-            restoration_stack=self.stack,
+            image_stack=self.stack,
             rest_start=str(self.restoration_year.year),
             timestep=timestep,
         )
@@ -209,7 +209,7 @@ class RestorationArea:
 
     def dNBR(self, timestep: int = 5):
         dnbr = m.dNBR(
-            restoration_stack=self.stack,
+            image_stack=self.stack,
             rest_start=str(self.restoration_year.year),
             timestep=timestep,
         )
