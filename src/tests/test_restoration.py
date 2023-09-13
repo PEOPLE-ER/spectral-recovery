@@ -184,66 +184,6 @@ class TestRestorationAreaMetrics:
         
         return resto_area
 
-    # @pytest.mark.parametrize(
-    #     ("metric_list", "metric_method"),
-    #     [
-    #         (
-    #             [Metric.percent_recovered],
-    #             "percent_recovered",
-    #         ),
-    #         (
-    #             [Metric.Y2R],
-    #             "Y2R",
-    #         ),
-    #         (
-    #             [Metric.RI],
-    #             "RI",
-    #         ),
-    #         (
-    #             [Metric.dNBR],
-    #             "dNBR",
-    #         ),
-    #     ],
-    # )
-    # @patch("spectral_recovery.restoration._stack_bands")
-    # def test_switch_case(
-    #     self, mock_stack, valid_resto_area, metric_list, metric_method, mocker
-    # ):
-    #     metric_patch = mocker.patch(f"spectral_recovery.restoration.{metric_method}")
-
-    #     valid_resto_area.metrics(metric_list)
-
-    #     assert metric_patch.call_count == 1
-    #     assert mock_stack.call_count == 1
-
-    # @patch("spectral_recovery.restoration._stack_bands")
-    # def test_multiple_metrics(self, mock_stack, valid_resto_area, mocker):
-    #     metrics_list = [
-    #         Metric.percent_recovered,
-    #         Metric.Y2R,
-    #         Metric.RI,
-    #         Metric.dNBR,
-    #     ]
-    #     methods_list = [
-    #         "percent_recovered",
-    #         "Y2R",
-    #         "YrYr",
-    #         "RI",
-    #         "dNBR",
-    #     ]
-
-    #     patches = {}
-    #     for i, metric in enumerate(metrics_list):
-    #         patches[metric] = mocker.patch(
-    #             f"spectral_recovery.restoration.{methods_list[i]}"
-    #         )
-
-    #     valid_resto_area.metrics(metrics_list)
-
-    #     for i, metric in enumerate(metrics_list):
-    #         assert patches[metric].call_count == 1
-    #     assert mock_stack.call_count == 1
-
     @patch(
         "spectral_recovery.metrics.percent_recovered",
     )
@@ -371,49 +311,6 @@ class TestRestorationAreaMetrics:
             recovery_target=SAME_XR(self.baseline_array),
             percent=percent_default,
         )
-
-
-    # @patch(
-    #     "spectral_recovery.restoration.RestorationArea.percent_recovered",
-    #     return_value=xr.DataArray([[1.0]], dims=["y", "x"]),
-    # )
-    # @patch(
-    #     "spectral_recovery.restoration.RestorationArea.dNBR",
-    #     return_value=xr.DataArray([[0.5]], dims=["y", "x"]),
-    # )
-    # def test_stack_multiple_metrics(
-    #     self,
-    #     percent_reco_return,
-    #     dNBR_return,
-    #     valid_resto_area,
-    # ):
-    #     metric = [Metric.percent_recovered, Metric.dNBR]
-    #     expected_result = xr.DataArray(
-    #         [[[1.0]], [[0.5]]],
-    #         dims=["metric", "y", "x"],
-    #         coords={"metric": [Metric.percent_recovered, Metric.dNBR]},
-    #     )
-    #     result = valid_resto_area.metrics(metric)
-    #     assert result.equals(expected_result)
-
-    # @patch(
-    #     "spectral_recovery.restoration.RestorationArea.percent_recovered",
-    #     return_value=xr.DataArray([[1.0]], dims=["y", "x"]),
-    # )
-    # def test_stack_single_metric(
-    #     self,
-    #     percent_reco_return,
-    #     valid_resto_area,
-    # ):
-    #     metric = [Metric.percent_recovered]
-    #     expected_result = xr.DataArray(
-    #         [[[1.0]]],
-    #         dims=["metric", "y", "x"],
-    #         coords={"metric": [Metric.percent_recovered]},
-    #     )
-    #     result = valid_resto_area.metrics(metric)
-    #     assert result.equals(expected_result)
-
 
 class TestReferenceSystemInit:
     @pytest.fixture()
