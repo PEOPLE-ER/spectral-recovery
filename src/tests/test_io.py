@@ -1,7 +1,7 @@
-from unittest import mock
 import pytest
 import xarray as xr
 import pandas as pd
+import numpy as np
 
 
 from mock import patch
@@ -131,8 +131,8 @@ class TestReadAndStackTifs:
         ("expected_years", "filenames", "expected_bands", "rasterio_return"),
         [
             (
-                [pd.to_datetime("2020"), pd.to_datetime("2018"), pd.to_datetime("1990")],
-                [f"path/to/2020.tif",f"path/to/2018.tif",f"path/to/1990.tif"],
+                [np.datetime64("2019"), np.datetime64("2020"), np.datetime64("2021")],
+                [f"path/to/2019.tif",f"path/to/2020.tif",f"path/to/2021.tif"],
                 [BandCommon.blue, BandCommon.red, BandCommon.nir],
                 xr.DataArray(
                     [[[[0]]],[[[0]]],[[[0]]]],
@@ -151,6 +151,34 @@ class TestReadAndStackTifs:
 
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_and_stack_tifs(paths_to_tifs=filenames)
+        assert np.all(stacked_tifs["band"].data == expected_bands)
+        assert np.all(stacked_tifs["time"].data == expected_years)
+
+
+    @pytest.mark.parametrize(
+        ("sorted_years", "filenames", "rasterio_return"),
+        [
+            (
+                [np.datetime64("1990"), np.datetime64("1992"), np.datetime64("2017"), np.datetime64("2018")],
+                [f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
+                xr.DataArray(
+                    [[[[0]]],[[[0]]],[[[0]]]],
+                    dims=["band", "time", "y", "x"],
+                    attrs={"long_name": ["blue", "red", "nir"]}
+                ),
+            ),
+        ],
+    )
+    @patch(
+        "rioxarray.open_rasterio",
+    )
+    def test_sorted_years(
+        self, mocked_rasterio_open, sorted_years, filenames, rasterio_return, 
+    ):
+        mocked_rasterio_open.return_value = rasterio_return
+        stacked_tifs = read_and_stack_tifs(paths_to_tifs=filenames)
+        assert np.all(stacked_tifs["time"].data == sorted_years)
+    
 
         
 
