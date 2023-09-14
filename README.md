@@ -74,8 +74,13 @@ reference_years = [pd.to_datetime("2013"), pd.to_datetime("2014")]
 # event occured in 2015, and a recovery target can be derived from the 
 # two years prior to the disturbance, 2013-2014.
 
-# Read in polygon:
-restoration_poly = gpd.read_file("path_to_your_restoration/polygon.gpkg")
+# Read in restoration polygon:
+restoration_poly = gpd.read_file("path/to/restoration/polygon.gpkg")
+
+# Read in reference polygons:
+# If you want a recovery target based on historic conditions in the
+# restoration area then use `reference_poly = restoration_poly`
+reference_poly = gpd.read_file("path/to/referene/polygon.gpkg")
 
 ```
 Next get a well-formated xarray.DataArray using `read_and_stack_tifs`
@@ -109,6 +114,7 @@ metrics = [Metric.Y2R, Metric.RI]
 metrics_array = RestorationArea(
             restoration_polygon=restoration_poly,
             restoration_year=restoration_year,
+            reference_polygon=restoration_poly,
             reference_system=reference_years,
             composite_stack=indices,
         ).metrics(metrics)
