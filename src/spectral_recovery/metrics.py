@@ -4,6 +4,7 @@ import pandas as pd
 
 from spectral_recovery.utils import maintain_rio_attrs
 
+
 # NOTE: percent_recovered will likely be removed before publishing
 @maintain_rio_attrs
 def percent_recovered(
@@ -25,45 +26,47 @@ def percent_recovered(
         from. x and y dimensions must match `eval_stack`.
 
     """
-    total_change = abs(recovery_target - event_obs)  
-    recovered = abs(eval_stack - event_obs)     
+    total_change = abs(recovery_target - event_obs)
+    recovered = abs(eval_stack - event_obs)
     return recovered / total_change
 
-#TODO: P80R should be using a target recovery value like the others
+
+# TODO: P80R should be using a target recovery value like the others
 @maintain_rio_attrs
 def P80R(
     image_stack: xr.DataArray,
     rest_start: str,
+    recovery_target: xr.DataArray,
+    percent: int,
 ) -> xr.DataArray:
-    """ Extent (percent) that trajectory has reached 80% of pre-disturbance value.
+    """Extent (percent) that trajectory has reached 80% of pre-disturbance value.
 
     Modified metric from Y2R. Value equal to 1 indicates 80% has been reached and value more or less than 1
     indicates more or less than 80% has been reached.
 
-    
+
     """
-    dist_start = str((int(rest_start) - 1))
-    pre_rest = [date < pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
-    post_rest = [date >= pd.to_datetime(dist_start) for date in image_stack.coords["time"].values]
-    pre_rest_avg = image_stack.sel(time=pre_rest).mean(dim=["y", "x"])
+    post_rest = [
+        date >= pd.to_datetime(rest_start) for date in image_stack.coords["time"].values
+    ]
     post_rest_max = image_stack.sel(time=post_rest).max(dim=["y", "x"])
 
-    return post_rest_max / (0.8 * pre_rest_avg)
+    return post_rest_max / ((percent / 100) * recovery_target)
 
 
 @maintain_rio_attrs
 def YrYr(
     image_stack: xr.DataArray,
     rest_start: str,
+    timestep: int,
 ):
-    
     dist_start = str((int(rest_start) - 1))
-    dist_post_5 = str(int(dist_start) + 5)
+    dist_post_t = str(int(dist_start) + timestep)
 
-    dist_post_5_val = image_stack.sel(time=dist_post_5)
+    dist_post_t_val = image_stack.sel(time=dist_post_t)
     dist_val = image_stack.sel(time=dist_start)
 
-    return dist_post_5_val - dist_val
+    return dist_post_t_val - dist_val
 
 
 @maintain_rio_attrs
@@ -92,7 +95,7 @@ def Y2R(
     # working with xarray. Likely not the best way to do it, but can't figure anything else out now.
     year_of_recovery = recovered_pixels.idxmax(dim="time")
 
-    Y2R = xr.full_like(recovered_pixels[:,0,:,:], fill_value=np.nan)
+    Y2R = xr.full_like(recovered_pixels[:, 0, :, :], fill_value=np.nan)
     for i, recovery_time in enumerate(possible_years_to_recovery):
         Y2R_t = year_of_recovery
         Y2R_t = Y2R_t.where(Y2R_t == post_rest_years[i]).notnull()
@@ -105,8 +108,9 @@ def Y2R(
 
 @maintain_rio_attrs
 def dNBR(
-    restoration_stack: xr.DataArray,
+    image_stack: xr.DataArray,
     rest_start: str,
+    timestep: int = 5,
 ) -> xr.DataArray:
     """Delta-NBR
 
@@ -116,10 +120,10 @@ def dNBR(
     trajectory_func : callable, optional
 
     """
-    rest_post_5 = str(int(rest_start) + 5)
+    rest_post_t = str(int(rest_start) + timestep)
     dNBR = (
-        restoration_stack.sel(time=rest_post_5).drop_vars("time")
-        - restoration_stack.sel(time=rest_start).drop_vars("time")
+        image_stack.sel(time=rest_post_t).drop_vars("time")
+        - image_stack.sel(time=rest_start).drop_vars("time")
     ).squeeze("time")
     return dNBR
 
@@ -128,6 +132,7 @@ def dNBR(
 def RI(
     image_stack: xr.DataArray,
     rest_start: str,
+    timestep: int = 5,
 ) -> xr.DataArray:
     """
     Notes
@@ -135,12 +140,12 @@ def RI(
     This implementation currently assumes that the disturbance period is 1 year long.
     TODO: allow for multi-year disturbances?
     """
-    rest_post_5 = str(int(rest_start) + 5)
+    rest_post_t = str(int(rest_start) + timestep)
     dist_start = str(int(rest_start) - 1)
     dist_end = rest_start
     RI = (
         (
-            image_stack.sel(time=rest_post_5).drop_vars("time")
+            image_stack.sel(time=rest_post_t).drop_vars("time")
             - image_stack.sel(time=rest_start)
         ).drop_vars("time")
         / (
@@ -149,21 +154,3 @@ def RI(
         )
     ).squeeze("time")
     return RI
-
-
-@maintain_rio_attrs
-def NBRRegrowth(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    time_interval: int,
-):
-    raise NotImplementedError
-    rest_post_5 = str(int(rest_start) + 5)
-    interval_end = str(int(rest_start) + time_interval)
-    interval_dates = [((date < pd.to_datetime(interval_end)) and date > pd.to_datetime(rest_start)) for date in image_stack.coords["time"].values]
-    interval_avg = image_stack.sel(time=interval_dates).mean(dim=["y", "x"])
-    # NOTE: no averaging happening because multi-year disturbances are not implemented yet
-    dist_avg = image_stack.sel(time=rest_start).mean(dim=["y", "x"])
-
-    
-    return 

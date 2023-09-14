@@ -36,4 +36,4 @@ include = ["spectral_recovery*", "scripts*"]
 exclude = ["tests*"]
 
 [project.scripts]
-specrec = "scripts.spectral_recovery:cli"
+specrec = "scripts.cli:cli"
