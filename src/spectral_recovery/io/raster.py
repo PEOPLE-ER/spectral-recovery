@@ -1,3 +1,4 @@
+import re
 import rioxarray
 
 import pandas as pd
@@ -14,6 +15,7 @@ from spectral_recovery.enums import BandCommon, Index
 DATETIME_FREQ = "YS"
 REQ_DIMS = ["band", "time", "y", "x"]
 
+VALID_YEAR = re.compile(r"^\d{4}$")
 
 def read_and_stack_tifs(
     paths_to_tifs: List[str],
@@ -41,14 +43,16 @@ def read_and_stack_tifs(
     for file in paths_to_tifs:
         with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
             image_dict[Path(file).stem] = data
-    try:
-        time_keys = []
-        for filename in image_dict.keys():
+
+    time_keys = []
+    for filename in image_dict.keys():
+        if _str_is_year(filename):
             time_keys.append(pd.to_datetime(filename))
-    except DateParseError:
-        raise ValueError(
-            f"TIF filenames must be in format 'YYYY' but recived: '{filename}'"
-        ) from None
+        else:
+            raise ValueError(
+                f"TIF filenames must be in format 'YYYY' but recived: '{filename}'"
+                ) from None
+        
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
     band_names = _to_band_or_index(stacked_data.attrs["long_name"])
     stacked_data = stacked_data.assign_coords(band=list(band_names.values()))
@@ -68,18 +72,24 @@ def _to_band_or_index(names_list: List[str]):
     valid_names_mapping = {}
     for name in names_list:
         try:
-            val = BandCommon(name.upper())
+            val = BandCommon[name.lower()]
             valid_names_mapping[name] = val
             continue
         except ValueError:
             pass
         try:
-            val = Index(name.upper())
+            val = Index[name.lower()]
             valid_names_mapping[name] = val
         except ValueError:
             # TODO: add accepted values to error message and direct user to documentation
             raise ValueError
     return valid_names_mapping
+
+def _str_is_year(year_str):
+    if VALID_YEAR.match(year_str) is None:
+        return False
+    else:
+        return True
 
 
 def _stack_bands(bands, names, dim_name):
