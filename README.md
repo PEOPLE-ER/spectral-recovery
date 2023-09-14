@@ -36,7 +36,7 @@ When done with a development task, you can simply uninstall the package as you n
 
 #### From CLI
 
-The CLI for the spectral recovery tool can be access using the `specrec` command. Run `specrec --help` for information about the parameters. Below is an example of a run,
+The CLI for the spectral recovery tool can be accessed using the `specrec` command. Run `specrec --help` for information about the parameters. Below is an example of a run,
 
 ```{bash}
 specrec -i NBR -i NDVI path_to_your_tifs/ output/path/ path_to_your_restoration/polygon.gpkg 2015 path_to_your/reference_polygon.gpkg 2013 2014 Y2R -p 80 RI -t 5
