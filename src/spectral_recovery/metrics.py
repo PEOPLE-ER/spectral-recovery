@@ -122,8 +122,8 @@ def dNBR(
     """
     rest_post_t = str(int(rest_start) + timestep)
     dNBR = (
-        restoration_stack.sel(time=rest_post_t).drop_vars("time")
-        - restoration_stack.sel(time=rest_start).drop_vars("time")
+        image_stack.sel(time=rest_post_t).drop_vars("time")
+        - image_stack.sel(time=rest_start).drop_vars("time")
     ).squeeze("time")
     return dNBR
 
@@ -154,23 +154,3 @@ def RI(
         )
     ).squeeze("time")
     return RI
-
-
-@maintain_rio_attrs
-def NBRRegrowth(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    time_interval: int,
-):
-    raise NotImplementedError
-    rest_post_5 = str(int(rest_start) + 5)
-    interval_end = str(int(rest_start) + time_interval)
-    interval_dates = [
-        ((date < pd.to_datetime(interval_end)) and date > pd.to_datetime(rest_start))
-        for date in image_stack.coords["time"].values
-    ]
-    interval_avg = image_stack.sel(time=interval_dates).mean(dim=["y", "x"])
-    # NOTE: no averaging happening because multi-year disturbances are not implemented yet
-    dist_avg = image_stack.sel(time=rest_start).mean(dim=["y", "x"])
-
-    return
