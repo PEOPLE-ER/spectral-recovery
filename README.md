@@ -36,13 +36,13 @@ When done with a development task, you can simply uninstall the package as you n
 
 #### From CLI
 
-The CLI for the spectral recovery tool can be access using the `specrec` command. Run `specrec --help` for information about the parameters. Below is an example of a run,
+The CLI for the spectral recovery tool can be accessed using the `specrec` command. Run `specrec --help` for information about the parameters. Below is an example of a run,
 
 ```{bash}
-specrec path_to_your_tifs/ --years 2010 2022 --per-year --rest-poly path_to_your_restoration/polygon.gpkg --rest-year 2015 --ref-years 2013 2014 -i NBR -i NDVI -i GCI -m Y2R -m RI --out output_dir/
+specrec -i NBR -i NDVI path_to_your_tifs/ output/path/ path_to_your_restoration/polygon.gpkg 2015 path_to_your/reference_polygon.gpkg 2013 2014 Y2R -p 80 RI -t 5
 ```
 
-In more detail, the above command points to a directory ("path_to_your_tifs/") of annumal tifs from 2010 to 2022, a restoration polygon ("path_to_your_restoration/polygon.gpkg") that experienced disturbance in 2015, and indicates that the recovery target/reference should be derived from the years 2013-2014. The run will compute NBR, NDVI, and GCI indices, and for each index will compute the Y2R and RI recovery metrics. One tif for each metrics will be written to "output_dir/".
+The above command points to a directory ("path_to_your_tifs/") of annumal tifs, a restoration polygon ("path_to_your_restoration/polygon.gpkg") that experienced disturbance in 2015, and a reference polygon that recovery targets should be derived from the years 2013-2014. The run will compute NBR and NDVI, and for each index will compute the Y2R and RI recovery metrics. One tif for each metrics will be written to "output/path/".
 
 #### Within Modules
 
@@ -74,8 +74,13 @@ reference_years = [pd.to_datetime("2013"), pd.to_datetime("2014")]
 # event occured in 2015, and a recovery target can be derived from the 
 # two years prior to the disturbance, 2013-2014.
 
-# Read in polygon:
-restoration_poly = gpd.read_file("path_to_your_restoration/polygon.gpkg")
+# Read in restoration polygon:
+restoration_poly = gpd.read_file("path/to/restoration/polygon.gpkg")
+
+# Read in reference polygons:
+# If you want a recovery target based on historic conditions in the
+# restoration area then use `reference_poly = restoration_poly`
+reference_poly = gpd.read_file("path/to/referene/polygon.gpkg")
 
 ```
 Next get a well-formated xarray.DataArray using `read_and_stack_tifs`
@@ -109,6 +114,7 @@ metrics = [Metric.Y2R, Metric.RI]
 metrics_array = RestorationArea(
             restoration_polygon=restoration_poly,
             restoration_year=restoration_year,
+            reference_polygon=restoration_poly,
             reference_system=reference_years,
             composite_stack=indices,
         ).metrics(metrics)

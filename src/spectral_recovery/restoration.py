@@ -9,15 +9,9 @@ from pandas import Timestamp
 from spectral_recovery.timeseries import _stack_bands
 from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.utils import to_datetime
-from spectral_recovery.metrics import (
-    percent_recovered,
-    Y2R,
-    dNBR,
-    RI,
-    P80R,
-    YrYr,
-)
 from spectral_recovery.enums import Metric
+
+from spectral_recovery import metrics as m
 
 
 # TODO: split date into start and end dates.
@@ -127,7 +121,8 @@ class RestorationArea:
         self,
         restoration_polygon: gpd.GeoDataFrame,
         restoration_year: str | datetime,
-        reference_system: int | List[int] | ReferenceSystem,
+        reference_polygon: gpd.GeoDataFrame,
+        reference_years: str | List[datetime],
         composite_stack: xr.DataArray,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
@@ -149,15 +144,12 @@ class RestorationArea:
             else:
                 self.restoration_year = to_datetime(restoration_year)
 
-        if not isinstance(reference_system, ReferenceSystem):
-            historic_reference = ReferenceSystem(
-                reference_polygons=restoration_polygon,
+            self.reference_system = ReferenceSystem(
+                reference_polygons=reference_polygon,
+                reference_range=reference_years,
                 reference_stack=composite_stack,
-                reference_range=reference_system,
+                recovery_target_method=None,
             )
-            self.reference_system = historic_reference
-        else:
-            self.reference_system = reference_system
 
         if not self._within(composite_stack):
             raise ValueError(f"Not contained! Better message soon!")
@@ -175,62 +167,126 @@ class RestorationArea:
         if not (
             stack.satts.contains_spatial(self.restoration_polygon)
             and stack.satts.contains_temporal(self.restoration_year)
-            and stack.satts.contains_temporal(self.reference_system.reference_range)
         ):
             return False
         return True
 
-    def metrics(self, metrics: List[str]) -> xr.DataArray:
-        """Generate recovery metrics over a Restoration Area
-
-        Parameters
-        ----------
-        metrics : list of str
-            A list containing the names of metrics to generate.
-
-        Returns
-        -------
-        metrics_stack : xr.DataArray
-            A 4D (metric, band, y, x) DataArray, computed metrics values are
-            located along the `metric` dimension. Coordinates of metrics
-            are the related enums.Metric.
-
-        """
-        metrics_dict = {}
-        for metrics_input in metrics:
-            metric = Metric(metrics_input)
-            match metric:
-                case Metric.percent_recovered:
-                    curr = self.stack.sel(time=self.end_year)
-                    recovery_target = self.reference_system.recovery_target()
-                    event = self.stack.sel(time=self.restoration_year)
-                    metrics_dict[metric] = percent_recovered(
-                        eval_stack=curr,
-                        recovery_target=recovery_target["recovery_target"],
-                        event_obs=event,
-                    )
-                case Metric.Y2R:
-                    filtered_stack = self.stack.sel(
-                        time=slice(self.restoration_year, self.end_year)
-                    )
-                    recovery_target = self.reference_system.recovery_target()
-                    metrics_dict[metric] = Y2R(
-                        image_stack=filtered_stack,
-                        recovery_target=recovery_target["recovery_target"],
-                        rest_start=str(self.restoration_year.year),
-                        rest_end=str(self.end_year.year)
-                    )
-                case Metric.dNBR:
-                    metrics_dict[metric] = dNBR(
-                        restoration_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                    )
-                case Metric.RI:
-                    metrics_dict[metric] = RI(
-                        image_stack=self.stack,
-                        rest_start=str(self.restoration_year.year),
-                    )
-        metrics_stack = _stack_bands(
-            metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
+    def percent_recovered(self):
+        curr = self.stack.sel(time=self.end_year)
+        recovery_target = self.reference_system.recovery_target()
+        event = self.stack.sel(time=self.restoration_year)
+        pr = m.percent_recovered(
+            eval_stack=curr,
+            recovery_target=recovery_target["recovery_target"],
+            event_obs=event,
         )
-        return metrics_stack
+        pr = pr.expand_dims(dim={"metric": [Metric.percent_recovered]})
+        return pr
+
+    def Y2R(self, percent_of_target: int = 80):
+        post_restoration = self.stack.sel(
+            time=slice(self.restoration_year, self.end_year)
+        )
+        recovery_target = self.reference_system.recovery_target()
+        y2r = m.Y2R(
+            image_stack=post_restoration,
+            recovery_target=recovery_target["recovery_target"],
+            rest_start=str(self.restoration_year.year),
+            rest_end=str(self.end_year.year),
+            percent=percent_of_target,
+        )
+        y2r = y2r.expand_dims(dim={"metric": [Metric.Y2R]})
+        return y2r
+
+    def YrYr(self, timestep: int = 5):
+        yryr = m.YrYr(
+            image_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            timestep=timestep,
+        )
+        yryr = yryr.expand_dims(dim={"metric": [Metric.YrYr]})
+        return yryr
+
+    def dNBR(self, timestep: int = 5):
+        dnbr = m.dNBR(
+            image_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            timestep=timestep,
+        )
+        dnbr = dnbr.expand_dims(dim={"metric": [Metric.dNBR]})
+        return dnbr
+
+    def RI(self, timestep: int = 5):
+        ri = m.RI(
+            image_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            timestep=timestep,
+        )
+        ri = ri.expand_dims(dim={"metric": [Metric.RI]})
+        return ri
+
+    def P80R(self, percent_of_target: int = 80):
+        recovery_target = self.reference_system.recovery_target()
+        p80r = m.P80R(
+            image_stack=self.stack,
+            rest_start=str(self.restoration_year.year),
+            recovery_target=recovery_target["recovery_target"],
+            percent=percent_of_target,
+        )
+        p80r = p80r.expand_dims(dim={"metric": [Metric.P80R]})
+        return p80r
+
+    # def metrics(self, metrics: List[str]) -> xr.DataArray:
+    #     """Generate recovery metrics over a Restoration Area
+
+    #     Parameters
+    #     ----------
+    #     metrics : list of str
+    #         A list containing the names of metrics to generate.
+
+    #     Returns
+    #     -------
+    #     metrics_stack : xr.DataArray
+    #         A 4D (metric, band, y, x) DataArray, computed metrics values are
+    #         located along the `metric` dimension. Coordinates of metrics
+    #         are the related enums.Metric.
+
+    #     """
+    #     metrics_dict = {}
+    #     for metrics_input in metrics:
+    #         metric = Metric(metrics_input)
+    #         match metric:
+    #             case Metric.percent_recovered:
+    #                 curr = self.stack.sel(time=self.end_year)
+    #                 recovery_target = self.reference_system.recovery_target()
+    #                 event = self.stack.sel(time=self.restoration_year)
+    #                 metrics_dict[metric] = percent_recovered(
+    #                     eval_stack=curr,
+    #                     recovery_target=recovery_target["recovery_target"],
+    #                     event_obs=event,
+    #                 )
+    #             case Metric.Y2R:
+    #                 filtered_stack = self.stack.sel(
+    #                     time=slice(self.restoration_year, self.end_year)
+    #                 )
+    #                 recovery_target = self.reference_system.recovery_target()
+    #                 metrics_dict[metric] = Y2R(
+    #                     image_stack=filtered_stack,
+    #                     recovery_target=recovery_target["recovery_target"],
+    #                     rest_start=str(self.restoration_year.year),
+    #                     rest_end=str(self.end_year.year),
+    #                 )
+    #             case Metric.dNBR:
+    #                 metrics_dict[metric] = dNBR(
+    #                     restoration_stack=self.stack,
+    #                     rest_start=str(self.restoration_year.year),
+    #                 )
+    #             case Metric.RI:
+    #                 metrics_dict[metric] = RI(
+    #                     image_stack=self.stack,
+    #                     rest_start=str(self.restoration_year.year),
+    #                 )
+    #     metrics_stack = _stack_bands(
+    #         metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
+    #     )
+    #     return metrics_stack
