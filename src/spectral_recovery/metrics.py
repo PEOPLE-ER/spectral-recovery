@@ -187,50 +187,84 @@ def Y2R(
 
 
 @maintain_rio_attrs
-def dNBR(
+def RRI(
     image_stack: xr.DataArray,
     rest_start: str,
     timestep: int = 5,
+    use_dist_avg: bool = False,
 ) -> xr.DataArray:
-    """Delta-NBR
+    """
+    A modified version of the commonly used RI, the RRI accounts for
+    noise in trajectory by using the maximum from the 4th or 5th year
+    in monitoring window. The metric relates recovery magnitude to
+    disturbance magnitude, and is the change in index value in 4 or 5
+    years divided by the change due to disturbance.
 
     Parameters
     ----------
-    restoration_stack :
-    trajectory_func : callable, optional
+    image_stack : xr.DataArray
+        DataArray of images over which to compute per-pixel dNBR.
+    rest_start : str
+        The starting year of the restoration monitoring window.
+    timestep : int, optional
+        The timestep (years) in the restoration monitoring window
+        (post rest_start) from which to evaluate absolute change.
+        Default = 5.
 
     """
-    rest_post_t = str(int(rest_start) + timestep)
-    dNBR = (
-        image_stack.sel(time=rest_post_t).drop_vars("time")
-        - image_stack.sel(time=rest_start).drop_vars("time")
-    ).squeeze("time")
-    return dNBR
-
-
-@maintain_rio_attrs
-def RI(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    timestep: int = 5,
-) -> xr.DataArray:
-    """
-    Notes
-    -----
-    This implementation currently assumes that the disturbance period is 1 year long.
-    TODO: allow for multi-year disturbances?
-    """
-    rest_post_t = str(int(rest_start) + timestep)
     dist_start = str(int(rest_start) - 1)
-    dist_end = rest_start
-    RI = (
-        (
-            image_stack.sel(time=rest_post_t).drop_vars("time")
-            - image_stack.sel(time=rest_start)
-        ).drop_vars("time")
-        / (
-            image_stack.sel(time=dist_start).drop_vars("time")
-            - image_stack.sel(time=dist_end).drop_vars("time")
-        )
-    ).squeeze("time")
-    return RI
+    min_year = image_stack["time"].data.min()
+    max_year = image_stack["time"].data.max()
+
+    rest_post_4 = str(int(rest_start) + 4)
+    rest_post_5 = str(int(rest_start) + 5)
+    if int(rest_post_4) > year_dt(max_year) or int(rest_post_5) > year_dt(max_year):
+            raise ValueError(
+                f"Max year in provided image_stack is {image_stack['time'].data.max()} but need {rest_post_4} and {rest_post_5}."
+            )
+    rest_4_5 = [
+        (date == pd.to_datetime(rest_post_4) or date == pd.to_datetime(rest_post_5))
+        for date in image_stack.coords["time"].values
+    ]
+    rest_4_5 = image_stack.sel(time=rest_4_5).max(dim=["y", "x"])
+
+    if use_dist_avg:
+        dist_pre_1 = str(int(dist_start) - 1)
+        dist_pre_2 = str(int(dist_start) - 2)
+        if int(dist_pre_1) < year_dt(min_year) or int(dist_pre_2) < year_dt(min_year):
+            raise ValueError(
+                f"Min year in provided image_stack is {image_stack['time'].data.min()} but need {dist_pre_1} and {dist_pre_2}."
+            )
+        dist_1_2 = [
+            (date == pd.to_datetime(dist_pre_1) or date == pd.to_datetime(dist_pre_2))
+            for date in image_stack.coords["time"].values
+        ]
+        dist_pre = image_stack.sel(time=dist_1_2).max(dim=["y", "x"])
+        dist_s_e = [
+            (date >= pd.to_datetime(dist_start) or date <= pd.to_datetime(rest_start))
+            for date in image_stack.coords["time"].values
+        ]
+        dist_avg = image_stack.sel(time=dist_s_e).mean(dim=["y", "x"])
+
+        rri = ((rest_4_5.max() - dist_avg) / (dist_pre - dist_avg)).squeeze("time")
+    else:
+        rest_0 = image_stack.sel(time=rest_start).drop_vars("time")
+        dist_e = rest_0
+        dist_start = image_stack.sel(time=dist_start).drop_vars("time")
+
+        rri = ((rest_4_5.max() - rest_0) / (dist_start - dist_e)).squeeze("time")
+    return rri
+
+
+def year_dt(dt, type: str="int"):
+    """ Get int or str representation of year from datetime-like object. """
+    # TODO: refuse to move forward if dt isn't datetime-like
+    try:
+        dt_dt = pd.to_datetime(dt)
+        year = dt_dt.year
+    except ValueError:
+        raise ValueError(f"Unable to get year {type} from {dt} of type {type(dt)}")
+    if type == "str":
+        return str(year)
+    else:
+        return year
