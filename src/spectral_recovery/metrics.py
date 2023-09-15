@@ -193,8 +193,8 @@ def RRI(
     timestep: int = 5,
     use_dist_avg: bool = False,
 ) -> xr.DataArray:
-    """ Per-pixel RRI.
-    
+    """Per-pixel RRI.
+
     A modified version of the commonly used RI, the RRI accounts for
     noise in trajectory by using the maximum from the 4th or 5th year
     in monitoring window. The metric relates recovery magnitude to
@@ -220,9 +220,9 @@ def RRI(
     rest_post_4 = str(int(rest_start) + 4)
     rest_post_5 = str(int(rest_start) + 5)
     if int(rest_post_4) > year_dt(max_year) or int(rest_post_5) > year_dt(max_year):
-            raise ValueError(
-                f"Max year in provided image_stack is {image_stack['time'].data.max()} but need {rest_post_4} and {rest_post_5}."
-            )
+        raise ValueError(
+            f"Max year in provided image_stack is {image_stack['time'].data.max()} but need {rest_post_4} and {rest_post_5}."
+        )
     rest_4_5 = [
         (date == pd.to_datetime(rest_post_4) or date == pd.to_datetime(rest_post_5))
         for date in image_stack.coords["time"].values
@@ -257,8 +257,8 @@ def RRI(
     return rri
 
 
-def year_dt(dt, type: str="int"):
-    """ Get int or str representation of year from datetime-like object. """
+def year_dt(dt, type: str = "int"):
+    """Get int or str representation of year from datetime-like object."""
     # TODO: refuse to move forward if dt isn't datetime-like
     try:
         dt_dt = pd.to_datetime(dt)
