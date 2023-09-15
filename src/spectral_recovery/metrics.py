@@ -76,18 +76,62 @@ def YrYr(
 
 
 @maintain_rio_attrs
-def YrYr(
+def R80P(
     image_stack: xr.DataArray,
     rest_start: str,
-    timestep: int,
-):
-    dist_start = str((int(rest_start) - 1))
-    dist_post_t = str(int(dist_start) + timestep)
+    recovery_target: xr.DataArray,
+    percent: int,
+    max_4_5: bool = False,
+) -> xr.DataArray:
+    """Per-pixel R80P.
 
-    dist_post_t_val = image_stack.sel(time=dist_post_t)
-    dist_val = image_stack.sel(time=dist_start)
+    The extent to which the trajectory has reached 80% of the recovery
+    target value. The metric commonly uses the maximum value from the
+    4th or 5th year of restoration window to show the extent to which a
+    pixel has reached 80% of the target value 5 years into the restoration
+    window, however for monitoring purposes, this tool uses the current
+    time step or last year of the time series to provide up to date recovery
+    progress. 80% of the recovery target value is the default, however this
+    can be changed by modifying the value of P.
 
-    return dist_post_t_val - dist_val
+    Parameters
+    ----------
+    image_stack : xr.DataArray
+        DataArray of images over which to compute per-pixel dNBR.
+    rest_start : str
+        The starting year of the restoration monitoring window.
+    recovery_target : xr.DataArray
+        Recovery target values. Must be broadcastable to image_stack.
+    percent: int, optional
+        Percent of recovery to compute recovery against. Default = 80.
+    max_4_5: bool, optional
+        Flag indicating whether or not to compute using maximum value
+        from the 4th or 5th year of restoration window.
+
+    """
+    max_year = image_stack["time"].data.max()
+    if max_4_5:
+        rest_post_4 = str(int(rest_start) + 4)
+        rest_post_5 = str(int(rest_start) + 5)
+        if int(rest_post_4) > year_dt(max_year) or int(rest_post_5) > year_dt(max_year):
+            raise ValueError(
+                f"Max year in provided image_stack is {image_stack['time'].data.max()} but need {rest_post_4} and {rest_post_5}."
+            )
+        rest_4_5 = [
+            (date == pd.to_datetime(rest_post_4) or date == pd.to_datetime(rest_post_5))
+            for date in image_stack.coords["time"].values
+        ]
+        r80p = (
+            (image_stack.sel(time=rest_4_5).max(dim=["y", "x"])).drop_vars("time")
+            / ((percent / 100) * recovery_target)
+        ).squeeze("time")
+    else:
+        r80p = (
+            (image_stack.sel(time=max_year)).drop_vars("time")
+            / ((percent / 100) * recovery_target)
+        ).squeeze("time")
+
+    return r80p
 
 
 @maintain_rio_attrs
