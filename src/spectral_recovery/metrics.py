@@ -5,30 +5,37 @@ import pandas as pd
 from spectral_recovery.utils import maintain_rio_attrs
 
 
-# NOTE: percent_recovered will likely be removed before publishing
 @maintain_rio_attrs
-def percent_recovered(
-    eval_stack: xr.DataArray, recovery_target: xr.DataArray, event_obs: xr.DataArray
+def dNBR(
+    image_stack: xr.DataArray,
+    rest_start: str,
+    timestep: int = 5,
 ) -> xr.DataArray:
-    """Per-pixel percent recovery
+    """Per-pixel dNBR.
+
+    The absolute change in a spectral index’s value at a point in the
+    restoration monitoring window from the start of the restoration monitoring
+    window. The default is the change that has occurred 5 years into the
+    restoration from the start of the restoration.
 
     Parameters
     ----------
-    eval_stack : xr.DataArray
-        The stack of images to evaluate percent recovered over.
-
-    baseline : xr.DataArray
-        The baseline for recovery. Dimensions must be able to broadcast
-        to `eval_stack` and `event_obs`.
-
-    event_obs : xr.DataArray
-        The image/values of the event which we are measuring recovery
-        from. x and y dimensions must match `eval_stack`.
+    image_stack : xr.DataArray
+        DataArray of images over which to compute per-pixel dNBR.
+    rest_start : str
+        The starting year of the restoration monitoring window.
+    timestep : int, optional
+        The timestep (years) in the restoration monitoring
+        window (post rest_start) from which to evaluate absolute
+        change. Default = 5.
 
     """
-    total_change = abs(recovery_target - event_obs)
-    recovered = abs(eval_stack - event_obs)
-    return recovered / total_change
+    rest_post_t = str(int(rest_start) + timestep)
+    dNBR = (
+        image_stack.sel(time=rest_post_t).drop_vars("time")
+        - image_stack.sel(time=rest_start).drop_vars("time")
+    ).squeeze("time")
+    return dNBR
 
 
 # TODO: P80R should be using a target recovery value like the others
