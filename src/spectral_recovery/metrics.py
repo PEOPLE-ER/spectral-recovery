@@ -38,27 +38,41 @@ def dNBR(
     return dNBR
 
 
-# TODO: P80R should be using a target recovery value like the others
 @maintain_rio_attrs
-def P80R(
+def YrYr(
     image_stack: xr.DataArray,
     rest_start: str,
-    recovery_target: xr.DataArray,
-    percent: int,
-) -> xr.DataArray:
-    """Extent (percent) that trajectory has reached 80% of pre-disturbance value.
+    timestep: int,
+):
+    """Per-pixel YrYr.
 
-    Modified metric from Y2R. Value equal to 1 indicates 80% has been reached and value more or less than 1
-    indicates more or less than 80% has been reached.
+    The average annual recovery rate relative to a fixed time intervald
+    during the restoration monitoring window. The default is the first 5
+    years of the restoration window, however this can be changed by specifying
+    the index value at a specific time step (Ri).
 
-
+    Parameters
+    ----------
+    image_stack : xr.DataArray
+        DataArray of images over which to compute per-pixel YrYr.
+    rest_start : str
+        The starting year of the restoration monitoring window.
+    timestep : int, optional
+        The timestep (years) in the restoration monitoring
+        window (post rest_start) from which to evaluate absolute
+        change. Default = 5.
     """
-    post_rest = [
-        date >= pd.to_datetime(rest_start) for date in image_stack.coords["time"].values
-    ]
-    post_rest_max = image_stack.sel(time=post_rest).max(dim=["y", "x"])
+    rest_post_t = str(int(rest_start) + timestep)
+    obs_post_t = image_stack.sel(time=rest_post_t).drop_vars("time")
+    obs_start = image_stack.sel(time=rest_start).drop_vars("time")
+    d_t = (
+        pd.to_datetime(image_stack.sel(time=rest_post_t)["time"].data).year
+        - pd.to_datetime(image_stack.sel(time=rest_start)["time"].data).year
+    )
 
-    return post_rest_max / ((percent / 100) * recovery_target)
+    YrYr = ((obs_post_t - obs_start) / d_t).squeeze("time")
+
+    return YrYr
 
 
 @maintain_rio_attrs
