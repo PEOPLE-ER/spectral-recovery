@@ -137,31 +137,46 @@ def R80P(
 @maintain_rio_attrs
 def Y2R(
     image_stack: xr.DataArray,
-    recovery_target: xr.DataArray,
     rest_start: str,
-    rest_end: str,
+    recovery_target: xr.DataArray,
     percent: int = 80,
 ) -> xr.DataArray:
-    """Per-pixel years-to-recovery
+    """Per-pixel Y2R.
+
+    The length of time taken (in time steps/years) for a given pixel to
+    reach 80% of its recovery target value. The percent can be modified
+    by changing the value of P.
 
     Parameters
     ----------
     image_stack : xr.DataArray
-        Timeseries of images to compute years-to-recovery across.
+        DataArray of images over which to compute per-pixel Y2R.
+    rest_start : str
+        The starting year of the restoration monitoring window.
+    recovery_target : xr.DataArray
+        Recovery target values. Must be broadcastable to image_stack.
+    percent: int, optional
+        Percent of recovery to compute recovery against. Default = 80.
+
+    Notes
+    -----
+    If a pixel P at timestep X has value V_x=(percent * recovery_target)
+    but then at timestep X+i has value V_{xi}<(percent * recovery_target),
+    this implementation of Y2R will return X.
 
     """
     reco_target = recovery_target * (percent / 100)
-    post_rest = image_stack.sel(time=slice(rest_start, rest_end))
+    post_rest = image_stack.sel(time=slice(rest_start, None))
     post_rest_years = post_rest["time"].values
-    possible_years_to_recovery = np.arange(len(post_rest_years))
+    rest_window_count = np.arange(len(post_rest_years))
 
     recovered_pixels = post_rest.where(image_stack >= reco_target)
     # NOTE: the following code was my best attempt to get "find the first year that recovered"
-    # working with xarray. Likely not the best way to do it, but can't figure anything else out now.
+    # working with xarray. Likely not the best way to do it, but can't figure anything else out right now.
     year_of_recovery = recovered_pixels.idxmax(dim="time")
 
     Y2R = xr.full_like(recovered_pixels[:, 0, :, :], fill_value=np.nan)
-    for i, recovery_time in enumerate(possible_years_to_recovery):
+    for i, recovery_time in enumerate(rest_window_count):
         Y2R_t = year_of_recovery
         Y2R_t = Y2R_t.where(Y2R_t == post_rest_years[i]).notnull()
         Y2R_mask = Y2R.where(Y2R_t, False)
