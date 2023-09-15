@@ -193,7 +193,8 @@ def RRI(
     timestep: int = 5,
     use_dist_avg: bool = False,
 ) -> xr.DataArray:
-    """
+    """ Per-pixel RRI.
+    
     A modified version of the commonly used RI, the RRI accounts for
     noise in trajectory by using the maximum from the 4th or 5th year
     in monitoring window. The metric relates recovery magnitude to
