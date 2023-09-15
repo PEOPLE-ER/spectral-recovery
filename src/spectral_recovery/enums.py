@@ -38,7 +38,7 @@ class Metric(Enum):
     Y2R = "Y2R"
     RI = "RI"
     dNBR = "dNBR"
-    P80R = "P80R"
+    R80P = "R80P"
     YrYr = "YrYr"
 
     def __str__(self) -> str:

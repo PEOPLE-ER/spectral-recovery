@@ -17,7 +17,6 @@ from spectral_recovery import metrics as m
 # TODO: split date into start and end dates.
 # TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
 class ReferenceSystem:
-
     """A Reference System.
 
     Attributes
@@ -171,18 +170,6 @@ class RestorationArea:
             return False
         return True
 
-    def percent_recovered(self):
-        curr = self.stack.sel(time=self.end_year)
-        recovery_target = self.reference_system.recovery_target()
-        event = self.stack.sel(time=self.restoration_year)
-        pr = m.percent_recovered(
-            eval_stack=curr,
-            recovery_target=recovery_target["recovery_target"],
-            event_obs=event,
-        )
-        pr = pr.expand_dims(dim={"metric": [Metric.percent_recovered]})
-        return pr
-
     def Y2R(self, percent_of_target: int = 80):
         post_restoration = self.stack.sel(
             time=slice(self.restoration_year, self.end_year)
@@ -216,25 +203,25 @@ class RestorationArea:
         dnbr = dnbr.expand_dims(dim={"metric": [Metric.dNBR]})
         return dnbr
 
-    def RI(self, timestep: int = 5):
-        ri = m.RI(
+    def RRI(self, timestep: int = 5):
+        rri = m.RRI(
             image_stack=self.stack,
             rest_start=str(self.restoration_year.year),
             timestep=timestep,
         )
-        ri = ri.expand_dims(dim={"metric": [Metric.RI]})
-        return ri
+        rri = rri.expand_dims(dim={"metric": [Metric.RI]})
+        return rri
 
-    def P80R(self, percent_of_target: int = 80):
+    def R80P(self, percent_of_target: int = 80):
         recovery_target = self.reference_system.recovery_target()
-        p80r = m.P80R(
+        r80p = m.R80P(
             image_stack=self.stack,
             rest_start=str(self.restoration_year.year),
             recovery_target=recovery_target["recovery_target"],
             percent=percent_of_target,
         )
-        p80r = p80r.expand_dims(dim={"metric": [Metric.P80R]})
-        return p80r
+        r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
+        return r80p
 
     # def metrics(self, metrics: List[str]) -> xr.DataArray:
     #     """Generate recovery metrics over a Restoration Area
