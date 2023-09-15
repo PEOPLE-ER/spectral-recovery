@@ -137,8 +137,9 @@ class TestRestorationAreaInit:
                     composite_stack=stack,
                 )
 
+
 # NOTE: SAME_XR is a hacky solution to get around "ValueErrors" that
-# are thrown if you try to assert a mocked function was called with 
+# are thrown if you try to assert a mocked function was called with
 # more than one DataArray. The need for this sol. is likely a symptom of bad design
 # in RestorationArea... but for now it stays to ensure correctness.
 # Solution from: https://stackoverflow.com/questions/44640717
@@ -148,29 +149,32 @@ class SAME_XR:
 
     def __eq__(self, other):
         return isinstance(other, xr.DataArray) and other.equals(self.xr)
-    
-    def __repr__(self): 
+
+    def __repr__(self):
         return repr(self.xr)
 
 
 class TestRestorationAreaMetrics:
-
     restoration_year = pd.to_datetime("2015")
-    reference_year = pd.to_datetime("2012") 
+    reference_year = pd.to_datetime("2012")
     time_range = [str(x) for x in np.arange(2010, 2027)]
-    baseline_array = xr.DataArray([[[1.0]],[[2.0]]])
+    baseline_array = xr.DataArray([[[1.0]], [[2.0]]])
 
     @pytest.fixture()
     def valid_resto_area(self):
         polygon = "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
         raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
-        
+
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             resto_poly = gpd.read_file(polygon)
             stack = data
             stack = stack.rename({"band": "time"})
             stack = stack.assign_coords(
-                time=(pd.date_range(self.time_range[0], self.time_range[-1], freq=DATETIME_FREQ))
+                time=(
+                    pd.date_range(
+                        self.time_range[0], self.time_range[-1], freq=DATETIME_FREQ
+                    )
+                )
             )
             stack = xr.concat([stack, stack], dim=pd.Index([0, 1], name="band"))
             resto_area = RestorationArea(
@@ -181,32 +185,12 @@ class TestRestorationAreaMetrics:
                 composite_stack=stack,
             )
 
-            mock_target_return = {"recovery_target": self.baseline_array }
-            resto_area.reference_system.recovery_target = MagicMock(return_value=mock_target_return)
-        
+            mock_target_return = {"recovery_target": self.baseline_array}
+            resto_area.reference_system.recovery_target = MagicMock(
+                return_value=mock_target_return
+            )
+
         return resto_area
-
-    @patch(
-        "spectral_recovery.metrics.percent_recovered",
-    )
-    def test_percent_recovered_call_default(self, method_mock, valid_resto_area):
-        mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
-        method_mock.return_value = mocked_return
-
-        result = valid_resto_area.percent_recovered()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.percent_recovered]})
-
-        assert result.equals(expected_result)
-
-        final_obs = valid_resto_area.stack.sel(time=valid_resto_area.end_year)
-        baseline =  xr.DataArray([[[1.0]],[[2.0]]])
-        event_obs = valid_resto_area.stack.sel(time=valid_resto_area.restoration_year)
-
-        method_mock.assert_called_with(
-            eval_stack=SAME_XR(final_obs),
-            recovery_target=SAME_XR(baseline),
-            event_obs=SAME_XR(event_obs)
-        )
 
     @patch(
         "spectral_recovery.metrics.Y2R",
@@ -220,7 +204,9 @@ class TestRestorationAreaMetrics:
 
         assert result.equals(expected_result)
 
-        post_restoration = valid_resto_area.stack.sel(time=slice(valid_resto_area.restoration_year, None))
+        post_restoration = valid_resto_area.stack.sel(
+            time=slice(valid_resto_area.restoration_year, None)
+        )
         rest_start = str(valid_resto_area.restoration_year.year)
         rest_end = str(valid_resto_area.end_year.year)
         default_percent = 80
@@ -228,11 +214,11 @@ class TestRestorationAreaMetrics:
         method_mock.assert_called_with(
             image_stack=SAME_XR(post_restoration),
             recovery_target=SAME_XR(self.baseline_array),
-            rest_start=rest_start, 
+            rest_start=rest_start,
             rest_end=rest_end,
             percent=default_percent,
         )
-    
+
     @patch(
         "spectral_recovery.metrics.YrYr",
     )
@@ -250,7 +236,7 @@ class TestRestorationAreaMetrics:
         method_mock.assert_called_with(
             image_stack=SAME_XR(valid_resto_area.stack),
             rest_start=str(valid_resto_area.restoration_year.year),
-            timestep=timestep_default
+            timestep=timestep_default,
         )
 
     @patch(
@@ -270,17 +256,17 @@ class TestRestorationAreaMetrics:
         method_mock.assert_called_with(
             image_stack=SAME_XR(valid_resto_area.stack),
             rest_start=str(valid_resto_area.restoration_year.year),
-            timestep=timestep_default
+            timestep=timestep_default,
         )
 
     @patch(
-        "spectral_recovery.metrics.RI",
+        "spectral_recovery.metrics.RRI",
     )
-    def test_RI_call_default(self, method_mock, valid_resto_area):
+    def test_RRI_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.RI()
+        result = valid_resto_area.RRI()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.RI]})
 
         assert result.equals(expected_result)
@@ -290,18 +276,18 @@ class TestRestorationAreaMetrics:
         method_mock.assert_called_with(
             image_stack=SAME_XR(valid_resto_area.stack),
             rest_start=str(valid_resto_area.restoration_year.year),
-            timestep=timestep_default
+            timestep=timestep_default,
         )
-    
+
     @patch(
-        "spectral_recovery.metrics.P80R",
+        "spectral_recovery.metrics.R80P",
     )
-    def test_P80R_call_default(self, method_mock, valid_resto_area):
+    def test_R80P_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.P80R()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.P80R]})
+        result = valid_resto_area.R80P()
+        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.R80P]})
 
         assert result.equals(expected_result)
 
@@ -313,6 +299,7 @@ class TestRestorationAreaMetrics:
             recovery_target=SAME_XR(self.baseline_array),
             percent=percent_default,
         )
+
 
 class TestReferenceSystemInit:
     @pytest.fixture()
