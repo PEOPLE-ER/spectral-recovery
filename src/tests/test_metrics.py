@@ -12,67 +12,6 @@ from spectral_recovery.metrics import (
     R80P,
 )
 
-# TODO: group tests into classes and add functions that check for CRS after computation
-
-
-# @pytest.mark.parametrize(
-#     ("recovery_target", "curr", "event", "expected"),
-#     [
-#         # TODO: make a func to construct xr dataarray to simplify parametrize call
-#         # see Xarray project testing modules for reference
-#         (
-#             xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
-#             xr.DataArray([[[80]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
-#             xr.DataArray([[[0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
-#             xr.DataArray([[[0.8]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
-#         ),
-#         (
-#             xr.DataArray([100, 100], dims=["band"]).rio.write_crs("4326"),
-#             xr.DataArray([[[80]], [[50]]], dims=["band", "y", "x"]).rio.write_crs(
-#                 "4326"
-#             ),
-#             xr.DataArray([[[0]], [[0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
-#             xr.DataArray([[[0.8]], [[0.5]]], dims=["band", "y", "x"]).rio.write_crs(
-#                 "4326"
-#             ),
-#         ),
-#         (
-#             xr.DataArray([100, 100], dims=["band"]).rio.write_crs("4326"),
-#             xr.DataArray(
-#                 [[[80, 90], [100, 70]], [[50, 60], [70, 80]]], dims=["band", "y", "x"]
-#             ).rio.write_crs("4326"),
-#             xr.DataArray(
-#                 [[[0, 0], [0, 0]], [[0, 0], [0, 0]]], dims=["band", "y", "x"]
-#             ).rio.write_crs("4326"),
-#             xr.DataArray(
-#                 [[[0.8, 0.9], [1.0, 0.7]], [[0.5, 0.6], [0.7, 0.8]]],
-#                 dims=["band", "y", "x"],
-#             ).rio.write_crs("4326"),
-#         ),
-#         (
-#             xr.DataArray(
-#                 [[[100, 90], [100, 70]], [[100, 60], [100, 80]]],
-#                 dims=["band", "y", "x"],
-#             ).rio.write_crs("4326"),
-#             xr.DataArray(
-#                 [[[80, 90], [100, 70]], [[50, 60], [70, 80]]], dims=["band", "y", "x"]
-#             ).rio.write_crs("4326"),
-#             xr.DataArray(
-#                 [[[0, 0], [0, 0]], [[0, 0], [0, 0]]], dims=["band", "y", "x"]
-#             ).rio.write_crs("4326"),
-#             xr.DataArray(
-#                 [[[0.8, 1.0], [1.0, 1.0]], [[0.5, 1.0], [0.7, 1.0]]],
-#                 dims=["band", "y", "x"],
-#             ).rio.write_crs("4326"),
-#         ),
-#     ],
-# )
-# def test_correct_percent_recovered(recovery_target, curr, event, expected):
-#     assert percent_recovered(
-#         eval_stack=curr, recovery_target=recovery_target, event_obs=event
-#     ).equals(expected)
-
-
 # TODO: revisit case #4
 @pytest.mark.parametrize(
     ("recovery_target", "obs", "percent", "expected"),
