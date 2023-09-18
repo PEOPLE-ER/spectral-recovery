@@ -12,54 +12,62 @@ from spectral_recovery.metrics import (
     R80P,
 )
 
-# TODO: revisit case #4
+# TODO: simplfy parameterize calls using this func.
+def make_da(data, dims, time=None, band=None, y=None, x=None, crs=None):
+    coords = {"time":time, "band":band, "y":y, "x":x}
+    coords = {k: v for k, v in coords.items() if v is not None}
+    obs = xr.DataArray(
+            data,
+            coords=coords,
+            dims=dims,
+    )
+    if crs:
+        obs = obs.rio.write_crs("4326")
+    return obs
+
 @pytest.mark.parametrize(
-    ("recovery_target", "obs", "percent", "expected"),
+    ("recovery_target", "obs", "expected"),
     [
-        (
+        (   
             xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
             xr.DataArray(
-                [[[[90]], [[100]]]],
+                [[[[70]], [[80]]]], # meets recovery target
                 coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                 dims=["band", "time", "y", "x"],
             ).rio.write_crs("4326"),
-            100,
             xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
         ),
         (
             xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
             xr.DataArray(
-                [[[[70]], [[80]]]],
+                [[[[70]], [[90]]]], # surpasses recovery target
                 coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                 dims=["band", "time", "y", "x"],
             ).rio.write_crs("4326"),
-            80,
             xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
         ),
         (
             xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
             xr.DataArray(
-                [[[[80]], [[90]]]],
+                [[[[80]], [[90]]]], # equals recovery target at start
                 coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                 dims=["band", "time", "y", "x"],
             ).rio.write_crs("4326"),
-            100,
+            xr.DataArray([[[0.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+        ),
+        (
+            xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
+            xr.DataArray(
+                [[[[60]], [[70]]]], # never meets recovery target
+                coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
+                dims=["band", "time", "y", "x"],
+            ).rio.write_crs("4326"),
             xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
         ),
         (
             xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
             xr.DataArray(
-                [[[[80]], [[90]]]],
-                coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
-                dims=["band", "time", "y", "x"],
-            ).rio.write_crs("4326"),
-            100,
-            xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
-        ),
-        (  # TODO: check this test with team
-            xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
-            xr.DataArray(
-                [[[[90]], [[100]], [[95]]]],
+                [[[[70, 60], [70, 60]], [[80, 70], [70, 70]], [[100, 70], [70, 80]]]],
                 coords={
                     "time": [
                         pd.to_datetime("2020"),
@@ -69,30 +77,56 @@ from spectral_recovery.metrics import (
                 },
                 dims=["band", "time", "y", "x"],
             ).rio.write_crs("4326"),
-            100,
-            xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
-        ),
-        (
-            xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
-            xr.DataArray(
-                [[[[90, 80], [70, 80]], [[100, 90], [80, 90]], [[100, 90], [90, 100]]]],
-                coords={
-                    "time": [
-                        pd.to_datetime("2020"),
-                        pd.to_datetime("2021"),
-                        pd.to_datetime("2022"),
-                    ]
-                },
-                dims=["band", "time", "y", "x"],
-            ).rio.write_crs("4326"),
-            100,
             xr.DataArray(
                 [[[1.0, np.nan], [np.nan, 2.0]]], dims=["band", "y", "x"]
             ).rio.write_crs("4326"),
         ),
     ],
 )
-def test_correct_y2r(recovery_target, obs, percent, expected):
+def test_default_y2r(recovery_target, obs, expected):
+    print(expected)
+    assert Y2R(
+        image_stack=obs,
+        recovery_target=recovery_target,
+        rest_start="2020",
+    ).equals(expected)
+
+@pytest.mark.parametrize(
+    ("recovery_target", "obs", "percent", "expected"),
+    [
+        (
+            xr.DataArray([87], dims=["band"]).rio.write_crs("4326"),
+            xr.DataArray(
+                [[[[80]], [[100]]]],
+                coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
+                dims=["band", "time", "y", "x"],
+            ).rio.write_crs("4326"),
+            100, # take full recovery target
+            xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+        ),
+        (
+            xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
+            xr.DataArray(
+                [[[[30]], [[110]]]],
+                coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
+                dims=["band", "time", "y", "x"],
+            ).rio.write_crs("4326"),
+            0, # recovery target of 0
+            xr.DataArray([[[0.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+        ),
+        (
+            xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
+            xr.DataArray(
+                [[[[10]], [[19]]]],
+                coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
+                dims=["band", "time", "y", "x"],
+            ).rio.write_crs("4326"),
+            20, # X percent of recovery target
+            xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+        ),
+    ],
+)
+def test_percent_y2r(recovery_target, obs, percent, expected):
     assert Y2R(
         image_stack=obs,
         recovery_target=recovery_target,
@@ -109,7 +143,7 @@ year_period = [
     pd.to_datetime("2013"),
     pd.to_datetime("2014"),
     pd.to_datetime("2015"),
-]
+]   
 
 
 @pytest.mark.parametrize(
