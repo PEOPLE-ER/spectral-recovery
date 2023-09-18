@@ -4,6 +4,8 @@ import pandas as pd
 
 from spectral_recovery.utils import maintain_rio_attrs
 
+# TODO: should methods that take 'percent' params not allow negative percent 
+# or greater than 100 values? Right now, anything is permissable.
 
 @maintain_rio_attrs
 def dNBR(
@@ -173,7 +175,7 @@ def Y2R(
     recovered_pixels = post_rest.where(image_stack >= reco_target)
     # NOTE: the following code was my best attempt to get "find the first year that recovered"
     # working with xarray. Likely not the best way to do it, but can't figure anything else out right now.
-    year_of_recovery = recovered_pixels.idxmax(dim="time")
+    year_of_recovery = recovered_pixels.idxmin(dim="time")
 
     Y2R = xr.full_like(recovered_pixels[:, 0, :, :], fill_value=np.nan)
     for i, recovery_time in enumerate(rest_window_count):
