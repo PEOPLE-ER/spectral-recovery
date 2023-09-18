@@ -32,11 +32,20 @@ def dNBR(
         change. Default = 5.
 
     """
-    rest_post_t = str(int(rest_start) + timestep)
-    dNBR = (
-        image_stack.sel(time=rest_post_t).drop_vars("time")
-        - image_stack.sel(time=rest_start).drop_vars("time")
-    ).squeeze("time")
+    if timestep < 0:
+        raise ValueError(f"timestep cannot be negative. timestep={timestep}.")
+    try:
+        rest_post_t = str(int(rest_start) + timestep)
+        dNBR = (
+            image_stack.sel(time=rest_post_t).drop_vars("time")
+            - image_stack.sel(time=rest_start).drop_vars("time")
+        ).squeeze("time")
+    except KeyError as e:
+        if int(rest_post_t) > year_dt(image_stack["time"].data.max(), int):
+            ts_len = year_dt(image_stack["time"].data.max(), int) - int(rest_start)
+            raise ValueError(f"timestep={timestep} is too large for timeseries with {ts_len} timesteps.")
+        else:
+            raise e
     return dNBR
 
 
@@ -219,17 +228,17 @@ def RRI(
     min_year = image_stack["time"].data.min()
     max_year = image_stack["time"].data.max()
 
-    rest_post_4 = str(int(rest_start) + 4)
-    rest_post_5 = str(int(rest_start) + 5)
-    if int(rest_post_4) > year_dt(max_year) or int(rest_post_5) > year_dt(max_year):
+    rest_post_tm1 = str(int(rest_start) + 4)
+    rest_post_t = str(int(rest_start) + 5)
+    if int(rest_post_tm1) > year_dt(max_year) or int(rest_post_t) > year_dt(max_year):
         raise ValueError(
             f"Max year in provided image_stack is {image_stack['time'].data.max()} but need {rest_post_4} and {rest_post_5}."
         )
-    rest_4_5 = [
-        (date == pd.to_datetime(rest_post_4) or date == pd.to_datetime(rest_post_5))
+    rest_t_tm1 = [
+        (date == pd.to_datetime(rest_post_tm1) or date == pd.to_datetime(rest_post_t))
         for date in image_stack.coords["time"].values
     ]
-    rest_4_5 = image_stack.sel(time=rest_4_5).max(dim=["y", "x"])
+    rest_t_tm1 = image_stack.sel(time=rest_t_tm1).max(dim=["y", "x"])
 
     if use_dist_avg:
         dist_pre_1 = str(int(dist_start) - 1)
@@ -249,13 +258,13 @@ def RRI(
         ]
         dist_avg = image_stack.sel(time=dist_s_e).mean(dim=["y", "x"])
 
-        rri = ((rest_4_5.max() - dist_avg) / (dist_pre - dist_avg)).squeeze("time")
+        rri = ((rest_t_tm1.max() - dist_avg) / (dist_pre - dist_avg)).squeeze("time")
     else:
         rest_0 = image_stack.sel(time=rest_start).drop_vars("time")
         dist_e = rest_0
         dist_start = image_stack.sel(time=dist_start).drop_vars("time")
 
-        rri = ((rest_4_5.max() - rest_0) / (dist_start - dist_e)).squeeze("time")
+        rri = ((rest_t_tm1.max() - rest_0) / (dist_start - dist_e)).squeeze("time")
     return rri
 
 

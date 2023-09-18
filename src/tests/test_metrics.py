@@ -213,12 +213,62 @@ year_period = [
         ),
     ],
 )
-def test_correct_dNBR(obs, restoration_date, expected):
+def test_default_dNBR(obs, restoration_date, expected):
     assert dNBR(
         image_stack=obs,
         rest_start=restoration_date,
     ).equals(expected)
 
+def test_timestep_dNBR():
+    obs = xr.DataArray(
+                [[[[50]], [[60]], [[70]], [[80]], [[90]], [[100]]]],
+                coords={"time": year_period},
+                dims=["band", "time", "y", "x"],
+            ).rio.write_crs("4326")
+    restoration_date = "2010"
+    timestep = 3
+
+    expected = xr.DataArray( [[[30]]],
+                dims=["band", "y", "x"],
+            ).rio.write_crs("4326")
+
+    assert dNBR(
+        image_stack=obs,
+        rest_start=restoration_date,
+        timestep=timestep,
+    ).equals(expected)
+
+def test_invalid_timestep_throws_err():
+    obs = xr.DataArray(
+                [[[[50]], [[60]], [[70]], [[80]], [[90]], [[100]]]],
+                coords={"time": year_period},
+                dims=["band", "time", "y", "x"],
+            ).rio.write_crs("4326")
+    restoration_date = "2010"
+    timestep = -2
+
+    with pytest.raises(ValueError, match="timestep cannot be negative. timestep=-2."):
+        dNBR(
+            image_stack=obs,
+            rest_start=restoration_date,
+            timestep=timestep,
+        )
+
+def test_timestep_too_large_throws_err():
+    obs = xr.DataArray(
+                [[[[50]], [[60]], [[70]], [[80]], [[90]], [[100]]]],
+                coords={"time": year_period},
+                dims=["band", "time", "y", "x"],
+            ).rio.write_crs("4326")
+    restoration_date = "2010"
+    timestep = 6
+
+    with pytest.raises(ValueError, match="timestep=6 is too large for timeseries with 5 timesteps."):
+        dNBR(
+            image_stack=obs,
+            rest_start=restoration_date,
+            timestep=timestep,
+        )
 
 year_period_RI = [
     pd.to_datetime("2000"),
@@ -229,7 +279,6 @@ year_period_RI = [
     pd.to_datetime("2005"),
     pd.to_datetime("2006"),
 ]
-
 
 # TODO: follow-up on test cases with Melissa
 @pytest.mark.parametrize(
