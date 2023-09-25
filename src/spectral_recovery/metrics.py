@@ -4,8 +4,9 @@ import pandas as pd
 
 from spectral_recovery.utils import maintain_rio_attrs
 
-# TODO: should methods that take 'percent' params not allow negative percent 
+# TODO: should methods that take 'percent' params not allow negative percent
 # or greater than 100 values? Right now, anything is permissable.
+NEG_TIMESTEP_MSG = f"timestep cannot be negative."
 
 @maintain_rio_attrs
 def dNBR(
@@ -33,7 +34,7 @@ def dNBR(
 
     """
     if timestep < 0:
-        raise ValueError(f"timestep cannot be negative. timestep={timestep}.")
+        raise ValueError(NEG_TIMESTEP_MSG)
     try:
         rest_post_t = str(int(rest_start) + timestep)
         dNBR = (
@@ -43,7 +44,9 @@ def dNBR(
     except KeyError as e:
         if int(rest_post_t) > year_dt(image_stack["time"].data.max(), int):
             ts_len = year_dt(image_stack["time"].data.max(), int) - int(rest_start)
-            raise ValueError(f"timestep={timestep} is too large for timeseries with {ts_len} timesteps.")
+            raise ValueError(
+                f"timestep={timestep} is too large for timeseries with {ts_len} timesteps."
+            )
         else:
             raise e
     return dNBR
@@ -53,14 +56,14 @@ def dNBR(
 def YrYr(
     image_stack: xr.DataArray,
     rest_start: str,
-    timestep: int,
+    timestep: int = 5,
 ):
     """Per-pixel YrYr.
 
     The average annual recovery rate relative to a fixed time intervald
     during the restoration monitoring window. The default is the first 5
     years of the restoration window, however this can be changed by specifying
-    the index value at a specific time step (Ri).
+    the parameter `timestep`.
 
     Parameters
     ----------
@@ -73,15 +76,13 @@ def YrYr(
         window (post rest_start) from which to evaluate absolute
         change. Default = 5.
     """
+    if timestep < 0:
+        raise ValueError(NEG_TIMESTEP_MSG)
+    
     rest_post_t = str(int(rest_start) + timestep)
     obs_post_t = image_stack.sel(time=rest_post_t).drop_vars("time")
     obs_start = image_stack.sel(time=rest_start).drop_vars("time")
-    d_t = (
-        pd.to_datetime(image_stack.sel(time=rest_post_t)["time"].data).year
-        - pd.to_datetime(image_stack.sel(time=rest_start)["time"].data).year
-    )
-
-    YrYr = ((obs_post_t - obs_start) / d_t).squeeze("time")
+    YrYr = ((obs_post_t - obs_start) / timestep).squeeze("time")
 
     return YrYr
 
@@ -91,8 +92,8 @@ def R80P(
     image_stack: xr.DataArray,
     rest_start: str,
     recovery_target: xr.DataArray,
-    percent: int,
-    max_4_5: bool = False,
+    timestep: int = None, 
+    percent: int = 80,
 ) -> xr.DataArray:
     """Per-pixel R80P.
 
@@ -100,10 +101,10 @@ def R80P(
     target value. The metric commonly uses the maximum value from the
     4th or 5th year of restoration window to show the extent to which a
     pixel has reached 80% of the target value 5 years into the restoration
-    window, however for monitoring purposes, this tool uses the current
-    time step or last year of the time series to provide up to date recovery
+    window. However for monitoring purposes, this tool uses the selected `timestep`
+    or defaults to the current timestep to provide up to date recovery
     progress. 80% of the recovery target value is the default, however this
-    can be changed by modifying the value of P.
+    can be changed by modifying the value of `percent`.
 
     Parameters
     ----------
@@ -113,35 +114,29 @@ def R80P(
         The starting year of the restoration monitoring window.
     recovery_target : xr.DataArray
         Recovery target values. Must be broadcastable to image_stack.
+    timestep : int, optional
+        The timestep (years) in the restoration monitoring window
+        from which to evaluate absolute change. Default = -1 which 
+        represents the max/most recent timestep.
     percent: int, optional
         Percent of recovery to compute recovery against. Default = 80.
-    max_4_5: bool, optional
-        Flag indicating whether or not to compute using maximum value
-        from the 4th or 5th year of restoration window.
 
     """
-    max_year = image_stack["time"].data.max()
-    if max_4_5:
-        rest_post_4 = str(int(rest_start) + 4)
-        rest_post_5 = str(int(rest_start) + 5)
-        if int(rest_post_4) > year_dt(max_year) or int(rest_post_5) > year_dt(max_year):
-            raise ValueError(
-                f"Max year in provided image_stack is {image_stack['time'].data.max()} but need {rest_post_4} and {rest_post_5}."
-            )
-        rest_4_5 = [
-            (date == pd.to_datetime(rest_post_4) or date == pd.to_datetime(rest_post_5))
-            for date in image_stack.coords["time"].values
-        ]
-        r80p = (
-            (image_stack.sel(time=rest_4_5).max(dim=["y", "x"])).drop_vars("time")
-            / ((percent / 100) * recovery_target)
-        ).squeeze("time")
+    if timestep is None:
+        rest_post_t = image_stack["time"].data[-1]
+    elif timestep < 0:
+        raise ValueError(NEG_TIMESTEP_MSG)
     else:
-        r80p = (
-            (image_stack.sel(time=max_year)).drop_vars("time")
-            / ((percent / 100) * recovery_target)
-        ).squeeze("time")
-
+        rest_post_t = str(int(rest_start) + timestep)
+    r80p = (
+        (image_stack.sel(time=rest_post_t)).drop_vars("time")
+        / ((percent / 100) * recovery_target)
+    )
+    try:
+        # if using the default timestep (the max/most recent), the indexing will not get rid of the "time" dim
+        r80p = r80p.squeeze("time")
+    except KeyError:
+        pass
     return r80p
 
 
@@ -224,36 +219,46 @@ def RRI(
         Default = 5.
 
     """
+    if timestep < 0:
+        raise ValueError(NEG_TIMESTEP_MSG)
+    
+    if timestep == 0:
+        raise ValueError("timestep for RRI must be greater than 0.")
+    
     dist_start = str(int(rest_start) - 1)
-    min_year = image_stack["time"].data.min()
-    max_year = image_stack["time"].data.max()
+    dist_end = rest_start
+    # TODO: ensure rest_start, dist_start, and dist_end are all in time coordinates
+    # min_year = image_stack["time"].data.min()
+    # rest_end = image_stack["time"].data.max()
 
-    rest_post_tm1 = str(int(rest_start) + 4)
-    rest_post_t = str(int(rest_start) + 5)
-    if int(rest_post_tm1) > year_dt(max_year) or int(rest_post_t) > year_dt(max_year):
-        raise ValueError(
-            f"Max year in provided image_stack is {image_stack['time'].data.max()} but need {rest_post_4} and {rest_post_5}."
-        )
+    rest_post_tm1 = str(int(rest_start) + (timestep - 1))
+    rest_post_t = str(int(rest_start) + timestep)
+    print(rest_post_t, rest_post_tm1)
     rest_t_tm1 = [
         (date == pd.to_datetime(rest_post_tm1) or date == pd.to_datetime(rest_post_t))
         for date in image_stack.coords["time"].values
     ]
+    if any(rest_t_tm1) == 0:
+        raise ValueError(
+            f"{rest_post_tm1} or {rest_post_t} not within time coordinates."
+        )
     rest_t_tm1 = image_stack.sel(time=rest_t_tm1).max(dim=["y", "x"])
 
     if use_dist_avg:
         dist_pre_1 = str(int(dist_start) - 1)
         dist_pre_2 = str(int(dist_start) - 2)
-        if int(dist_pre_1) < year_dt(min_year) or int(dist_pre_2) < year_dt(min_year):
-            raise ValueError(
-                f"Min year in provided image_stack is {image_stack['time'].data.min()} but need {dist_pre_1} and {dist_pre_2}."
-            )
-        dist_1_2 = [
+        dist_pre_1_2 = [
             (date == pd.to_datetime(dist_pre_1) or date == pd.to_datetime(dist_pre_2))
             for date in image_stack.coords["time"].values
         ]
-        dist_pre = image_stack.sel(time=dist_1_2).max(dim=["y", "x"])
+        if any(dist_pre_1_2) == 0:
+            raise ValueError(
+                f"{dist_pre_1} or {dist_pre_2} not within time coordinates."
+            )
+        dist_pre = image_stack.sel(time=dist_pre_1_2).max(dim=["y", "x"])
+
         dist_s_e = [
-            (date >= pd.to_datetime(dist_start) or date <= pd.to_datetime(rest_start))
+            (date >= pd.to_datetime(dist_start) or date <= pd.to_datetime(dist_end))
             for date in image_stack.coords["time"].values
         ]
         dist_avg = image_stack.sel(time=dist_s_e).mean(dim=["y", "x"])
@@ -261,9 +266,10 @@ def RRI(
         rri = ((rest_t_tm1.max() - dist_avg) / (dist_pre - dist_avg)).squeeze("time")
     else:
         rest_0 = image_stack.sel(time=rest_start).drop_vars("time")
-        dist_e = rest_0
         dist_start = image_stack.sel(time=dist_start).drop_vars("time")
 
+        dist_e = rest_0
+        print(rest_t_tm1.max().data, rest_0.data, dist_start.data, dist_e.data)
         rri = ((rest_t_tm1.max() - rest_0) / (dist_start - dist_e)).squeeze("time")
     return rri
 
