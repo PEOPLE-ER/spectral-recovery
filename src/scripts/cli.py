@@ -17,6 +17,7 @@ from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 INDEX_CHOICE = [i.value for i in Index]
 METRIC_CHOICE = [str(m) for m in Metric]
 
+# NOTE: multi-year disturbances are not implemented in CLI yet.
 
 @click.group(chain=True)
 @click.argument("tif_dir", type=click.Path(exists=True, path_type=Path))
@@ -79,7 +80,7 @@ def cli(
     TIF_DIR        Path to a directory containing annual composites.
     OUT            Path to directory to write output rasters.
     REST_POLY      Path to the restoration area polygon.
-    REST_YEAR      Year of the restoration event.
+    REST_YEAR      Year the restoration event began.
     REF_POLY       Path to reference polygon(s).
     REF_YEARS      Start and end years over which to derive a recovery target.
 
