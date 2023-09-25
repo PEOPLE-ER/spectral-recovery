@@ -196,6 +196,7 @@ def Y2R(
 def RRI(
     image_stack: xr.DataArray,
     rest_start: str,
+    dist_start: int,
     timestep: int = 5,
     use_dist_avg: bool = False,
 ) -> xr.DataArray:
@@ -224,8 +225,6 @@ def RRI(
     
     if timestep == 0:
         raise ValueError("timestep for RRI must be greater than 0.")
-    
-    dist_start = str(int(rest_start) - 1)
     dist_end = rest_start
     # TODO: ensure rest_start, dist_start, and dist_end are all in time coordinates
     # min_year = image_stack["time"].data.min()
@@ -269,7 +268,6 @@ def RRI(
         dist_start = image_stack.sel(time=dist_start).drop_vars("time")
 
         dist_e = rest_0
-        print(rest_t_tm1.max().data, rest_0.data, dist_start.data, dist_e.data)
         rri = ((rest_t_tm1.max() - rest_0) / (dist_start - dist_e)).squeeze("time")
     return rri
 
