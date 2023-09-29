@@ -8,6 +8,7 @@ from spectral_recovery.utils import maintain_rio_attrs
 # or greater than 100 values? Right now, anything is permissable.
 NEG_TIMESTEP_MSG = f"timestep cannot be negative."
 
+
 @maintain_rio_attrs
 def dNBR(
     image_stack: xr.DataArray,
@@ -78,7 +79,7 @@ def YrYr(
     """
     if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    
+
     rest_post_t = str(int(rest_start) + timestep)
     obs_post_t = image_stack.sel(time=rest_post_t).drop_vars("time")
     obs_start = image_stack.sel(time=rest_start).drop_vars("time")
@@ -92,7 +93,7 @@ def R80P(
     image_stack: xr.DataArray,
     rest_start: str,
     recovery_target: xr.DataArray,
-    timestep: int = None, 
+    timestep: int = None,
     percent: int = 80,
 ) -> xr.DataArray:
     """Per-pixel R80P.
@@ -116,7 +117,7 @@ def R80P(
         Recovery target values. Must be broadcastable to image_stack.
     timestep : int, optional
         The timestep (years) in the restoration monitoring window
-        from which to evaluate absolute change. Default = -1 which 
+        from which to evaluate absolute change. Default = -1 which
         represents the max/most recent timestep.
     percent: int, optional
         Percent of recovery to compute recovery against. Default = 80.
@@ -128,9 +129,8 @@ def R80P(
         raise ValueError(NEG_TIMESTEP_MSG)
     else:
         rest_post_t = str(int(rest_start) + timestep)
-    r80p = (
-        (image_stack.sel(time=rest_post_t)).drop_vars("time")
-        / ((percent / 100) * recovery_target)
+    r80p = (image_stack.sel(time=rest_post_t)).drop_vars("time") / (
+        (percent / 100) * recovery_target
     )
     try:
         # if using the default timestep (the max/most recent), the indexing will not get rid of the "time" dim
@@ -222,7 +222,7 @@ def RRI(
     """
     if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    
+
     if timestep == 0:
         raise ValueError("timestep for RRI must be greater than 0.")
     dist_end = rest_start

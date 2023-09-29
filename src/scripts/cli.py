@@ -19,6 +19,7 @@ METRIC_CHOICE = [str(m) for m in Metric]
 
 # NOTE: multi-year disturbances are not implemented in CLI yet.
 
+
 @click.group(chain=True)
 @click.argument("tif_dir", type=click.Path(exists=True, path_type=Path))
 @click.argument(

@@ -84,7 +84,7 @@ class TestRestorationAreaInit:
         raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
         time_range = [str(x) for x in np.arange(2010, 2027)]
 
-        expected_resto_start = pd.to_datetime("2016") # + 1 year from dist_start
+        expected_resto_start = pd.to_datetime("2016")  # + 1 year from dist_start
 
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
@@ -100,7 +100,7 @@ class TestRestorationAreaInit:
                 composite_stack=stack,
             )
             assert resto_a.restoration_start == expected_resto_start
-    
+
     def test_dist_year_greater_than_rest_year_throws_value_error(self):
         resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
         resto_start = pd.to_datetime("2015")
@@ -127,7 +127,7 @@ class TestRestorationAreaInit:
                     reference_years=ref_years,
                     composite_stack=stack,
                 )
-    
+
     def test_only_rest_start_defaults_dist_year_to_prior_year(self):
         resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
         resto_start = pd.to_datetime("2015")
@@ -153,7 +153,14 @@ class TestRestorationAreaInit:
 
     # check fro bad resto year, bad reference year, bad spatial location
     @pytest.mark.parametrize(
-        ("resto_poly", "resto_start", "dist_start", "ref_years", "raster", "time_range"),
+        (
+            "resto_poly",
+            "resto_start",
+            "dist_start",
+            "ref_years",
+            "raster",
+            "time_range",
+        ),
         [
             (
                 # bad resto year
@@ -164,7 +171,7 @@ class TestRestorationAreaInit:
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
-            ( # bad reference year
+            (  # bad reference year
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
                 pd.to_datetime("2011"),
                 None,
@@ -172,7 +179,7 @@ class TestRestorationAreaInit:
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
-            ( # bad dist year
+            (  # bad dist year
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
                 pd.to_datetime("2011"),
                 pd.to_datetime("2005"),
@@ -180,7 +187,7 @@ class TestRestorationAreaInit:
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
-            ( # bad spatial location (not contained at all)
+            (  # bad spatial location (not contained at all)
                 "src/tests/test_data/polygon_outbound_epsg3005.gpkg",
                 pd.to_datetime("2015"),
                 None,
@@ -188,7 +195,7 @@ class TestRestorationAreaInit:
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
-            ( # bad spatial location (not fully contained)
+            (  # bad spatial location (not fully contained)
                 "src/tests/test_data/polygon_overlap_epsg3005.gpkg",
                 pd.to_datetime("2015"),
                 None,
