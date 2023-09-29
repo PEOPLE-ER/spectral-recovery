@@ -12,6 +12,7 @@ from spectral_recovery.metrics import (
     R80P,
 )
 
+
 # TODO: simplfy parametrize calls using this func.
 def make_da(data, dims, time=None, band=None, y=None, x=None, crs=None):
     coords = {"time": time, "band": band, "y": y, "x": x}
@@ -25,8 +26,8 @@ def make_da(data, dims, time=None, band=None, y=None, x=None, crs=None):
         obs = obs.rio.write_crs("4326")
     return obs
 
-class TestY2R():
 
+class TestY2R:
     @pytest.mark.parametrize(
         ("recovery_target", "obs", "expected"),
         [
@@ -64,12 +65,20 @@ class TestY2R():
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+                    "4326"
+                ),
             ),
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
                 xr.DataArray(
-                    [[[[70, 60], [70, 60]], [[80, 70], [70, 70]], [[100, 70], [70, 80]]]],
+                    [
+                        [
+                            [[70, 60], [70, 60]],
+                            [[80, 70], [70, 70]],
+                            [[100, 70], [70, 80]],
+                        ]
+                    ],
                     coords={
                         "time": [
                             pd.to_datetime("2020"),
@@ -92,7 +101,6 @@ class TestY2R():
             recovery_target=recovery_target,
             rest_start="2020",
         ).equals(expected)
-
 
     @pytest.mark.parametrize(
         ("recovery_target", "obs", "percent", "expected"),
@@ -125,7 +133,9 @@ class TestY2R():
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 20,  # X percent of recovery target
-                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+                    "4326"
+                ),
             ),
         ],
     )
@@ -137,17 +147,17 @@ class TestY2R():
             rest_start="2020",
         ).equals(expected)
 
-class TestDNBR():
 
+class TestDNBR:
     year_period = [
-            pd.to_datetime("2010"),
-            pd.to_datetime("2011"),
-            pd.to_datetime("2012"),
-            pd.to_datetime("2013"),
-            pd.to_datetime("2014"),
-            pd.to_datetime("2015"),
+        pd.to_datetime("2010"),
+        pd.to_datetime("2011"),
+        pd.to_datetime("2012"),
+        pd.to_datetime("2013"),
+        pd.to_datetime("2014"),
+        pd.to_datetime("2015"),
     ]
-    
+
     @pytest.mark.parametrize(
         ("obs", "restoration_date", "expected"),
         [
@@ -221,7 +231,6 @@ class TestDNBR():
             rest_start=restoration_date,
         ).equals(expected)
 
-
     def test_timestep_dNBR(self):
         obs = xr.DataArray(
             [[[[50]], [[60]], [[70]], [[80]], [[90]], [[100]]]],
@@ -242,7 +251,6 @@ class TestDNBR():
             timestep=timestep,
         ).equals(expected)
 
-
     def test_invalid_timestep_throws_err(self):
         obs = xr.DataArray(
             [[[[50]], [[60]], [[70]], [[80]], [[90]], [[100]]]],
@@ -258,7 +266,6 @@ class TestDNBR():
                 rest_start=restoration_date,
                 timestep=timestep,
             )
-
 
     def test_timestep_too_large_throws_err(self):
         obs = xr.DataArray(
@@ -278,10 +285,8 @@ class TestDNBR():
                 timestep=timestep,
             )
 
-class TestRRI():
 
-
-
+class TestRRI:
     year_period_RI = [
         pd.to_datetime("2000"),
         pd.to_datetime("2001"),
@@ -330,9 +335,8 @@ class TestRRI():
             dist_start=dist_start,
         ).equals(expected)
 
-
     @pytest.mark.parametrize(
-        ("obs", "restoration_start","dist_start", "timestep", "expected"),
+        ("obs", "restoration_start", "dist_start", "timestep", "expected"),
         [
             (
                 xr.DataArray(
@@ -348,7 +352,7 @@ class TestRRI():
                     dims=["band", "y", "x"],
                 ).rio.write_crs("4326"),
             ),
-            (  
+            (
                 xr.DataArray(
                     [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
                     coords={"time": year_period_RI},
@@ -372,193 +376,63 @@ class TestRRI():
             timestep=timestep,
         ).equals(expected)
 
-
     def test_neg_timestep_raises_err(self):
         obs = xr.DataArray(
-                    [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
-                    coords={"time": self.year_period_RI},
-                    dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326")
+            [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
+            coords={"time": self.year_period_RI},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
         restoration_start = "2001"
         dist_start = "2000"
-        timestep = -1 
-        with pytest.raises(
-            ValueError, match="timestep cannot be negative."
-            ):
+        timestep = -1
+        with pytest.raises(ValueError, match="timestep cannot be negative."):
             RRI(
-            image_stack=obs,
-            rest_start=restoration_start,
-            dist_start=dist_start,
-            timestep=timestep
+                image_stack=obs,
+                rest_start=restoration_start,
+                dist_start=dist_start,
+                timestep=timestep,
             )
 
     def test_out_bound_timestep_raises_err(self):
         obs = xr.DataArray(
-                    [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
-                    coords={"time": self.year_period_RI},
-                    dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326")
+            [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
+            coords={"time": self.year_period_RI},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
         restoration_start = "2001"
         dist_start = "2000"
-        timestep = 10 
+        timestep = 10
         with pytest.raises(
             ValueError, match="2010 or 2011 not within time coordinates."
-            ):
+        ):
             RRI(
-            image_stack=obs,
-            rest_start=restoration_start,
-            dist_start=dist_start,
-            timestep=timestep
+                image_stack=obs,
+                rest_start=restoration_start,
+                dist_start=dist_start,
+                timestep=timestep,
             )
 
     def test_0_timestep_RRI_raises_err(self):
         obs = xr.DataArray(
-                    [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
-                    coords={"time": self.year_period_RI},
-                    dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326")
+            [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
+            coords={"time": self.year_period_RI},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
         restoration_start = "2001"
         dist_start = "2000"
         timestep = 0
         with pytest.raises(
             ValueError, match="timestep for RRI must be greater than 0."
-            ):
+        ):
             RRI(
-            image_stack=obs,
-            rest_start=restoration_start,
-            dist_start=dist_start,
-            timestep=timestep
+                image_stack=obs,
+                rest_start=restoration_start,
+                dist_start=dist_start,
+                timestep=timestep,
             )
 
-class TestR80P():
 
-    year_period = [
-            pd.to_datetime("2010"),
-            pd.to_datetime("2011"),
-            pd.to_datetime("2012"),
-            pd.to_datetime("2013"),
-            pd.to_datetime("2014"),
-            pd.to_datetime("2015"),
-    ]
-
-    @pytest.mark.parametrize(
-        ("image_stack", "rest_start", "recovery_target", "expected"),
-        [
-            (
-                xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[70]], [[80]], [[80]]]],
-                coords={"time": year_period},
-                dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326"),
-                "2010",
-                xr.DataArray([100], dims=["band"]),
-                xr.DataArray(
-                [[[1.0]]],
-                dims=["band", "y", "x"],
-                ).rio.write_crs("4326")
-            ),
-            (
-                xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[70]], [[80]], [[120]]]],
-                coords={"time": year_period},
-                dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326"),
-                "2010",
-                xr.DataArray([100], dims=["band"]),
-                xr.DataArray(
-                [[[1.5]]],
-                dims=["band", "y", "x"],
-                ).rio.write_crs("4326")
-            ),
-            (
-                xr.DataArray(
-                    [[[[40]], [[45]], [[50]], [[55]], [[60]], [[60]]]],
-                coords={"time": year_period},
-                dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326"),
-                "2010",
-                xr.DataArray([100], dims=["band"]),
-                xr.DataArray(
-                [[[0.75]]],
-                dims=["band", "y", "x"],
-                ).rio.write_crs("4326")
-            ),
-        ],
-    )
-    def test_default_exactly_recovered(self, image_stack, rest_start, recovery_target, expected):
-
-        result = R80P(
-            image_stack=image_stack,
-            recovery_target=recovery_target,
-            rest_start=rest_start,
-        )
-        assert result.equals(expected)
-    
-    def test_timestep(self):
-        image_stack = xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[70]], [[75]], [[80]]]],
-                    coords={"time": self.year_period},
-                    dims=["band", "time", "y", "x"],
-                    ).rio.write_crs("4326")
-        rest_start = "2010"
-        timestep = 2
-        recovery_target = xr.DataArray([100], dims=["band"])
-        expected = xr.DataArray(
-                    [[[0.75]]],
-                    dims=["band", "y", "x"],
-                    ).rio.write_crs("4326")
-        result =  R80P(
-            image_stack=image_stack,
-            recovery_target=recovery_target,
-            rest_start=rest_start,
-            timestep=timestep,
-        )
-        assert result.equals(expected)
-    
-    def test_percent(self):
-        image_stack = xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[70]], [[75]], [[80]]]],
-                    coords={"time": self.year_period},
-                    dims=["band", "time", "y", "x"],
-                    ).rio.write_crs("4326")
-        rest_start = "2010"
-        percent = 50
-        recovery_target = xr.DataArray([100], dims=["band"])
-        expected = xr.DataArray(
-                    [[[1.6]]],
-                    dims=["band", "y", "x"],
-                    ).rio.write_crs("4326")
-        
-        result =  R80P(
-            image_stack=image_stack,
-            recovery_target=recovery_target,
-            rest_start=rest_start,
-            percent=percent,
-        )
-        assert result.equals(expected)
-    
-    def test_neg_timestep_value_err(self):
-        image_stack = xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[70]], [[75]], [[80]]]],
-                    coords={"time": self.year_period},
-                    dims=["band", "time", "y", "x"],
-                    ).rio.write_crs("4326")
-        restoration_date = "2010"
-        recovery_target = xr.DataArray([100], dims=["band"])
-        neg_timestep = -1
-
-        with pytest.raises(
-            ValueError, match="timestep cannot be negative."
-            ):
-            R80P(
-            image_stack=image_stack,
-            recovery_target=recovery_target,
-            rest_start=restoration_date,
-            timestep=neg_timestep
-            )
-
-class TestYrYr():
-
+class TestR80P:
     year_period = [
         pd.to_datetime("2010"),
         pd.to_datetime("2011"),
@@ -569,88 +443,210 @@ class TestYrYr():
     ]
 
     @pytest.mark.parametrize(
-            ("image_stack", "rest_start","expected"),
-        [ 
-            ( # Ri is greater than R0
+        ("image_stack", "rest_start", "recovery_target", "expected"),
+        [
+            (
                 xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[70]], [[80]], [[90]]]],
-                coords={"time": year_period},
-                dims=["band", "time", "y", "x"],
+                    [[[[40]], [[50]], [[60]], [[70]], [[80]], [[80]]]],
+                    coords={"time": year_period},
+                    dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 "2010",
+                xr.DataArray([100], dims=["band"]),
                 xr.DataArray(
-                [[[10.0]]],
-                dims=["band", "y", "x"],
-                ).rio.write_crs("4326")
+                    [[[1.0]]],
+                    dims=["band", "y", "x"],
+                ).rio.write_crs("4326"),
             ),
-            ( # Ri is less than R0
+            (
                 xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[50]], [[40]], [[30]]]],
-                coords={"time": year_period},
-                dims=["band", "time", "y", "x"],
+                    [[[[40]], [[50]], [[60]], [[70]], [[80]], [[120]]]],
+                    coords={"time": year_period},
+                    dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 "2010",
+                xr.DataArray([100], dims=["band"]),
                 xr.DataArray(
-                [[[-2.0]]],
-                dims=["band", "y", "x"],
-                ).rio.write_crs("4326")
+                    [[[1.5]]],
+                    dims=["band", "y", "x"],
+                ).rio.write_crs("4326"),
             ),
-            ( # Ri is equal than R0
+            (
                 xr.DataArray(
-                    [[[[40]], [[50]], [[60]], [[50]], [[40]], [[40]]]],
-                coords={"time": year_period},
-                dims=["band", "time", "y", "x"],
+                    [[[[40]], [[45]], [[50]], [[55]], [[60]], [[60]]]],
+                    coords={"time": year_period},
+                    dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 "2010",
+                xr.DataArray([100], dims=["band"]),
                 xr.DataArray(
-                [[[0.0]]],
-                dims=["band", "y", "x"],
-                ).rio.write_crs("4326")
-            ),  
-        ]
+                    [[[0.75]]],
+                    dims=["band", "y", "x"],
+                ).rio.write_crs("4326"),
+            ),
+        ],
     )
-    def test_default(self, image_stack, rest_start, expected):
-        result = YrYr(
-            image_stack=image_stack, 
-            rest_start=rest_start, 
+    def test_default_exactly_recovered(
+        self, image_stack, rest_start, recovery_target, expected
+    ):
+        result = R80P(
+            image_stack=image_stack,
+            recovery_target=recovery_target,
+            rest_start=rest_start,
         )
-        print(result, expected)
         assert result.equals(expected)
-    
+
     def test_timestep(self):
         image_stack = xr.DataArray(
-                    [[[[40]], [[45]], [[50]], [[70]], [[80]], [[90]]]],
-                coords={"time": self.year_period},
-                dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326")
+            [[[[40]], [[50]], [[60]], [[70]], [[75]], [[80]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
         rest_start = "2010"
         timestep = 2
+        recovery_target = xr.DataArray([100], dims=["band"])
         expected = xr.DataArray(
-                [[[5.0]]],
-                dims=["band", "y", "x"],
-                ).rio.write_crs("4326")
-        result = YrYr(
-            image_stack=image_stack, 
+            [[[0.75]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+        result = R80P(
+            image_stack=image_stack,
+            recovery_target=recovery_target,
             rest_start=rest_start,
             timestep=timestep,
         )
         assert result.equals(expected)
-    
+
+    def test_percent(self):
+        image_stack = xr.DataArray(
+            [[[[40]], [[50]], [[60]], [[70]], [[75]], [[80]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rest_start = "2010"
+        percent = 50
+        recovery_target = xr.DataArray([100], dims=["band"])
+        expected = xr.DataArray(
+            [[[1.6]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+
+        result = R80P(
+            image_stack=image_stack,
+            recovery_target=recovery_target,
+            rest_start=rest_start,
+            percent=percent,
+        )
+        assert result.equals(expected)
+
+    def test_neg_timestep_value_err(self):
+        image_stack = xr.DataArray(
+            [[[[40]], [[50]], [[60]], [[70]], [[75]], [[80]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        restoration_date = "2010"
+        recovery_target = xr.DataArray([100], dims=["band"])
+        neg_timestep = -1
+
+        with pytest.raises(ValueError, match="timestep cannot be negative."):
+            R80P(
+                image_stack=image_stack,
+                recovery_target=recovery_target,
+                rest_start=restoration_date,
+                timestep=neg_timestep,
+            )
+
+
+class TestYrYr:
+    year_period = [
+        pd.to_datetime("2010"),
+        pd.to_datetime("2011"),
+        pd.to_datetime("2012"),
+        pd.to_datetime("2013"),
+        pd.to_datetime("2014"),
+        pd.to_datetime("2015"),
+    ]
+
+    @pytest.mark.parametrize(
+        ("image_stack", "rest_start", "expected"),
+        [
+            (  # Ri is greater than R0
+                xr.DataArray(
+                    [[[[40]], [[50]], [[60]], [[70]], [[80]], [[90]]]],
+                    coords={"time": year_period},
+                    dims=["band", "time", "y", "x"],
+                ).rio.write_crs("4326"),
+                "2010",
+                xr.DataArray(
+                    [[[10.0]]],
+                    dims=["band", "y", "x"],
+                ).rio.write_crs("4326"),
+            ),
+            (  # Ri is less than R0
+                xr.DataArray(
+                    [[[[40]], [[50]], [[60]], [[50]], [[40]], [[30]]]],
+                    coords={"time": year_period},
+                    dims=["band", "time", "y", "x"],
+                ).rio.write_crs("4326"),
+                "2010",
+                xr.DataArray(
+                    [[[-2.0]]],
+                    dims=["band", "y", "x"],
+                ).rio.write_crs("4326"),
+            ),
+            (  # Ri is equal than R0
+                xr.DataArray(
+                    [[[[40]], [[50]], [[60]], [[50]], [[40]], [[40]]]],
+                    coords={"time": year_period},
+                    dims=["band", "time", "y", "x"],
+                ).rio.write_crs("4326"),
+                "2010",
+                xr.DataArray(
+                    [[[0.0]]],
+                    dims=["band", "y", "x"],
+                ).rio.write_crs("4326"),
+            ),
+        ],
+    )
+    def test_default(self, image_stack, rest_start, expected):
+        result = YrYr(
+            image_stack=image_stack,
+            rest_start=rest_start,
+        )
+        print(result, expected)
+        assert result.equals(expected)
+
+    def test_timestep(self):
+        image_stack = xr.DataArray(
+            [[[[40]], [[45]], [[50]], [[70]], [[80]], [[90]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rest_start = "2010"
+        timestep = 2
+        expected = xr.DataArray(
+            [[[5.0]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+        result = YrYr(
+            image_stack=image_stack,
+            rest_start=rest_start,
+            timestep=timestep,
+        )
+        assert result.equals(expected)
+
     def test_neg_timestep_throws_val_err(self):
         image_stack = xr.DataArray(
-                    [[[[40]], [[45]], [[50]], [[70]], [[80]], [[90]]]],
-                coords={"time": self.year_period},
-                dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326")
+            [[[[40]], [[45]], [[50]], [[70]], [[80]], [[90]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
         rest_start = "2010"
         timestep = -4
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             YrYr(
-                image_stack=image_stack, 
+                image_stack=image_stack,
                 rest_start=rest_start,
                 timestep=timestep,
             )
-
-
-
-
