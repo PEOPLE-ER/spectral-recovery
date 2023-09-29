@@ -293,7 +293,7 @@ class TestRRI():
     ]
 
     @pytest.mark.parametrize(
-        ("obs", "restoration_date", "expected"),
+        ("obs", "restoration_start", "dist_start", "expected"),
         [
             (  # max at t=4
                 xr.DataArray(
@@ -302,6 +302,7 @@ class TestRRI():
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 "2001",
+                "2000",
                 xr.DataArray(
                     [[[4.0]]],
                     dims=["band", "y", "x"],
@@ -314,6 +315,7 @@ class TestRRI():
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 "2001",
+                "2000",
                 xr.DataArray(
                     [[[4.0]]],
                     dims=["band", "y", "x"],
@@ -321,15 +323,16 @@ class TestRRI():
             ),
         ],
     )
-    def test_correct_default(self, obs, restoration_date, expected):
+    def test_correct_default(self, obs, restoration_start, dist_start, expected):
         assert RRI(
             image_stack=obs,
-            rest_start=restoration_date,
+            rest_start=restoration_start,
+            dist_start=dist_start,
         ).equals(expected)
 
 
     @pytest.mark.parametrize(
-        ("obs", "restoration_date", "timestep", "expected"),
+        ("obs", "restoration_start","dist_start", "timestep", "expected"),
         [
             (
                 xr.DataArray(
@@ -338,6 +341,7 @@ class TestRRI():
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 "2001",
+                "2000",
                 2,
                 xr.DataArray(
                     [[[6.0]]],
@@ -351,6 +355,7 @@ class TestRRI():
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 "2001",
+                "2000",
                 1,
                 xr.DataArray(
                     [[[1.0]]],
@@ -359,10 +364,11 @@ class TestRRI():
             ),
         ],
     )
-    def test_timestep(self, obs, restoration_date, timestep, expected):
+    def test_timestep(self, obs, restoration_start, dist_start, timestep, expected):
         assert RRI(
             image_stack=obs,
-            rest_start=restoration_date,
+            rest_start=restoration_start,
+            dist_start=dist_start,
             timestep=timestep,
         ).equals(expected)
 
@@ -373,14 +379,16 @@ class TestRRI():
                     coords={"time": self.year_period_RI},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326")
-        restoration_date = "2001"
+        restoration_start = "2001"
+        dist_start = "2000"
         timestep = -1 
         with pytest.raises(
             ValueError, match="timestep cannot be negative."
             ):
             RRI(
             image_stack=obs,
-            rest_start=restoration_date,
+            rest_start=restoration_start,
+            dist_start=dist_start,
             timestep=timestep
             )
 
@@ -390,14 +398,16 @@ class TestRRI():
                     coords={"time": self.year_period_RI},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326")
-        restoration_date = "2001"
+        restoration_start = "2001"
+        dist_start = "2000"
         timestep = 10 
         with pytest.raises(
             ValueError, match="2010 or 2011 not within time coordinates."
             ):
             RRI(
             image_stack=obs,
-            rest_start=restoration_date,
+            rest_start=restoration_start,
+            dist_start=dist_start,
             timestep=timestep
             )
 
@@ -407,14 +417,16 @@ class TestRRI():
                     coords={"time": self.year_period_RI},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326")
-        restoration_date = "2001"
+        restoration_start = "2001"
+        dist_start = "2000"
         timestep = 0
         with pytest.raises(
             ValueError, match="timestep for RRI must be greater than 0."
             ):
             RRI(
             image_stack=obs,
-            rest_start=restoration_date,
+            rest_start=restoration_start,
+            dist_start=dist_start,
             timestep=timestep
             )
 
