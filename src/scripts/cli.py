@@ -17,6 +17,9 @@ from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 INDEX_CHOICE = [i.value for i in Index]
 METRIC_CHOICE = [str(m) for m in Metric]
 
+# NOTE: multi-year disturbances are not implemented in CLI yet.
+
+
 @click.group(chain=True)
 @click.argument("tif_dir", type=click.Path(exists=True, path_type=Path))
 @click.argument(
@@ -72,13 +75,13 @@ def cli(
 
     This script will compute recovery metrics over the area of REST_POLY
     using spectral data from annual composites in TIF_DIR. Recovery targets
-    will be derived over REF_POLYGON for REF_YEARS. 
+    will be derived over REF_POLYGON for REF_YEARS.
 
     \b
     TIF_DIR        Path to a directory containing annual composites.
     OUT            Path to directory to write output rasters.
     REST_POLY      Path to the restoration area polygon.
-    REST_YEAR      Year of the restoration event.
+    REST_YEAR      Year the restoration event began.
     REF_POLY       Path to reference polygon(s).
     REF_YEARS      Start and end years over which to derive a recovery target.
 
@@ -86,7 +89,7 @@ def cli(
     # TODO: move user input prep/validation into own function?
     rest_year = pd.to_datetime(rest_year)
     ref_years = [pd.to_datetime(ref_years[0]), pd.to_datetime(ref_years[1])]
-   
+
     try:
         valid_indices = [Index[name.lower()] for name in indices]
     except KeyError as e:
@@ -121,6 +124,7 @@ def cli(
         )
         ctx.obj = ra
 
+
 @cli.command("RI")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
@@ -131,6 +135,7 @@ def RI(obj, timestep):
     else:
         ri = obj.RI()
     return ri
+
 
 @cli.command("Y2R")
 @click.pass_obj
@@ -143,6 +148,7 @@ def Y2R(obj, percent):
         y2r = obj.Y2R()
     return y2r
 
+
 @cli.command("YrYr")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
@@ -154,6 +160,7 @@ def YrYr(obj, timestep):
         yryr = obj.YrYr()
     return yryr
 
+
 @cli.command("dNBR")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
@@ -161,20 +168,22 @@ def dNBR(obj, timestep):
     click.echo(f"Computing dNBR")
     if timestep:
         dnbr = obj.dNBR(timestep=timestep)
-    else: 
+    else:
         dnbr = obj.dNBR()
     return dnbr
 
-@cli.command("P80R")
+
+@cli.command("R80P")
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
-def P80R(obj, percent):
-    click.echo(f"Computing P80R")
+def R80P(obj, percent):
+    click.echo(f"Computing R80P")
     if percent:
-        p80r = obj.P80R(percent_of_target=percent)
+        p80r = obj.R80P(percent_of_target=percent)
     else:
-        p80r = obj.P80R()
+        p80r = obj.R80P()
     return p80r
+
 
 @cli.result_callback()
 def write_metrics(result, **kwargs):
