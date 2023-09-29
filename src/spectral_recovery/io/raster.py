@@ -17,6 +17,7 @@ REQ_DIMS = ["band", "time", "y", "x"]
 
 VALID_YEAR = re.compile(r"^\d{4}$")
 
+
 def read_and_stack_tifs(
     paths_to_tifs: List[str],
     path_to_mask: str = None,
@@ -51,8 +52,8 @@ def read_and_stack_tifs(
         else:
             raise ValueError(
                 f"TIF filenames must be in format 'YYYY' but recived: '{filename}'"
-                ) from None
-        
+            ) from None
+
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
     band_names = _to_band_or_index(stacked_data.attrs["long_name"])
     stacked_data = stacked_data.assign_coords(band=list(band_names.values()))
@@ -84,6 +85,7 @@ def _to_band_or_index(names_list: List[str]):
             # TODO: add accepted values to error message and direct user to documentation
             raise ValueError
     return valid_names_mapping
+
 
 def _str_is_year(year_str):
     if VALID_YEAR.match(year_str) is None:
@@ -127,8 +129,8 @@ def metrics_to_tifs(
             # TODO: don't except on an error hidden from API users...
             except CPLE_AppDefinedError as exc:
                 raise PermissionError(
-                    f"Permission denied to overwrite {filename}. Is the existing TIF open in an"
-                    " application (e.g QGIS)? If so, try closing it before your"
-                    " next run to avoid this error."
+                    f"Permission denied to overwrite {filename}. Is the existing TIF"
+                    " open in an application (e.g QGIS)? If so, try closing it before"
+                    " your next run to avoid this error."
                 ) from None
     return

@@ -17,7 +17,6 @@ from spectral_recovery import metrics as m
 # TODO: split date into start and end dates.
 # TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
 class ReferenceSystem:
-
     """A Reference System.
 
     Attributes
@@ -30,7 +29,7 @@ class ReferenceSystem:
         A 4D (band, time, y, x) DataArray of images from which indices and
         metrics will be computed. The spatial bounds of the DataArray must
         contain `restoration_polygon` and (optional) `reference_polygons`,
-        and the temporal bounds must contain `restoration_year`.
+        and the temporal bounds must contain `restoration_start`.
     reference_years : Tuple of datetimes
         The year or range of years from which to get values for computing
         the recovery target.
@@ -102,8 +101,11 @@ class RestorationArea:
         The spatial deliniation of the restoration event. There
         must only be one geometry in the GeoDataframe and it must be
         of type shapely.Polygon or shapely.MultiPolygon.
-    restoration_year : str or datetime
-        The start year of the restoration event. Value must be within
+    disturbance_start : str or datetime
+        The year the disturbance began. Value must be within
+        the time dimension coordinates of `composite_stack` param.
+    restoration_start : str or datetime
+        The year the restoration event began. Value must be within
         the time dimension coordinates of `composite_stack` param.
     reference_polygons : int or list of int or ReferenceSystem
         The reference system for the restoration area. If ints, then
@@ -113,17 +115,18 @@ class RestorationArea:
         A 4D (band, time, y, x) DataArray of images from which indices and
         metrics will be computed. The spatial bounds of the DataArray must
         contain `restoration_polygon` and (optional) `reference_polygons`,
-        and the temporal bounds must contain `restoration_year`.
+        and the temporal bounds must contain `restoration_start`.
 
     """
 
     def __init__(
         self,
         restoration_polygon: gpd.GeoDataFrame,
-        restoration_year: str | datetime,
         reference_polygon: gpd.GeoDataFrame,
         reference_years: str | List[datetime],
         composite_stack: xr.DataArray,
+        disturbance_start: str | datetime = None,
+        restoration_start: str | datetime = None,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
@@ -132,17 +135,47 @@ class RestorationArea:
             )
         self.restoration_polygon = restoration_polygon
 
-        try:
-            _ = len(restoration_year)
-            raise TypeError(
-                "Iterable passed to restoration_year, but restoration_year must be a"
-                " Timestamp."
+        if disturbance_start is None and restoration_start is None:
+            return ValueError(
+                "At least one of disturbance_start or restoration_start need to be set,"
+                " both are None."
             )
-        except:
-            if type(restoration_year) is Timestamp:
-                self.restoration_year = restoration_year
-            else:
-                self.restoration_year = to_datetime(restoration_year)
+        if disturbance_start is not None:
+            try:
+                _ = len(disturbance_start)
+                raise TypeError(
+                    "Iterable passed to disturbance_start, but disturbance_start must be"
+                    " a Timestamp."
+                )
+            except:
+                if type(disturbance_start) is Timestamp:
+                    self.disturbance_start = disturbance_start
+                else:
+                    self.disturbance_start = to_datetime(disturbance_start)
+            if restoration_start is None:
+                self.restoration_start = pd.to_datetime(
+                    str(self.disturbance_start.year + 1)
+                )
+                if self.restoration_start < self.disturbance_start:
+                    raise ValueError(
+                        "The disturbance start year must be less than the restoration start year."
+                    )
+        if restoration_start is not None:
+            try:
+                _ = len(restoration_start)
+                raise TypeError(
+                    "Iterable passed to restoration_start, but restoration_start must"
+                    " be a Timestamp."
+                )
+            except:
+                if type(restoration_start) is Timestamp:
+                    self.restoration_start = restoration_start
+                else:
+                    self.restoration_start = to_datetime(restoration_start)
+            if disturbance_start is None:
+                self.disturbance_start = pd.to_datetime(
+                    str(self.restoration_start.year - 1)
+                )
 
             self.reference_system = ReferenceSystem(
                 reference_polygons=reference_polygon,
@@ -150,7 +183,11 @@ class RestorationArea:
                 reference_stack=composite_stack,
                 recovery_target_method=None,
             )
-
+        if self.restoration_start < self.disturbance_start:
+            # TODO: Should we allow restoration_start=disturbance_start
+            raise ValueError(
+                "The disturbance start year must be less than the restoration start year."
+            )
         if not self._within(composite_stack):
             raise ValueError(f"Not contained! Better message soon!")
         self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
@@ -166,32 +203,21 @@ class RestorationArea:
         """
         if not (
             stack.satts.contains_spatial(self.restoration_polygon)
-            and stack.satts.contains_temporal(self.restoration_year)
+            and stack.satts.contains_temporal(self.restoration_start)
+            and stack.satts.contains_temporal(self.disturbance_start)
         ):
             return False
         return True
 
-    def percent_recovered(self):
-        curr = self.stack.sel(time=self.end_year)
-        recovery_target = self.reference_system.recovery_target()
-        event = self.stack.sel(time=self.restoration_year)
-        pr = m.percent_recovered(
-            eval_stack=curr,
-            recovery_target=recovery_target["recovery_target"],
-            event_obs=event,
-        )
-        pr = pr.expand_dims(dim={"metric": [Metric.percent_recovered]})
-        return pr
-
     def Y2R(self, percent_of_target: int = 80):
         post_restoration = self.stack.sel(
-            time=slice(self.restoration_year, self.end_year)
+            time=slice(self.restoration_start, self.end_year)
         )
         recovery_target = self.reference_system.recovery_target()
         y2r = m.Y2R(
             image_stack=post_restoration,
             recovery_target=recovery_target["recovery_target"],
-            rest_start=str(self.restoration_year.year),
+            rest_start=str(self.restoration_start.year),
             rest_end=str(self.end_year.year),
             percent=percent_of_target,
         )
@@ -201,7 +227,7 @@ class RestorationArea:
     def YrYr(self, timestep: int = 5):
         yryr = m.YrYr(
             image_stack=self.stack,
-            rest_start=str(self.restoration_year.year),
+            rest_start=str(self.restoration_start.year),
             timestep=timestep,
         )
         yryr = yryr.expand_dims(dim={"metric": [Metric.YrYr]})
@@ -210,31 +236,32 @@ class RestorationArea:
     def dNBR(self, timestep: int = 5):
         dnbr = m.dNBR(
             image_stack=self.stack,
-            rest_start=str(self.restoration_year.year),
+            rest_start=str(self.restoration_start.year),
             timestep=timestep,
         )
         dnbr = dnbr.expand_dims(dim={"metric": [Metric.dNBR]})
         return dnbr
 
-    def RI(self, timestep: int = 5):
-        ri = m.RI(
+    def RRI(self, timestep: int = 5):
+        rri = m.RRI(
             image_stack=self.stack,
-            rest_start=str(self.restoration_year.year),
+            rest_start=str(self.restoration_start.year),
+            dist_start=str(self.disturbance_start.year),
             timestep=timestep,
         )
-        ri = ri.expand_dims(dim={"metric": [Metric.RI]})
-        return ri
+        rri = rri.expand_dims(dim={"metric": [Metric.RI]})
+        return rri
 
-    def P80R(self, percent_of_target: int = 80):
+    def R80P(self, percent_of_target: int = 80):
         recovery_target = self.reference_system.recovery_target()
-        p80r = m.P80R(
+        r80p = m.R80P(
             image_stack=self.stack,
-            rest_start=str(self.restoration_year.year),
+            rest_start=str(self.restoration_start.year),
             recovery_target=recovery_target["recovery_target"],
             percent=percent_of_target,
         )
-        p80r = p80r.expand_dims(dim={"metric": [Metric.P80R]})
-        return p80r
+        r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
+        return r80p
 
     # def metrics(self, metrics: List[str]) -> xr.DataArray:
     #     """Generate recovery metrics over a Restoration Area
