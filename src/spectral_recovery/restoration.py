@@ -122,11 +122,11 @@ class RestorationArea:
     def __init__(
         self,
         restoration_polygon: gpd.GeoDataFrame,
-        disturbance_start: str | datetime,
-        restoration_start: str | datetime,
         reference_polygon: gpd.GeoDataFrame,
         reference_years: str | List[datetime],
         composite_stack: xr.DataArray,
+        disturbance_start: str | datetime = None,
+        restoration_start: str | datetime = None,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
