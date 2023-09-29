@@ -156,6 +156,8 @@ class RestorationArea:
                 self.restoration_start = pd.to_datetime(
                     str(self.disturbance_start.year + 1)
                 )
+                if self.restoration_start < self.disturbance_start:
+                    raise ValueError("The disturbance start year must be less than the restoration start year.")
         if restoration_start is not None:
             try:
                 _ = len(restoration_start)
