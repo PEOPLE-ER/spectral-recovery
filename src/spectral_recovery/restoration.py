@@ -144,7 +144,7 @@ class RestorationArea:
             try:
                 _ = len(disturbance_start)
                 raise TypeError(
-                    "Iterable passed to disturbance_start, but restoration_start must be"
+                    "Iterable passed to disturbance_start, but disturbance_start must be"
                     " a Timestamp."
                 )
             except:
