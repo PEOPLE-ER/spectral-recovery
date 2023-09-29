@@ -200,6 +200,7 @@ class RestorationArea:
         if not (
             stack.satts.contains_spatial(self.restoration_polygon)
             and stack.satts.contains_temporal(self.restoration_start)
+            and stack.satts.contains_temporal(self.disturbance_start)
         ):
             return False
         return True
