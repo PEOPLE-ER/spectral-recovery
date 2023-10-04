@@ -60,19 +60,17 @@ from spectral_recovery.enums import Metric, Index, BandCommon
 Read in your polygon data with geopandas, set the dates of your timeseries, restoration event, and reference years.
 
 ```{python}
-# Define years:
-# the years your TIFs cover
-start_year, end_year = [pd.to_datetime("2010"), pd.to_datetime("2022")]
-
-# the year of the restoration event
-restoration_year = pd.to_datetime("2015")
+# the year of the restoration and disturbance events
+# NOTE: only one of restoration_start/disturbance_start need to be set
+restoration_start = pd.to_datetime("2015")
+disturbance_start = pd.to_datetime("2014")
 
 # the years to derive reference/recovery target conditions from
-reference_years = [pd.to_datetime("2013"), pd.to_datetime("2014")]
+reference_years = [pd.to_datetime("2011"), pd.to_datetime("2013")]
 
 # All together, this defines a timeseries from 2010-2022 where a restoration 
-# event occured in 2015, and a recovery target can be derived from the 
-# two years prior to the disturbance, 2013-2014.
+# started in 2015 from a disturbance in 2014. A recovery target is derived from the 
+# two years prior to the disturbance, 2011-2013.
 
 # Read in restoration polygon:
 restoration_poly = gpd.read_file("path/to/restoration/polygon.gpkg")
@@ -108,9 +106,11 @@ Then, initialize a `RestorationArea` object with the indices, dates, and restora
 
 ```{python}
 metrics = [Metric.Y2R, Metric.RI]
+# NOTE: Usuing a historical reference target? set `reference_polygon=restoration_polygon`
 metrics_array = RestorationArea(
             restoration_polygon=restoration_poly,
-            restoration_year=restoration_year,
+            restoration_start=restoration_year,
+            disturbance_start=disturbance_year,
             reference_polygon=restoration_poly,
             reference_system=reference_years,
             composite_stack=indices,
