@@ -50,8 +50,11 @@ class ReferenceSystem:
         self.reference_polygons = reference_polygons
         self.reference_range = to_datetime(reference_range)
         self.recovery_target_method = recovery_target_method or historic_average
-        if not self._within(reference_stack):
-            raise ValueError(f"Not contained! Better message soon!")
+        try:
+            if self._within(reference_stack):
+                self.reference_stack = reference_stack
+        except ValueError as e:
+            raise e from None
         else:
             clipped_stacks = {}
             # TODO: Maybe handle MultiPolygons here. Otherwise force everything to Polygon in pre-processing.
@@ -81,11 +84,10 @@ class ReferenceSystem:
         stack of yearly composite images.
 
         """
-        if not (
-            stack.satts.contains_spatial(self.reference_polygons)
-            and stack.satts.contains_temporal(self.reference_range)
-        ):
-            return False
+        if not stack.satts.contains_spatial(self.reference_polygons):
+            raise ValueError(f"Reference polygon is not contained in the spatial bounds of the annual composite stack. The spatial bounds of the annual composite stack are: {stack.rio.bounds()}")
+        if not stack.satts.contains_temporal(self.reference_range):
+            raise ValueError(f"Reference range is not contained in the temporal bounds of the annual composite stack. The temporal bounds of the annual composite stack are: {stack['time'].min().data} to {stack['time'].max().data}")
         return True
 
 
@@ -144,8 +146,8 @@ class RestorationArea:
             try:
                 _ = len(disturbance_start)
                 raise TypeError(
-                    "Iterable passed to disturbance_start, but disturbance_start must be"
-                    " a Timestamp."
+                    "Iterable passed to disturbance_start, but disturbance_start must"
+                    " be a Timestamp."
                 )
             except:
                 if type(disturbance_start) is Timestamp:
@@ -158,7 +160,8 @@ class RestorationArea:
                 )
                 if self.restoration_start < self.disturbance_start:
                     raise ValueError(
-                        "The disturbance start year must be less than the restoration start year."
+                        "The disturbance start year must be less than the restoration"
+                        " start year."
                     )
         if restoration_start is not None:
             try:
@@ -186,11 +189,24 @@ class RestorationArea:
         if self.restoration_start < self.disturbance_start:
             # TODO: Should we allow restoration_start=disturbance_start
             raise ValueError(
-                "The disturbance start year must be less than the restoration start year."
+                "The disturbance start year must be less than the restoration start"
+                " year."
             )
-        if not self._within(composite_stack):
-            raise ValueError(f"Not contained! Better message soon!")
-        self.stack = composite_stack.rio.clip(self.restoration_polygon.geometry.values)
+        if composite_stack.satts.is_annual_composite:
+            try:
+                if self._within(composite_stack):
+                    self.stack = composite_stack.rio.clip(
+                        self.restoration_polygon.geometry.values
+                    )
+            except ValueError as e:
+                raise e from None
+        else:
+            raise ValueError(
+                "composite_stack is not a valid stack of annual composites. Please"
+                " ensure there are no missing years and that the DataArray object"
+                " contains 'band', 'time', 'y' and 'x' dimensions."
+            )
+
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
 
     def _within(self, stack: xr.DataArray) -> bool:
@@ -201,12 +217,12 @@ class RestorationArea:
         stack of yearly composite images.
 
         """
-        if not (
-            stack.satts.contains_spatial(self.restoration_polygon)
-            and stack.satts.contains_temporal(self.restoration_start)
-            and stack.satts.contains_temporal(self.disturbance_start)
-        ):
-            return False
+        if not stack.satts.contains_spatial(self.restoration_polygon):
+            raise ValueError(f"Restoration polygon is not contained in the spatial bounds of the annual composite stack. The spatial bounds of the annual composite stack are: {stack.rio.bounds()}")
+        if not stack.satts.contains_temporal(self.restoration_start):
+            raise ValueError(f"Restoration start year is not contained in the temporal bounds of the annual composite stack. The temporal bounds of the annual composite stack are: {stack['time'].min().data} to {stack['time'].max().data}")
+        if not stack.satts.contains_temporal(self.disturbance_start):
+            raise ValueError(f"Disturbance start year is not contained in the temporal bounds of the annual composite stack. The temporal bounds of the annual composite stack are: {stack['time'].min().data} to {stack['time'].max().data}")
         return True
 
     def Y2R(self, percent_of_target: int = 80):
@@ -262,58 +278,4 @@ class RestorationArea:
         )
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
-
-    # def metrics(self, metrics: List[str]) -> xr.DataArray:
-    #     """Generate recovery metrics over a Restoration Area
-
-    #     Parameters
-    #     ----------
-    #     metrics : list of str
-    #         A list containing the names of metrics to generate.
-
-    #     Returns
-    #     -------
-    #     metrics_stack : xr.DataArray
-    #         A 4D (metric, band, y, x) DataArray, computed metrics values are
-    #         located along the `metric` dimension. Coordinates of metrics
-    #         are the related enums.Metric.
-
-    #     """
-    #     metrics_dict = {}
-    #     for metrics_input in metrics:
-    #         metric = Metric(metrics_input)
-    #         match metric:
-    #             case Metric.percent_recovered:
-    #                 curr = self.stack.sel(time=self.end_year)
-    #                 recovery_target = self.reference_system.recovery_target()
-    #                 event = self.stack.sel(time=self.restoration_year)
-    #                 metrics_dict[metric] = percent_recovered(
-    #                     eval_stack=curr,
-    #                     recovery_target=recovery_target["recovery_target"],
-    #                     event_obs=event,
-    #                 )
-    #             case Metric.Y2R:
-    #                 filtered_stack = self.stack.sel(
-    #                     time=slice(self.restoration_year, self.end_year)
-    #                 )
-    #                 recovery_target = self.reference_system.recovery_target()
-    #                 metrics_dict[metric] = Y2R(
-    #                     image_stack=filtered_stack,
-    #                     recovery_target=recovery_target["recovery_target"],
-    #                     rest_start=str(self.restoration_year.year),
-    #                     rest_end=str(self.end_year.year),
-    #                 )
-    #             case Metric.dNBR:
-    #                 metrics_dict[metric] = dNBR(
-    #                     restoration_stack=self.stack,
-    #                     rest_start=str(self.restoration_year.year),
-    #                 )
-    #             case Metric.RI:
-    #                 metrics_dict[metric] = RI(
-    #                     image_stack=self.stack,
-    #                     rest_start=str(self.restoration_year.year),
-    #                 )
-    #     metrics_stack = _stack_bands(
-    #         metrics_dict.values(), metrics_dict.keys(), dim_name="metric"
-    #     )
-    #     return metrics_stack
+    
