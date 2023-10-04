@@ -7,6 +7,7 @@ import pandas as pd
 
 from unittest.mock import patch
 from unittest.mock import MagicMock
+from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
 
 from spectral_recovery.recovery_target import historic_average
@@ -53,6 +54,7 @@ class TestRestorationAreaInit:
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
             stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
@@ -89,9 +91,11 @@ class TestRestorationAreaInit:
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
             stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
+            print(stack)
             resto_a = RestorationArea(
                 restoration_polygon=resto_poly,
                 disturbance_start=dist_start,
@@ -112,6 +116,7 @@ class TestRestorationAreaInit:
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
             stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
@@ -139,6 +144,7 @@ class TestRestorationAreaInit:
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
             stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
@@ -151,79 +157,22 @@ class TestRestorationAreaInit:
             )
             assert resto_a.disturbance_start == expected_dist_start
 
-    # check fro bad resto year, bad reference year, bad spatial location
-    @pytest.mark.parametrize(
-        (
-            "resto_poly",
-            "resto_start",
-            "dist_start",
-            "ref_years",
-            "raster",
-            "time_range",
-        ),
-        [
-            (
-                # bad resto year
-                "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
-                pd.to_datetime("2028"),
-                None,
-                pd.to_datetime("2012"),
-                "src/tests/test_data/time17_xy2_epsg3005.tif",
-                [str(x) for x in np.arange(2010, 2027)],
-            ),
-            (  # bad reference year
-                "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
-                pd.to_datetime("2011"),
-                None,
-                pd.to_datetime("2009"),
-                "src/tests/test_data/time17_xy2_epsg3005.tif",
-                [str(x) for x in np.arange(2010, 2027)],
-            ),
-            (  # bad dist year
-                "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
-                pd.to_datetime("2011"),
-                pd.to_datetime("2005"),
-                pd.to_datetime("2010"),
-                "src/tests/test_data/time17_xy2_epsg3005.tif",
-                [str(x) for x in np.arange(2010, 2027)],
-            ),
-            (  # bad spatial location (not contained at all)
-                "src/tests/test_data/polygon_outbound_epsg3005.gpkg",
-                pd.to_datetime("2015"),
-                None,
-                pd.to_datetime("2012"),
-                "src/tests/test_data/time17_xy2_epsg3005.tif",
-                [str(x) for x in np.arange(2010, 2027)],
-            ),
-            (  # bad spatial location (not fully contained)
-                "src/tests/test_data/polygon_overlap_epsg3005.gpkg",
-                pd.to_datetime("2015"),
-                None,
-                pd.to_datetime("2012"),
-                "src/tests/test_data/time17_xy2_epsg3005.tif",
-                [str(x) for x in np.arange(2010, 2027)],
-            ),
-        ],
-    )
-    def test_not_contained_error(
-        self,
-        resto_poly,
-        resto_start,
-        dist_start,
-        ref_years,
-        raster,
-        time_range,
-    ):
-        with rioxarray.open_rasterio(raster, chunks="auto") as data:
+    def test_out_of_bounds_restoration_start_year_throws_value_error(self):
+        with rioxarray.open_rasterio("src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto") as data:
             stack = data
             stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
-                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
+                time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
             )
-            resto_poly = gpd.read_file(resto_poly)
+            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            # stack's temporal range is 2010-2026, set resto_start to greater than 2026
+            ref_years = pd.to_datetime("2010")
+            dist_start = pd.to_datetime("2011")
+            resto_start = pd.to_datetime("2028") # bad value!
+            
             with pytest.raises(
                 ValueError,
-                match="Not contained! Better message soon!",
             ):
                 resto_a = RestorationArea(
                     restoration_polygon=resto_poly,
@@ -232,6 +181,190 @@ class TestRestorationAreaInit:
                     reference_polygon=resto_poly,
                     reference_years=ref_years,
                     composite_stack=stack,
+                )
+
+    def test_out_of_bounds_disturbance_start_year_throws_value_error(self):
+        with rioxarray.open_rasterio("src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto") as data:
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
+            stack = stack.assign_coords(
+                time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
+            )
+            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            # stack's temporal range is 2010-2026, set dist_start to less than 2010
+            ref_years = pd.to_datetime("2010")
+            dist_start = pd.to_datetime("2005")
+            resto_start = pd.to_datetime("2012")
+            
+            with pytest.raises(
+                ValueError,
+            ):
+                resto_a = RestorationArea(
+                    restoration_polygon=resto_poly,
+                    restoration_start=resto_start,
+                    disturbance_start=dist_start,
+                    reference_polygon=resto_poly,
+                    reference_years=ref_years,
+                    composite_stack=stack,
+                )
+    
+    @pytest.mark.parametrize    (
+        (
+            "ref_years"
+        ), 
+        [
+            (pd.to_datetime("2002")),
+            ((pd.to_datetime("2010"), pd.to_datetime("2028"))),
+            (pd.to_datetime("2008"), pd.to_datetime("2012")),
+        ]
+    )
+    def test_out_of_bounds_reference_years_throw_value_error(self, ref_years):
+        with rioxarray.open_rasterio("src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto") as data:
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})    
+            stack = stack.assign_coords(
+                time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
+            )
+            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            # stack's temporal range is 2010-2025
+            # reference years taken from pytest.parametrize
+            dist_start = pd.to_datetime("2013")
+            resto_start = pd.to_datetime("2014")
+            
+            with pytest.raises(
+                ValueError,
+            ):
+                resto_a = RestorationArea(
+                    restoration_polygon=resto_poly,
+                    restoration_start=resto_start,
+                    disturbance_start=dist_start,
+                    reference_polygon=resto_poly,
+                    reference_years=ref_years,
+                    composite_stack=stack,
+                )
+    
+
+    @pytest.mark.parametrize(
+         (
+            "resto_poly",
+            "resto_start",
+            "dist_start",
+            "ref_years",
+            "raster",
+            "time_range",
+            ),
+          
+            [
+                (  # bad spatial location (not contained at all)
+                    "src/tests/test_data/polygon_outbound_epsg3005.gpkg",
+                    pd.to_datetime("2015"),
+                    None,
+                    pd.to_datetime("2012"),
+                    "src/tests/test_data/time17_xy2_epsg3005.tif",
+                    [str(x) for x in np.arange(2010, 2027)],
+                ),
+                (  # bad spatial location (not fully contained)
+                    "src/tests/test_data/polygon_overlap_epsg3005.gpkg",
+                    pd.to_datetime("2015"),
+                    None,
+                    pd.to_datetime("2012"),
+                    "src/tests/test_data/time17_xy2_epsg3005.tif",
+                    [str(x) for x in np.arange(2010, 2027)],
+                ),
+            ],
+    )
+    def test_out_of_bounds_polygons_throw_value_err(self, resto_poly, resto_start, dist_start, ref_years, raster, time_range):
+        with rioxarray.open_rasterio(raster, chunks="auto") as data:
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
+            stack = stack.assign_coords(
+                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
+            )
+            resto_poly = gpd.read_file(resto_poly)
+            with pytest.raises(
+                ValueError,
+            ):
+                resto_a = RestorationArea(
+                    restoration_polygon=resto_poly,
+                    restoration_start=resto_start,
+                    disturbance_start=dist_start,
+                    reference_polygon=resto_poly,
+                    reference_years=ref_years,
+                    composite_stack=stack,
+                )
+
+    def test_composite_stack_wrong_dims_throws_value_error(self):
+        with rioxarray.open_rasterio("src/tests/test_data/time3_xy2_epsg3005.tif") as data:
+            # Misname band dimension to "bandz"
+            bad_stack = data
+            bad_stack = bad_stack.rename({"band": "time"})
+            bad_stack = bad_stack.expand_dims(dim={"bandz": [0]}) 
+            bad_stack = bad_stack.assign_coords(
+                time=([pd.to_datetime("2020"), pd.to_datetime("2021"), pd.to_datetime("2022")])
+            )
+            resto_start = pd.to_datetime("2021")
+            ref_years = pd.to_datetime("2020")
+            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+
+            with pytest.raises(
+                ValueError,
+            ):
+                resto_a = RestorationArea(
+                    restoration_polygon=resto_poly,
+                    restoration_start=resto_start,
+                    reference_polygon=resto_poly,
+                    reference_years=ref_years,
+                    composite_stack=bad_stack,
+                )
+
+    def test_composite_stack_missing_dims_throws_value_error(self):
+        with rioxarray.open_rasterio("src/tests/test_data/time3_xy2_epsg3005.tif") as data:
+            # Do not add a "band" dimension
+            bad_stack = data
+            bad_stack = bad_stack.rename({"band": "time"})
+            bad_stack = bad_stack.assign_coords(
+                time=([pd.to_datetime("2020"), pd.to_datetime("2021"), pd.to_datetime("2023")])
+            )
+            resto_start = pd.to_datetime("2021")
+            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            ref_years = pd.to_datetime("2020")
+
+            with pytest.raises(
+                ValueError,
+            ):
+                resto_a = RestorationArea(
+                    restoration_polygon=resto_poly,
+                    restoration_start=resto_start,
+                    reference_polygon=resto_poly,
+                    reference_years=ref_years,
+                    composite_stack=bad_stack,
+                )
+    
+    def test_composite_stack_missing_years_throws_value_error(self):
+        with rioxarray.open_rasterio("src/tests/test_data/time3_xy2_epsg3005.tif") as data:
+            # Set coordinates to 2020, 2021, and 2023, missing 2022
+            bad_stack = data
+            bad_stack = bad_stack.rename({"band": "time"})
+            bad_stack = bad_stack.expand_dims(dim={"band": [0]}) 
+            bad_stack = bad_stack.assign_coords(
+                time=([pd.to_datetime("2020"), pd.to_datetime("2021"), pd.to_datetime("2023")])
+            )
+            resto_start = pd.to_datetime("2021")
+            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            ref_years = pd.to_datetime("2020")
+
+            with pytest.raises(
+                ValueError,
+            ):
+                resto_a = RestorationArea(
+                    restoration_polygon=resto_poly,
+                    restoration_start=resto_start,
+                    reference_polygon=resto_poly,
+                    reference_years=ref_years,
+                    composite_stack=bad_stack,
                 )
 
 
@@ -266,6 +399,7 @@ class TestRestorationAreaMetrics:
             resto_poly = gpd.read_file(polygon)
             stack = data
             stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(
                     pd.date_range(
@@ -420,6 +554,7 @@ class TestReferenceSystemInit:
         with rioxarray.open_rasterio(test_raster) as data:
             test_stack = data
             test_stack = test_stack.rename({"band": "time"})
+            test_stack = test_stack.expand_dims(dim={"band": [0]})
             test_stack = test_stack.astype(
                 np.float64
             )  # NOTE: if this conversion doesn't happen, test with count will fail. Filtered ints become 0.
@@ -428,7 +563,7 @@ class TestReferenceSystemInit:
             )
         return test_stack
 
-    def test_init(self, image_stack):
+    def test_init_correctly_sets_dates(self, image_stack):
         reference_polys = gpd.read_file(
             "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
         )
@@ -445,9 +580,26 @@ class TestReferenceSystemInit:
         )
         assert rs.reference_range == reference_date
         assert rs.recovery_target_method == historic_average
-        assert rs.reference_stack.count() == 3
+        # the polygon overlaps only with the lower-right pixel of the stack.
 
-    def test_init_multi_poly(self, image_stack):
+    def test_init_correctly_clips_with_single_polygon(self, image_stack):
+        reference_polys = gpd.read_file(
+            "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
+        )
+        reference_date = pd.to_datetime("2008")
+
+        rs = ReferenceSystem(
+            reference_polygons=reference_polys,
+            reference_stack=image_stack,
+            reference_range=reference_date,
+            recovery_target_method=None,
+        )
+        # create 4d data array with dims poly_id, band, time, y, x
+        expected_stack = xr.DataArray([[[[[1.0]], [[2.0]], [[3.0]]]]], dims=["poly_id", "band", "time", "y", "x"])
+        assert npt.assert_array_equal(rs.reference_stack.data, expected_stack.data) is None
+        assert expected_stack.dims == rs.reference_stack.dims
+
+    def test_init_clips_with_multipolygons_correctly(self, image_stack):
         reference_polys = gpd.read_file(
             "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
         )
@@ -459,11 +611,32 @@ class TestReferenceSystemInit:
             reference_range=reference_date,
             recovery_target_method=None,
         )
-        # assert_geodataframe_equal(rs.reference_polygons, reference_polys, check_geom_type=True)
-        assert rs.reference_stack.count() == 6
+        # The multipolygon contains 2 polygons, which overlap with the lower-left and upper-right pixels. 
+        # Note: remember that arrays are flipped in the y-axis, so the lower-left pixel is at the top of the array.
+        expected_stack = xr.DataArray(
+           [[[[[1., np.nan],    
+                [np.nan, np.nan]],   
+                            
+            [[2., np.nan],    
+                [np.nan, np.nan]],   
+                            
+            [[3., np.nan],    
+                [np.nan, np.nan]]]], 
+                     
+        [[[[np.nan, np.nan],    
+            [np.nan, 1.]],   
+                        
+        [[np.nan, np.nan],    
+            [np.nan, 2.]],   
+            [[np.nan, np.nan],
+          [np.nan, 3.]]]]],
+        
+        dims=["poly_id", "band", "time", "y", "x"])
+        assert npt.assert_array_equal(rs.reference_stack.data, expected_stack.data) is None
+        assert expected_stack.dims == rs.reference_stack.dims
 
     # NOTE: some of these test might be redundant? Might already be covered by testing of the Accessor contains methods?
-    def test_not_contained_error_outbounds(self, image_stack):
+    def test_out_of_bounds_polygon_throws_value_err(self, image_stack):
         reference_polys = gpd.read_file(
             "src/tests/test_data/polygon_outbound_epsg3005.gpkg"
         )
@@ -471,7 +644,6 @@ class TestReferenceSystemInit:
 
         with pytest.raises(
             ValueError,
-            match="Not contained! Better message soon!",
         ):
             rs = ReferenceSystem(
                 reference_polygons=reference_polys,
@@ -480,7 +652,7 @@ class TestReferenceSystemInit:
                 recovery_target_method=None,
             )
 
-    def test_not_contained_error_overlap(self, image_stack):
+    def test_overlapping_polygon_throws_value_err(self, image_stack):
         reference_poly_overlap = gpd.read_file(
             "src/tests/test_data/polygon_overlap_epsg3005.gpkg"
         )
@@ -488,7 +660,6 @@ class TestReferenceSystemInit:
 
         with pytest.raises(
             ValueError,
-            match="Not contained! Better message soon!",
         ):
             rs = ReferenceSystem(
                 reference_polygons=reference_poly_overlap,
@@ -497,7 +668,7 @@ class TestReferenceSystemInit:
                 recovery_target_method=None,
             )
 
-    def test_not_contained_error_multi_in_and_out(self, image_stack):
+    def test_multipolygon_with_some_polygons_out_of_bounds_throws_value_err(self, image_stack):
         reference_polys_multi = gpd.read_file(
             "src/tests/test_data/polygon_multi_inoutbound_epsg3005.gpkg"
         )
@@ -505,7 +676,6 @@ class TestReferenceSystemInit:
 
         with pytest.raises(
             ValueError,
-            match="Not contained! Better message soon!",
         ):
             rs = ReferenceSystem(
                 reference_polygons=reference_polys_multi,
@@ -514,15 +684,14 @@ class TestReferenceSystemInit:
                 recovery_target_method=None,
             )
 
-    def test_not_contained_error_time(self, image_stack):
+    def test_out_of_bounds_date_throws_value_err(self, image_stack):
         reference_polys = gpd.read_file(
-            "src/tests/test_data/polygon_outbound_epsg3005.gpkg"
+            "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
         )
         reference_date = pd.to_datetime("2020")
 
         with pytest.raises(
             ValueError,
-            match="Not contained! Better message soon!",
         ):
             rs = ReferenceSystem(
                 reference_polygons=reference_polys,
