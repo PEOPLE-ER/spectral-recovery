@@ -124,7 +124,7 @@ def datetime_to_index(
 
 @xr.register_dataarray_accessor("satts")
 class SatelliteTimeSeries:
-    """A accessor for operations commonly performed over 
+    """A accessor for operations commonly performed over
     a timeseries of satellite images stored in an xarray.DataArray.
 
     See "Extending xarray using accessors" for more information:
@@ -194,22 +194,20 @@ class SatelliteTimeSeries:
         for indice_input in indices_list:
             indice = Index(indice_input)
             indices_dict[indice] = indices_map[indice](self._obj)
-        indices = xr.concat(indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band"))
+        indices = xr.concat(
+            indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band")
+        )
         return indices
 
     def stats(self, percentile, dims):
         "Compute statistics for a given dataarray object."
-        stats =  {}
+        stats = {}
         stats["mean"] = self._obj.mean(dim=dims, skipna=True)
-        stats["max"]  = self._obj.max(dim=dims, skipna=True)
-        stats["min"]  = self._obj.min(dim=dims, skipna=True)
+        stats["max"] = self._obj.max(dim=dims, skipna=True)
+        stats["min"] = self._obj.min(dim=dims, skipna=True)
         stats["median"] = self._obj.median(dim=dims, skipna=True)
-        stats["quantile"] =  self._obj.quantile(q=percentile, dim=dims, skipna=True)
+        stats["quantile"] = self._obj.quantile(q=percentile, dim=dims, skipna=True)
         stats["std"] = self._obj.std(dim=dims, skipna=True)
-        stats["sum"] =  self._obj.std(dim=dims, skipna=True)
-        stats_xr  = xr.concat(stats.values(), dim=pd.Index(stats.keys(), name="stats"))
+        stats["sum"] = self._obj.std(dim=dims, skipna=True)
+        stats_xr = xr.concat(stats.values(), dim=pd.Index(stats.keys(), name="stats"))
         return stats_xr
-
-
-        
-

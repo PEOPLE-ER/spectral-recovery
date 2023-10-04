@@ -46,7 +46,8 @@ def dNBR(
         if int(rest_post_t) > year_dt(image_stack["time"].data.max(), int):
             ts_len = year_dt(image_stack["time"].data.max(), int) - int(rest_start)
             raise ValueError(
-                f"timestep={timestep} is too large for timeseries with {ts_len} timesteps."
+                f"timestep={timestep} is too large for timeseries with"
+                f" {ts_len} timesteps."
             )
         else:
             raise e

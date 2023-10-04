@@ -85,9 +85,17 @@ class ReferenceSystem:
 
         """
         if not stack.satts.contains_spatial(self.reference_polygons):
-            raise ValueError(f"Reference polygon is not contained in the spatial bounds of the annual composite stack. The spatial bounds of the annual composite stack are: {stack.rio.bounds()}")
+            raise ValueError(
+                "Reference polygon is not contained in the spatial bounds of the"
+                " annual composite stack. The spatial bounds of the annual composite"
+                f" stack are: {stack.rio.bounds()}"
+            )
         if not stack.satts.contains_temporal(self.reference_range):
-            raise ValueError(f"Reference range is not contained in the temporal bounds of the annual composite stack. The temporal bounds of the annual composite stack are: {stack['time'].min().data} to {stack['time'].max().data}")
+            raise ValueError(
+                "Reference range is not contained in the temporal bounds of the annual"
+                " composite stack. The temporal bounds of the annual composite stack"
+                f" are: {stack['time'].min().data} to {stack['time'].max().data}"
+            )
         return True
 
 
@@ -218,11 +226,23 @@ class RestorationArea:
 
         """
         if not stack.satts.contains_spatial(self.restoration_polygon):
-            raise ValueError(f"Restoration polygon is not contained in the spatial bounds of the annual composite stack. The spatial bounds of the annual composite stack are: {stack.rio.bounds()}")
+            raise ValueError(
+                "Restoration polygon is not contained in the spatial bounds of the"
+                " annual composite stack. The spatial bounds of the annual composite"
+                f" stack are: {stack.rio.bounds()}"
+            )
         if not stack.satts.contains_temporal(self.restoration_start):
-            raise ValueError(f"Restoration start year is not contained in the temporal bounds of the annual composite stack. The temporal bounds of the annual composite stack are: {stack['time'].min().data} to {stack['time'].max().data}")
+            raise ValueError(
+                "Restoration start year is not contained in the temporal bounds of the"
+                " annual composite stack. The temporal bounds of the annual composite"
+                f" stack are: {stack['time'].min().data} to {stack['time'].max().data}"
+            )
         if not stack.satts.contains_temporal(self.disturbance_start):
-            raise ValueError(f"Disturbance start year is not contained in the temporal bounds of the annual composite stack. The temporal bounds of the annual composite stack are: {stack['time'].min().data} to {stack['time'].max().data}")
+            raise ValueError(
+                "Disturbance start year is not contained in the temporal bounds of the"
+                " annual composite stack. The temporal bounds of the annual composite"
+                f" stack are: {stack['time'].min().data} to {stack['time'].max().data}"
+            )
         return True
 
     def Y2R(self, percent_of_target: int = 80):
@@ -278,4 +298,3 @@ class RestorationArea:
         )
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
-    
