@@ -104,8 +104,8 @@ def cli(
             paths_to_tifs=tifs,
             path_to_mask=mask,
         )
-        if not timeseries.satts.valid:
-            raise ValueError("Stack is not a valid yearly composite stack.")
+        if not timeseries.satts.is_annual_composite:
+            raise ValueError("Stack is not a valid annual composite stack.")
 
         if indices is not None and len(indices) != 0:
             click.echo(f"Computing indices: {indices}")
