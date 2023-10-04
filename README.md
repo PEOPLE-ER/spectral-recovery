@@ -88,10 +88,7 @@ Next get a well-formated xarray.DataArray using `read_and_stack_tifs`
 ```{python}
 xr_stack = raster.read_and_stack_tifs(
     path_to_tifs="path_to_your_tifs/",
-    per_year=True,
     path_to_mask=None,
-    start_year=start_year_of_tifs,
-    end_year=end_year_of_tifs
     )
 ```
 
