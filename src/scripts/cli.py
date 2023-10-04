@@ -17,7 +17,7 @@ from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
 INDEX_CHOICE = [i.value for i in Index]
 METRIC_CHOICE = [str(m) for m in Metric]
 
-# NOTE: multi-year disturbances are not implemented in CLI yet.
+# NOTE: multi-year disturbances are not implemented in CLI yet. Users cannot provide disturbance AND restoration years.
 
 
 @click.group(chain=True)
@@ -99,7 +99,7 @@ def cli(
     tifs = [x for x in p if x.is_file()]
 
     with LocalCluster() as cluster, Client(cluster) as client:
-        click.echo(f"\nReading in annual composites from {tif_dir}")
+        click.echo(f"\nReading in annual composites from '{tif_dir}'")
         timeseries = read_and_stack_tifs(
             paths_to_tifs=tifs,
             path_to_mask=mask,
@@ -117,7 +117,7 @@ def cli(
         ref_poly_gdf = gpd.read_file(ref_poly)
         ra = RestorationArea(
             restoration_polygon=rest_poly_gdf,
-            restoration_year=rest_year,
+            restoration_start=rest_year,
             reference_polygon=ref_poly_gdf,
             reference_years=ref_years,
             composite_stack=timeseries_for_metrics,
@@ -125,16 +125,16 @@ def cli(
         ctx.obj = ra
 
 
-@cli.command("RI")
+@cli.command("RRI")
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
-def RI(obj, timestep):
-    click.echo(f"Computing RI")
+def RRI(obj, timestep):
+    click.echo(f"Computing RRI")
     if timestep:
-        ri = obj.RI(timestep=timestep)
+        rri = obj.RRI(timestep=timestep)
     else:
-        ri = obj.RI()
-    return ri
+        rri = obj.RRI()
+    return rri
 
 
 @cli.command("Y2R")
@@ -176,19 +176,26 @@ def dNBR(obj, timestep):
 @cli.command("R80P")
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
+@click.option("-t", "--timestep", type=int, required=False)
 def R80P(obj, percent):
     click.echo(f"Computing R80P")
     if percent:
-        p80r = obj.R80P(percent_of_target=percent)
+        if timestep:
+            p80r = obj.R80P(percent_of_target=percent, timestep=timestep)
+        else:
+            p80r = obj.R80P(percent_of_target=percent)
     else:
-        p80r = obj.R80P()
+        if timestep:
+            p80r = obj.R80P(timestep=timestep)
+        else:
+            p80r = obj.R80P()
     return p80r
 
 
 @cli.result_callback()
 def write_metrics(result, **kwargs):
     concated_metrics = xr.concat(result, dim="metric")
-    click.echo(f"Writing metrics to {kwargs['out']}")
+    click.echo(f"Writing metrics to '{kwargs['out']}'...")
     kwargs["out"].mkdir(parents=True, exist_ok=True)
     metrics_to_tifs(
         metrics_array=concated_metrics,

@@ -218,7 +218,6 @@ class RestorationArea:
             image_stack=post_restoration,
             recovery_target=recovery_target["recovery_target"],
             rest_start=str(self.restoration_start.year),
-            rest_end=str(self.end_year.year),
             percent=percent_of_target,
         )
         y2r = y2r.expand_dims(dim={"metric": [Metric.Y2R]})
@@ -252,12 +251,13 @@ class RestorationArea:
         rri = rri.expand_dims(dim={"metric": [Metric.RI]})
         return rri
 
-    def R80P(self, percent_of_target: int = 80):
+    def R80P(self, percent_of_target: int = 80, timestep: int = 5):
         recovery_target = self.reference_system.recovery_target()
         r80p = m.R80P(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
             recovery_target=recovery_target["recovery_target"],
+            timestep=timestep,
             percent=percent_of_target,
         )
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
