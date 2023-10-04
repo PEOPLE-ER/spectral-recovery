@@ -137,8 +137,8 @@ class SatelliteTimeSeries:
         self._valid = None
 
     @property
-    def valid(self):
-        """Return flag for whether DataArray is validy yearly comppsite.
+    def is_annual_composite(self):
+        """Return flag for whether DataArray is valid annual comppsite.
 
         Checks whether the object has the required dimension labels (as
         defined by/for project) and valid coordinate values. Will
