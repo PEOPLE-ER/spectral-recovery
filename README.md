@@ -15,7 +15,7 @@ Build the package and install wheel.
 
 ```{bash}
 python -m build
-python install dist/spectral_recovery-0.1-py3-none-any.whl
+pip install dist/spectral_recovery-0.1-py3-none-any.whl
 ```
 The `spectral_recovery` package is now available through import statements and a CLI. See the "Using the Spectral Recovery Tool" notebook for example usage.
 
