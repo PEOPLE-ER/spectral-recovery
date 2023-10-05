@@ -19,7 +19,7 @@ VALID_YEAR = re.compile(r"^\d{4}$")
 
 
 def read_and_stack_tifs(
-    paths_to_tifs: List[str],
+    paths_to_tifs: List[str] | str,
     path_to_mask: str = None,
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
@@ -41,6 +41,10 @@ def read_and_stack_tifs(
 
     """
     image_dict = {}
+    if isinstance(paths_to_tifs, str):
+        # check if path is a directory
+        if Path(paths_to_tifs).is_dir():
+            paths_to_tifs = list(Path(paths_to_tifs).glob("*.tif"))
     for file in paths_to_tifs:
         with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
             image_dict[Path(file).stem] = data
