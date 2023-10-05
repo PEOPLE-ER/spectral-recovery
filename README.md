@@ -92,13 +92,7 @@ xr_stack = raster.read_and_stack_tifs(
     )
 ```
 
-Check that the stack will be accepted in the `spectral_recovery` tool using the custom the `satts` (short for: satellite timeseries) accessor.
-
-```{python}
-print(timeseries.satts.valid)
-```
-
-If the stack is valid, you can then compute the indices. Please ensure you have the required bands for each index in your TIF, otherwise the computation will fail.
+Next, if you want to use spectral indices in your recovery metrics, compute the indices! Please ensure you have the required bands for each index in your TIF, otherwise the computation will fail.
 
 ```{python}
 indices_to_compute = [Index.NBR, Index.NDVI]
