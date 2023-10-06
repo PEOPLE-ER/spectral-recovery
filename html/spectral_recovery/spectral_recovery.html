@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.8.1" />
+<title>spectral_recovery.spectral_recovery API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>spectral_recovery.spectral_recovery</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import os
+
+os.environ[&#34;USE_PYGEOS&#34;] = &#34;0&#34;
+import xarray as xr
+import geopandas as gpd
+import pandas as pd
+import numpy as np
+
+from typing import Union, List, Dict
+from rasterio import merge
+from spectral_recovery.timeseries import _stack_from_user_input
+from spectral_recovery.enums import Index, Metric, BandCommon
+from spectral_recovery.restoration import ReferenceSystem, RestorationArea
+from rasterio._err import CPLE_AppDefinedError
+
+
+# TODO: generalize &#34;*_list&#34; types to non-Enums.
+def spectral_recovery(
+    timeseries_dict: Dict[str | int, xr.DataArray | str],
+    restoration_poly: gpd.GeoDataFrame | str,
+    restoration_year: int,
+    reference_range: Union[int, List[int]],
+    reference_poly: gpd.GeoDataFrame | str,
+    metrics_list: List[Metric],
+    indices_list: List[Index] = None,
+    timeseries_range: List[str] = None,
+    data_mask: xr.DataArray = None,
+    write: bool = False,
+) -&gt; None:
+    &#34;&#34;&#34;The main calling function. Better doc-string is on the TO-DO.
+
+    Parameters
+    -----------
+    timeseries_dict : Dict of str or xr.DataArray
+        Dictionary of paths to or DataArrays of per-pixel timeseries data.
+        The dictionary is expected to contain band rasters (i.e a single
+        band over time), indices rasters, or year rasters (i.e multiple-bands
+        for a given year), with keys being the respective band name or year for
+        the given raster item. Keys for band rasters must be the common name.
+        Rasters will be stacked along new 4th dimension, so dimensions must match.
+    restoration_poly :
+        Path to vector file containing a Polygon of restoration area.
+    restoration_year :
+        Year of restoration event.
+    reference_range :
+        Year or year(s) from which to derive the reference/recovery target value.
+    metrics_list : str
+        List of recovery metrics to compute.
+    indices_list : list of str, optional
+        List of indices to compute with the data provided in `timeseries_dict`.
+        If given, recovery metrics will be compute over all indices. If not, then
+        recovery metrics are computed using the data passed with `timeseries_dict`.
+    timeseries_range : list of str, optional
+        The year range of the timeseries data in `timeseries_dict`. Must be provided
+        if `timeseries_dict` contains per-band/indice data.
+    data_mask : str or xr.DataArray, optional
+        Path to or DataArray of mask. Must be broadcastable to dim of size (N,M,y,x)
+        where N is # of bands/indices and M is # of timesteps.
+    write : bool, optional
+        Flag for whether to write recovery metrics to raster (TIF) or not.
+
+    Returns
+    -------
+    metrics : xr.DataArray
+        A 3D (metrics, y, x) DataArray of recovery metrics for the restoration
+        area and period. NaN values represent data-gaps and/or undetermined metrics.
+    &#34;&#34;&#34;
+    # TODO: check that the out file names don&#39;t already exist... abort early if they do
+    if isinstance(restoration_poly, str):
+        restoration_poly_gdf = gpd.read_file(restoration_poly)
+
+    timeseries = _stack_from_user_input(timeseries_dict, data_mask, timeseries_range)
+    if not timeseries.satts.valid:
+        raise ValueError(&#34;Stack is not a valid yearly composite stack.&#34;)
+
+    if indices_list is not None and len(indices_list) != 0:
+        timeseries_for_metrics = timeseries.satts.indices(indices_list)
+    else:
+        timeseries_for_metrics = timeseries
+    if reference_poly is not None:
+        if isinstance(restoration_poly, str):
+            reference_poly_gdf = gpd.read_file(reference_poly)
+        ref_sys = ReferenceSystem(
+            reference_polygons=reference_poly_gdf,
+            reference_stack=timeseries_for_metrics,
+            reference_range=reference_range,
+            recovery_target_method=None,
+        )
+    else:
+        ref_sys = reference_range
+    metrics = RestorationArea(
+        restoration_polygon=restoration_poly_gdf,
+        restoration_year=restoration_year,
+        reference_system=ref_sys,
+        composite_stack=timeseries_for_metrics,
+    ).metrics(metrics_list)
+
+    if write:
+        out_raster = xr.full_like(timeseries_for_metrics[0, 0, :, :], np.nan)
+        for metric in metrics[&#34;metric&#34;].values:
+            xa_dataset = xr.Dataset()
+            for band in metrics[&#34;band&#34;].values:
+                out_metric = metrics.sel(metric=metric, band=band)
+                # NOTE: This takes non-null values between each raster so `out_raster` (the full AOI) must be all null
+                merged = out_metric.combine_first(out_raster)
+                xa_dataset[str(band)] = merged
+                try:
+                    out_name = f&#34;{metric!s}.tif&#34;
+                    xa_dataset.rio.to_raster(raster_path=out_name)
+                except CPLE_AppDefinedError as exc:
+                    raise PermissionError(
+                        f&#34;Could not write output to {out_name} because a TIF already&#34;
+                        &#34; exists and could not be overwritten, likely because&#34;
+                        &#34; it&#39;s open elsewhere. Is the existing TIF open in an&#34;
+                        &#34; application (e.g QGIS)? If so, try closing it before your&#34;
+                        &#34; next run to avoid this error.&#34;
+                    ) from None
+    return metrics
+
+
+if __name__ == &#34;__main__&#34;:
+    from dask.distributed import Client, LocalCluster, progress
+
+    rest_year = pd.to_datetime(&#34;2009&#34;)
+    reference_year = pd.to_datetime(&#34;2007&#34;)
+
+    print(
+        &#34;Tool currently only supports Landsat data. Please ensure any rasters passed in&#34;
+        &#34; `timeseries_dic` are Landsat-derived.\n&#34;
+    )
+
+    with LocalCluster() as cluster, Client(cluster) as client:
+        metrics = spectral_recovery(
+            timeseries_dict={
+                Index.ndvi: &#34;spectral_recovery/tests/test_data/time17_xy2_epsg3005.tif&#34;,
+                Index.tcw: &#34;spectral_recovery/tests/test_data/time17_xy2_epsg3005.tif&#34;,
+            },
+            timeseries_range=[&#34;2005&#34;, &#34;2021&#34;],
+            restoration_poly=&#34;spectral_recovery/tests/test_data/polygon_inbound_epsg3005.gpkg&#34;,
+            restoration_year=rest_year,
+            reference_poly=&#34;spectral_recovery/tests/test_data/polygon_multi_inbound_epsg3005.gpkg&#34;,
+            reference_range=reference_year,
+            # indices_list=[Index.ndvi, Index.sr],
+            metrics_list=[
+                Metric.percent_recovered,
+                Metric.years_to_recovery,
+            ],
+            write=False,
+        )
+        # TODO: figure out how to display progress to users
+        # progress(metrics)
+        print(metrics.compute())</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="spectral_recovery.spectral_recovery.spectral_recovery"><code class="name flex">
+<span>def <span class="ident">spectral_recovery</span></span>(<span>timeseries_dict: Dict[str | int, xarray.core.dataarray.DataArray | str], restoration_poly: geopandas.geodataframe.GeoDataFrame | str, restoration_year: int, reference_range: Union[int, List[int]], reference_poly: geopandas.geodataframe.GeoDataFrame | str, metrics_list: List[<a title="spectral_recovery.enums.Metric" href="enums.html#spectral_recovery.enums.Metric">Metric</a>], indices_list: List[<a title="spectral_recovery.enums.Index" href="enums.html#spectral_recovery.enums.Index">Index</a>] = None, timeseries_range: List[str] = None, data_mask: xarray.core.dataarray.DataArray = None, write: bool = False) -> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>The main calling function. Better doc-string is on the TO-DO.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>timeseries_dict</code></strong> :&ensp;<code>Dict</code> of <code>str</code> or <code>xr.DataArray</code></dt>
+<dd>Dictionary of paths to or DataArrays of per-pixel timeseries data.
+The dictionary is expected to contain band rasters (i.e a single
+band over time), indices rasters, or year rasters (i.e multiple-bands
+for a given year), with keys being the respective band name or year for
+the given raster item. Keys for band rasters must be the common name.
+Rasters will be stacked along new 4th dimension, so dimensions must match.</dd>
+<dt>restoration_poly :</dt>
+<dt>Path to vector file containing a Polygon of restoration area.</dt>
+<dt>restoration_year :</dt>
+<dt>Year of restoration event.</dt>
+<dt>reference_range :</dt>
+<dt>Year or year(s) from which to derive the reference/recovery target value.</dt>
+<dt><strong><code>metrics_list</code></strong> :&ensp;<code>str</code></dt>
+<dd>List of recovery metrics to compute.</dd>
+<dt><strong><code>indices_list</code></strong> :&ensp;<code>list</code> of <code>str</code>, optional</dt>
+<dd>List of indices to compute with the data provided in <code>timeseries_dict</code>.
+If given, recovery metrics will be compute over all indices. If not, then
+recovery metrics are computed using the data passed with <code>timeseries_dict</code>.</dd>
+<dt><strong><code>timeseries_range</code></strong> :&ensp;<code>list</code> of <code>str</code>, optional</dt>
+<dd>The year range of the timeseries data in <code>timeseries_dict</code>. Must be provided
+if <code>timeseries_dict</code> contains per-band/indice data.</dd>
+<dt><strong><code>data_mask</code></strong> :&ensp;<code>str</code> or <code>xr.DataArray</code>, optional</dt>
+<dd>Path to or DataArray of mask. Must be broadcastable to dim of size (N,M,y,x)
+where N is # of bands/indices and M is # of timesteps.</dd>
+<dt><strong><code>write</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Flag for whether to write recovery metrics to raster (TIF) or not.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>metrics</code></strong> :&ensp;<code>xr.DataArray</code></dt>
+<dd>A 3D (metrics, y, x) DataArray of recovery metrics for the restoration
+area and period. NaN values represent data-gaps and/or undetermined metrics.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def spectral_recovery(
+    timeseries_dict: Dict[str | int, xr.DataArray | str],
+    restoration_poly: gpd.GeoDataFrame | str,
+    restoration_year: int,
+    reference_range: Union[int, List[int]],
+    reference_poly: gpd.GeoDataFrame | str,
+    metrics_list: List[Metric],
+    indices_list: List[Index] = None,
+    timeseries_range: List[str] = None,
+    data_mask: xr.DataArray = None,
+    write: bool = False,
+) -&gt; None:
+    &#34;&#34;&#34;The main calling function. Better doc-string is on the TO-DO.
+
+    Parameters
+    -----------
+    timeseries_dict : Dict of str or xr.DataArray
+        Dictionary of paths to or DataArrays of per-pixel timeseries data.
+        The dictionary is expected to contain band rasters (i.e a single
+        band over time), indices rasters, or year rasters (i.e multiple-bands
+        for a given year), with keys being the respective band name or year for
+        the given raster item. Keys for band rasters must be the common name.
+        Rasters will be stacked along new 4th dimension, so dimensions must match.
+    restoration_poly :
+        Path to vector file containing a Polygon of restoration area.
+    restoration_year :
+        Year of restoration event.
+    reference_range :
+        Year or year(s) from which to derive the reference/recovery target value.
+    metrics_list : str
+        List of recovery metrics to compute.
+    indices_list : list of str, optional
+        List of indices to compute with the data provided in `timeseries_dict`.
+        If given, recovery metrics will be compute over all indices. If not, then
+        recovery metrics are computed using the data passed with `timeseries_dict`.
+    timeseries_range : list of str, optional
+        The year range of the timeseries data in `timeseries_dict`. Must be provided
+        if `timeseries_dict` contains per-band/indice data.
+    data_mask : str or xr.DataArray, optional
+        Path to or DataArray of mask. Must be broadcastable to dim of size (N,M,y,x)
+        where N is # of bands/indices and M is # of timesteps.
+    write : bool, optional
+        Flag for whether to write recovery metrics to raster (TIF) or not.
+
+    Returns
+    -------
+    metrics : xr.DataArray
+        A 3D (metrics, y, x) DataArray of recovery metrics for the restoration
+        area and period. NaN values represent data-gaps and/or undetermined metrics.
+    &#34;&#34;&#34;
+    # TODO: check that the out file names don&#39;t already exist... abort early if they do
+    if isinstance(restoration_poly, str):
+        restoration_poly_gdf = gpd.read_file(restoration_poly)
+
+    timeseries = _stack_from_user_input(timeseries_dict, data_mask, timeseries_range)
+    if not timeseries.satts.valid:
+        raise ValueError(&#34;Stack is not a valid yearly composite stack.&#34;)
+
+    if indices_list is not None and len(indices_list) != 0:
+        timeseries_for_metrics = timeseries.satts.indices(indices_list)
+    else:
+        timeseries_for_metrics = timeseries
+    if reference_poly is not None:
+        if isinstance(restoration_poly, str):
+            reference_poly_gdf = gpd.read_file(reference_poly)
+        ref_sys = ReferenceSystem(
+            reference_polygons=reference_poly_gdf,
+            reference_stack=timeseries_for_metrics,
+            reference_range=reference_range,
+            recovery_target_method=None,
+        )
+    else:
+        ref_sys = reference_range
+    metrics = RestorationArea(
+        restoration_polygon=restoration_poly_gdf,
+        restoration_year=restoration_year,
+        reference_system=ref_sys,
+        composite_stack=timeseries_for_metrics,
+    ).metrics(metrics_list)
+
+    if write:
+        out_raster = xr.full_like(timeseries_for_metrics[0, 0, :, :], np.nan)
+        for metric in metrics[&#34;metric&#34;].values:
+            xa_dataset = xr.Dataset()
+            for band in metrics[&#34;band&#34;].values:
+                out_metric = metrics.sel(metric=metric, band=band)
+                # NOTE: This takes non-null values between each raster so `out_raster` (the full AOI) must be all null
+                merged = out_metric.combine_first(out_raster)
+                xa_dataset[str(band)] = merged
+                try:
+                    out_name = f&#34;{metric!s}.tif&#34;
+                    xa_dataset.rio.to_raster(raster_path=out_name)
+                except CPLE_AppDefinedError as exc:
+                    raise PermissionError(
+                        f&#34;Could not write output to {out_name} because a TIF already&#34;
+                        &#34; exists and could not be overwritten, likely because&#34;
+                        &#34; it&#39;s open elsewhere. Is the existing TIF open in an&#34;
+                        &#34; application (e.g QGIS)? If so, try closing it before your&#34;
+                        &#34; next run to avoid this error.&#34;
+                    ) from None
+    return metrics</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="spectral_recovery" href="index.html">spectral_recovery</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="spectral_recovery.spectral_recovery.spectral_recovery" href="#spectral_recovery.spectral_recovery.spectral_recovery">spectral_recovery</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
