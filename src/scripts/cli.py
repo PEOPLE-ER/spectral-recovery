@@ -101,7 +101,7 @@ def cli(
     with LocalCluster() as cluster, Client(cluster) as client:
         click.echo(f"\nReading in annual composites from '{tif_dir}'")
         timeseries = read_and_stack_tifs(
-            paths_to_tifs=tifs,
+            path_to_tifs=tifs,
             path_to_mask=mask,
         )
         if not timeseries.satts.is_annual_composite:
