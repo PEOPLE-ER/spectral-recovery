@@ -62,7 +62,7 @@ def YrYr(
 ):
     """Per-pixel YrYr.
 
-    The average annual recovery rate relative to a fixed time intervald
+    The average annual recovery rate relative to a fixed time interval
     during the restoration monitoring window. The default is the first 5
     years of the restoration window, however this can be changed by specifying
     the parameter `timestep`.
@@ -151,8 +151,8 @@ def Y2R(
     """Per-pixel Y2R.
 
     The length of time taken (in time steps/years) for a given pixel to
-    reach 80% of its recovery target value. The percent can be modified
-    by changing the value of P.
+    first reach 80% of its recovery target value. The percent can be modified
+    by changing the value of `percent`.
 
     Parameters
     ----------
@@ -164,12 +164,6 @@ def Y2R(
         Recovery target values. Must be broadcastable to image_stack.
     percent: int, optional
         Percent of recovery to compute recovery against. Default = 80.
-
-    Notes
-    -----
-    If a pixel P at timestep X has value V_x=(percent * recovery_target)
-    but then at timestep X+i has value V_{xi}<(percent * recovery_target),
-    this implementation of Y2R will return X.
 
     """
     reco_target = recovery_target * (percent / 100)
