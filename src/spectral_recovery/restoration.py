@@ -6,10 +6,11 @@ from pandas import Index
 from typing import Callable, Optional, Union, List
 from datetime import datetime
 from pandas import Timestamp
-from spectral_recovery.timeseries import _stack_bands
+
 from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.utils import to_datetime
 from spectral_recovery.enums import Metric
+from spectral_recovery.timeseries import _SatelliteTimeSeries
 
 from spectral_recovery import metrics as m
 

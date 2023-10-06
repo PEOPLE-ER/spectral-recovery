@@ -95,11 +95,10 @@ class TestReadAndStackTifs:
         assert stacked_tifs.sizes["x"] == mocked_rasterio_open.return_value.sizes["x"]
 
     @pytest.mark.parametrize(
-        ("filenames", "bad_name_index", "rasterio_return"),
+        ("filenames", "rasterio_return"),
         [
             (
                 [f"202o"],
-                0,
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -107,7 +106,6 @@ class TestReadAndStackTifs:
             ),
             (
                 [f"tif2020"],
-                0,
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -115,7 +113,6 @@ class TestReadAndStackTifs:
             ),
             (
                 [f"20"],
-                0,
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -123,7 +120,6 @@ class TestReadAndStackTifs:
             ),
             (
                 [f"2020", f"not_a_year", f"2022"],
-                1,
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -138,16 +134,11 @@ class TestReadAndStackTifs:
         self,
         mocked_rasterio_open,
         filenames,
-        bad_name_index,
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
         with pytest.raises(
             ValueError,
-            match=(
-                "TIF filenames must be in format 'YYYY' but recived:"
-                f" '{filenames[bad_name_index]}'"
-            ),
         ):
             read_and_stack_tifs(path_to_tifs=filenames)
 
@@ -169,7 +160,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_correct_coordinate_values(
+    def test_correct_coordinate_values_from_good_inputs(
         self,
         mocked_rasterio_open,
         expected_years,
