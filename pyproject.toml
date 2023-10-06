@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spectral_recovery"
-requires-python = ">=3.11"
+requires-python = ">=3.6"
 authors = [
     {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"},
 ]
