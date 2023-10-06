@@ -540,7 +540,7 @@ class TestRestorationAreaMetrics:
         method_mock.return_value = mocked_return
 
         result = valid_resto_area.RRI()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.RI]})
+        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.RRI]})
 
         assert result.equals(expected_result)
 
