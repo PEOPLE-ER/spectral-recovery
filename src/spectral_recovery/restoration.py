@@ -284,7 +284,7 @@ class RestorationArea:
             dist_start=str(self.disturbance_start.year),
             timestep=timestep,
         )
-        rri = rri.expand_dims(dim={"metric": [Metric.RI]})
+        rri = rri.expand_dims(dim={"metric": [Metric.RRI]})
         return rri
 
     def R80P(self, percent_of_target: int = 80, timestep: int = 5):

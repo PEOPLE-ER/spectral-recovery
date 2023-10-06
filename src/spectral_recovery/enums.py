@@ -36,7 +36,7 @@ class Index(Enum):
 class Metric(Enum):
     percent_recovered = "percent_recovered"
     Y2R = "Y2R"
-    RI = "RI"
+    RRI = "RRI"
     dNBR = "dNBR"
     R80P = "R80P"
     YrYr = "YrYr"
