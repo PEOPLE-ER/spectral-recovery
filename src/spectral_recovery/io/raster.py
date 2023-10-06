@@ -55,7 +55,7 @@ def read_and_stack_tifs(
             time_keys.append(pd.to_datetime(filename))
         else:
             raise ValueError(
-                f"TIF filenames must be in format 'YYYY' but recived: '{filename}'"
+                f"TIF filenames must be in format 'YYYY' but recieved: '{filename}'"
             ) from None
 
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
@@ -98,18 +98,17 @@ def _str_is_year(year_str):
         return True
 
 
-def _stack_bands(bands, names, dim_name):
-    """Stack 3D image stacks to create 4D image stack"""
-    # TODO: handle band dimension/coordinate errors
-    stacked_bands = xr.concat(bands, dim=pd.Index(names, name=dim_name))
+def _stack_bands(bands, coords, dim_name):
+    """Stack a bands along a named dimension with coordinates"""
+    # TODO: Probably doesn't need to be a function...
+    stacked_bands = xr.concat(bands, dim=pd.Index(coords, name=dim_name))
     return stacked_bands
 
 
 def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):
     """Mask a ND stack with 2D mask"""
-    # TODO: should this allow more than 2D mask?
     if len(mask.dims) != 2:
-        raise ValueError(f"Mask must be 2D but {len(mask.dims)}D mask provided.")
+        raise ValueError(f"Only 2D masks are supported. {len(mask.dims)}D mask provided.")
     masked_stack = stack.where(mask, fill)
     return masked_stack
 
