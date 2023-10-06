@@ -19,7 +19,7 @@ VALID_YEAR = re.compile(r"^\d{4}$")
 
 
 def read_and_stack_tifs(
-    paths_to_tifs: List[str] | str,
+    path_to_tifs: List[str] | str,
     path_to_mask: str = None,
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
@@ -41,11 +41,11 @@ def read_and_stack_tifs(
 
     """
     image_dict = {}
-    if isinstance(paths_to_tifs, str):
+    if isinstance(path_to_tifs, str):
         # check if path is a directory
-        if Path(paths_to_tifs).is_dir():
-            paths_to_tifs = list(Path(paths_to_tifs).glob("*.tif"))
-    for file in paths_to_tifs:
+        if Path(path_to_tifs).is_dir():
+            path_to_tifs = list(Path(path_to_tifs).glob("*.tif"))
+    for file in path_to_tifs:
         with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
             image_dict[Path(file).stem] = data
 
@@ -59,7 +59,7 @@ def read_and_stack_tifs(
             ) from None
 
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
-    band_names = _to_band_or_index(stacked_data.attrs["long_name"])
+    band_names = _to_band_or_index_name(stacked_data.attrs["long_name"])
     stacked_data = stacked_data.assign_coords(band=list(band_names.values()))
 
     # TODO: catch missing dimension error here
@@ -73,7 +73,7 @@ def read_and_stack_tifs(
     return stacked_data
 
 
-def _to_band_or_index(names_list: List[str]):
+def _to_band_or_index_name(names_list: List[str]):
     valid_names_mapping = {}
     for name in names_list:
         try:
