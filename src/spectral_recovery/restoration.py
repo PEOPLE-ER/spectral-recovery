@@ -89,13 +89,13 @@ class ReferenceSystem:
                 "Reference polygon is not contained in the spatial bounds of the"
                 " annual composite stack. The spatial bounds of the annual composite"
                 f" stack are: {stack.rio.bounds()}"
-            )
+            ) from None
         if not stack.satts.contains_temporal(self.reference_range):
             raise ValueError(
                 "Reference range is not contained in the temporal bounds of the annual"
                 " composite stack. The temporal bounds of the annual composite stack"
                 f" are: {stack['time'].min().data} to {stack['time'].max().data}"
-            )
+            ) from None
         return True
 
 
@@ -142,21 +142,21 @@ class RestorationArea:
             raise ValueError(
                 f"restoration_polygons contains more than one Polygon."
                 f"A RestorationArea instance can only contain one Polygon."
-            )
+            ) from None
         self.restoration_polygon = restoration_polygon
 
         if disturbance_start is None and restoration_start is None:
-            return ValueError(
+            raise ValueError(
                 "At least one of disturbance_start or restoration_start need to be set,"
                 " both are None."
-            )
+            ) from None
         if disturbance_start is not None:
             try:
                 _ = len(disturbance_start)
                 raise TypeError(
                     "Iterable passed to disturbance_start, but disturbance_start must"
                     " be a Timestamp."
-                )
+                ) from None
             except:
                 if type(disturbance_start) is Timestamp:
                     self.disturbance_start = disturbance_start
@@ -170,14 +170,15 @@ class RestorationArea:
                     raise ValueError(
                         "The disturbance start year must be less than the restoration"
                         " start year."
-                    )
+                    ) from None
+        
         if restoration_start is not None:
             try:
                 _ = len(restoration_start)
                 raise TypeError(
                     "Iterable passed to restoration_start, but restoration_start must"
                     " be a Timestamp."
-                )
+                ) from None
             except:
                 if type(restoration_start) is Timestamp:
                     self.restoration_start = restoration_start
@@ -188,14 +189,13 @@ class RestorationArea:
                     str(self.restoration_start.year - 1)
                 )
 
-            self.reference_system = ReferenceSystem(
-                reference_polygons=reference_polygon,
-                reference_range=reference_years,
-                reference_stack=composite_stack,
-                recovery_target_method=None,
-            )
+        self.reference_system = ReferenceSystem(
+            reference_polygons=reference_polygon,
+            reference_range=reference_years,
+            reference_stack=composite_stack,
+            recovery_target_method=None,
+        )
         if self.restoration_start < self.disturbance_start:
-            # TODO: Should we allow restoration_start=disturbance_start
             raise ValueError(
                 "The disturbance start year must be less than the restoration start"
                 " year."
@@ -213,7 +213,7 @@ class RestorationArea:
                 "composite_stack is not a valid stack of annual composites. Please"
                 " ensure there are no missing years and that the DataArray object"
                 " contains 'band', 'time', 'y' and 'x' dimensions."
-            )
+            ) from None
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
 
@@ -221,8 +221,7 @@ class RestorationArea:
         """Check if within a DataArray
 
         Determines whether an RestorationArea's spatial (polygons) and temporal
-        (reference and event years) attributes are contained within a
-        stack of yearly composite images.
+        (years) attributes are contained within a stack of annual composite images.
 
         """
         if not stack.satts.contains_spatial(self.restoration_polygon):
@@ -230,19 +229,19 @@ class RestorationArea:
                 "Restoration polygon is not contained in the spatial bounds of the"
                 " annual composite stack. The spatial bounds of the annual composite"
                 f" stack are: {stack.rio.bounds()}"
-            )
+            ) from None
         if not stack.satts.contains_temporal(self.restoration_start):
             raise ValueError(
                 "Restoration start year is not contained in the temporal bounds of the"
                 " annual composite stack. The temporal bounds of the annual composite"
                 f" stack are: {stack['time'].min().data} to {stack['time'].max().data}"
-            )
+            ) from None
         if not stack.satts.contains_temporal(self.disturbance_start):
             raise ValueError(
                 "Disturbance start year is not contained in the temporal bounds of the"
                 " annual composite stack. The temporal bounds of the annual composite"
                 f" stack are: {stack['time'].min().data} to {stack['time'].max().data}"
-            )
+            ) from None
         return True
 
     def Y2R(self, percent_of_target: int = 80):
