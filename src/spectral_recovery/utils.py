@@ -24,6 +24,10 @@ def maintain_rio_attrs(func):
     This method ensures that a returned xarray object has the
     same rio CRS and encoding as the input xarray object.
 
+    Notes
+    -----
+    Similar to https://github.com/pydata/xarray/pull/2482, but specifically
+    for a subset of rio attributes to be maintained.
     """
 
     @functools.wraps(func)
