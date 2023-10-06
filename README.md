@@ -36,7 +36,7 @@ When done with a development task, you can simply uninstall the package as you n
 
 #### From CLI
 
-The CLI for the spectral recovery tool can be accessed using the `specrec` command. Try it out the help command to see the different options and arguments you can pass.
+The CLI for the spectral recovery tool can be accessed using the `specrec` command. Try out the help command to see the different options and arguments you can pass.
 
 ```{bash}
 specrec --help
@@ -49,8 +49,6 @@ specrec -i NBR -i NDVI path/to/annual/composites/ output/path/ path/to/restorati
 ```
 
 The above command points to a directory containing a set of annual composite tifs, a restoration polygon whose restoration event began in 2015, and a reference polygon with reference years 2013-2014. The `-i` flags at the start of the command indicate that the recovery metrics should be computed using the NBR and NDVI indices, while the subcommands at the end (`Y2R`, `RRI`, etc.) are the choices of recovery metrics to compute for each index.
-
-For more information on 
 
 #### Within Modules (temp. most of this should be in tutorial, not README)
 
