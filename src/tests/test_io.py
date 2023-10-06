@@ -84,7 +84,7 @@ class TestReadAndStackTifs:
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
-        stacked_tifs = read_and_stack_tifs(paths_to_tifs=tif_paths)
+        stacked_tifs = read_and_stack_tifs(path_to_tifs=tif_paths)
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
         assert (
@@ -149,7 +149,7 @@ class TestReadAndStackTifs:
                 f" '{filenames[bad_name_index]}'"
             ),
         ):
-            read_and_stack_tifs(paths_to_tifs=filenames)
+            read_and_stack_tifs(path_to_tifs=filenames)
 
     @pytest.mark.parametrize(
         ("expected_years", "filenames", "expected_bands", "rasterio_return"),
@@ -178,7 +178,7 @@ class TestReadAndStackTifs:
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
-        stacked_tifs = read_and_stack_tifs(paths_to_tifs=filenames)
+        stacked_tifs = read_and_stack_tifs(path_to_tifs=filenames)
         assert np.all(stacked_tifs["band"].data == expected_bands)
         assert np.all(stacked_tifs["time"].data == expected_years)
 
@@ -212,7 +212,7 @@ class TestReadAndStackTifs:
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
-        stacked_tifs = read_and_stack_tifs(paths_to_tifs=filenames)
+        stacked_tifs = read_and_stack_tifs(path_to_tifs=filenames)
         assert np.all(stacked_tifs["time"].data == sorted_years)
 
     # @patch(
@@ -222,7 +222,7 @@ class TestReadAndStackTifs:
     #     self, mocked_rasterio_open, tif_paths, rasterio_return,
     # ):
     #     mocked_rasterio_open.return_value = rasterio_return
-    #     stacked_tifs = read_and_stack_tifs(paths_to_tifs=tif_paths)
+    #     stacked_tifs = read_and_stack_tifs(path_to_tifs=tif_paths)
 
     #     assert stacked_tifs.sizes["time"] == len(tif_paths)
     #     assert (

@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 from rasterio._err import CPLE_AppDefinedError
 from pandas.core.tools.datetimes import DateParseError
 
@@ -24,20 +24,24 @@ def read_and_stack_tifs(
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
 
-    The returned DataArray will have dimensions: 'time', 'band', 'y', and 'x'. The
-    'band' dimension coordinates will be either enums.Index or enums.BandCommon types, and 'time' dimension
-    will be datetime objected enabled with the '.dt' accessor.
-
     Parameters
     ----------
-    path_to_tifs : list of str,
-    per_year : bool, optional
-    per_band : bool, optional
+    path_to_tifs : list of str
+        List of paths to TIFs or path to directory containing TIFs.
     path_to_mask : str, optional
+        Path to a 2D data mask to apply over all TIFs.
 
     Returns
     -------
     stacked_data : xr.DataArray
+        A 4D DataArray containing all rasters passed in
+        `path_to_tifs` and optionally masked. The 'band' dimension coordinates 
+        will be either enums.Index or enums.BandCommon types, and 'time' dimension
+        will be datetime object dervied from the filename. 
+    
+    Notes
+    -----
+    Files must be named in the format 'YYYY.tif' where 'YYYY' is a valid year.
 
     """
     image_dict = {}
@@ -73,7 +77,8 @@ def read_and_stack_tifs(
     return stacked_data
 
 
-def _to_band_or_index_name(names_list: List[str]):
+def _to_band_or_index_name(names_list: List[str]) -> Dict[str, BandCommon | Index]:
+    """Convert a list of band or index names to BandCommon or Index enums"""
     valid_names_mapping = {}
     for name in names_list:
         try:
@@ -91,21 +96,22 @@ def _to_band_or_index_name(names_list: List[str]):
     return valid_names_mapping
 
 
-def _str_is_year(year_str):
+def _str_is_year(year_str) -> bool:
+    """Check if a string is a valid year (YYYY)"""
     if VALID_YEAR.match(year_str) is None:
         return False
     else:
         return True
 
 
-def _stack_bands(bands, coords, dim_name):
+def _stack_bands(bands, coords, dim_name) -> xr.DataArray:
     """Stack a bands along a named dimension with coordinates"""
     # TODO: Probably doesn't need to be a function...
     stacked_bands = xr.concat(bands, dim=pd.Index(coords, name=dim_name))
     return stacked_bands
 
 
-def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):
+def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.DataArray:
     """Mask a ND stack with 2D mask"""
     if len(mask.dims) != 2:
         raise ValueError(f"Only 2D masks are supported. {len(mask.dims)}D mask provided.")
@@ -114,20 +120,31 @@ def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan):
 
 
 def metrics_to_tifs(
-    metrics_array: xr.DataArray,
+    metric: xr.DataArray,
     out_dir: str,
-):
+) -> None:
+    """
+    Write a DataArray of metrics toTIFs.
+    
+    Parameters
+    ----------
+    metric : xr.DataArray
+        The metric to write to TIFs. Must have dimensions: 'metric', 'band', 'y', and 'x'.
+    out_dir : str
+        Path to directory to write TIFs.
+
+    """
     # NOTE: out_raster MUST be all null otherwise merging of rasters will fail
-    out_raster = xr.full_like(metrics_array[0, 0, :, :], np.nan)
-    for metric in metrics_array["metric"].values:
+    out_raster = xr.full_like(metric[0, 0, :, :], np.nan)
+    for m in metric["metric"].values:
         xa_dataset = xr.Dataset()
-        for band in metrics_array["band"].values:
-            out_metric = metrics_array.sel(metric=metric, band=band)
+        for band in metric["band"].values:
+            out_metric = metric.sel(metric=m, band=band)
 
             merged = out_metric.combine_first(out_raster)
             xa_dataset[str(band)] = merged
             try:
-                filename = f"{out_dir}/{str(metric)}.tif"
+                filename = f"{out_dir}/{str(m)}.tif"
                 xa_dataset.rio.to_raster(raster_path=filename)
             # TODO: don't except on an error hidden from API users...
             except CPLE_AppDefinedError as exc:
