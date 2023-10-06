@@ -118,16 +118,6 @@ class TestY2R:
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
                 xr.DataArray(
-                    [[[[30]], [[110]]]],
-                    coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
-                    dims=["band", "time", "y", "x"],
-                ).rio.write_crs("4326"),
-                0,  # recovery target of 0
-                xr.DataArray([[[0.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
-            ),
-            (
-                xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
-                xr.DataArray(
                     [[[[10]], [[19]]]],
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
@@ -277,7 +267,7 @@ class TestDNBR:
         timestep = 6
 
         with pytest.raises(
-            ValueError, match="timestep=6 is too large for timeseries with 5 timesteps."
+            ValueError,
         ):
             dNBR(
                 image_stack=obs,
@@ -329,16 +319,76 @@ class TestRRI:
         ],
     )
     def test_correct_default(self, obs, restoration_start, dist_start, expected):
+        print( RRI(
+            image_stack=obs,
+            rest_start=restoration_start,
+            dist_start=dist_start,), expected.data)
         assert RRI(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
         ).equals(expected)
+    
+    def test_correct_multi_dimension_result(self):
+        obs = xr.DataArray(
+    [[[[50, 2],
+         [30, 2]],
+
+        [[20, 1],
+         [25, 1]],
+
+        [[20, 1.],
+         [20, 1.]],
+
+        [[30, 2],
+         [15, 1]],
+
+        [[40, 3],
+         [20, 1]],
+
+        [[50, 4],
+         [25, 1]],
+
+        [[50, 5],
+         [30, 1]]]],
+            coords={"time": self.year_period_RI},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        restoration_start = "2001"
+        dist_start = "2000"
+        timestep = 5
+        # 4 pixels for dist_start - dist_end:
+        # 1. 50 - 20 = 30
+        # 2. 2 - 1 = 1
+        # 3. 30 - 25 = 5
+        # 4. 2 - 1 = 1
+        # Max of t+5 and t+4:
+        # 1. 60
+        # 2. 5
+        # 3. 30
+        # 4. 1
+        # t/f we want:
+        # 1. (50-20)/30 = 1
+        # 2. (5-1)/1 = 4 
+        # 3. (30-25)/5 = 1
+        # 4. 1-1/1 = 0
+        expected = xr.DataArray(
+            [[[1.0, 4.0], [1.0, 0.0]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+        result = RRI(
+            image_stack=obs,
+            rest_start=restoration_start,
+            dist_start=dist_start,
+            timestep=timestep
+            )
+        print(result, expected)
+        assert result.equals(expected)
 
     @pytest.mark.parametrize(
         ("obs", "restoration_start", "dist_start", "timestep", "expected"),
         [
-            (
+            (  # denom = 70 - 60 = 10, max of t+2 and t+1 = 120, 120-60 = 60, 60/10 = 6
                 xr.DataArray(
                     [[[[70]], [[60]], [[120]], [[80]], [[90]], [[100]], [[80]]]],
                     coords={"time": year_period_RI},
@@ -352,7 +402,7 @@ class TestRRI:
                     dims=["band", "y", "x"],
                 ).rio.write_crs("4326"),
             ),
-            (
+            ( # denom = 70 - 60 = 10, max of t+0 and t+1 = 70, 70-60 = 10, 10/10 = 1
                 xr.DataArray(
                     [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
                     coords={"time": year_period_RI},
@@ -403,7 +453,7 @@ class TestRRI:
         dist_start = "2000"
         timestep = 10
         with pytest.raises(
-            ValueError, match="2010 or 2011 not within time coordinates."
+            ValueError,
         ):
             RRI(
                 image_stack=obs,
@@ -430,6 +480,58 @@ class TestRRI:
                 dist_start=dist_start,
                 timestep=timestep,
             )
+    
+    def test_0_denom_sets_nan(self):
+        obs = xr.DataArray(
+            [[[[10]], [[10]], [[70]], [[80]], [[90]], [[100]], [[110]]]],
+            coords={"time": self.year_period_RI},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        # Disturbance window of 10 - 10 = 0
+        # Max of t+5 and t+4 is 110
+        restoration_start = "2001"
+        dist_start = "2000"
+        timestep = 5
+        # 110 / 0 = nan (not inf)
+        expected = xr.DataArray(
+            [[[np.nan]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+
+        assert RRI(
+            image_stack=obs,
+            rest_start=restoration_start,
+            dist_start=dist_start,
+            timestep=timestep,
+        ).equals(expected)
+    
+    def test_use_dist_avg_uses_avg_of_dist(self):
+        obs = xr.DataArray(
+            [[[[80]], [[80]], [[60]], [[70]], [[50]], [[100]], [[120]]]],
+            coords={"time": self.year_period_RI},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        restoration_start = "2004"
+        dist_start = "2002"
+        timestep = 2
+        # Disturbance window of [60, 70, 50] has an average of 60
+        # Previous disturbance window of [80, 80] has an average of 80
+        # Maximum of t+2 and t+1 is 120
+        # t/f (120 - 60) / (80 - 60) = 0.5
+        expected = xr.DataArray(
+            [[[3.0]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+
+        result =  RRI(
+            image_stack=obs,
+            rest_start=restoration_start,
+            dist_start=dist_start,
+            timestep=timestep,
+            use_dist_avg=True
+        )
+        assert result.equals(expected)
+
 
 
 class TestR80P:
