@@ -59,7 +59,7 @@ class _SatelliteTimeSeries:
     #   Move the check for valid dim names to a seperate method.
     @property
     def is_annual_composite(self) -> bool:
-        """Check if DataArray is contains valid annual comppsites.
+        """Check if DataArray is contains valid annual composites.
 
         Checks whether the object has the required dimension labels (as
         defined by/for project) and continuous years in the time dimension.
