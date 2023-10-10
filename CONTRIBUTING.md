@@ -1,4 +1,8 @@
 - [Contributing](#contributing)
+  - [How to Contribute](#how-to-contribute)
+    - [Download Code](#download-code)
+    - [Installing](#installing)
+    - [Running Tests](#running-tests)
 - [Pull Request Process](#pull-request-process)
 - [Report Bugs Using GitHub Issues](#report-bugs-using-github-issues)
   - [Bug Reporting Guidelines](#bug-reporting-guidelines)
@@ -6,7 +10,7 @@
   - [Python](#python)
 - [License](#license)
 - [References](#references)
-
+  
 # Contributing
 
 We want to make contributing to this project as easy and transparent as possible, whether it is:
@@ -17,19 +21,44 @@ We want to make contributing to this project as easy and transparent as possible
 - Proposing new features
 - Becoming a maintainer
 
+## How to Contribute
+
+### Download Code
+
+Make [a fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) of the main branch of Spectral-Recovery and clone the fork:
+
+```{bash}
+git clone https://github.com/<your-github-username>/Spectral-Recovery.git
+cd Spectral-Recovery
+```
+
+### Installing
+
+From the top-level directory of your Spectral-Recovery clone, you can install the `spectral_recovery` package using pip:
+
+```{bash}
+python3 -m pip install -e .
+```
+This is an "Editable Install" of the spectral_recovery package, meaning you do not have to re-build or re-install each
+time you make changes to the source code. See [Development Mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) for more information on Development Mode/Editable Installs.
+
+### Running Tests
+
+Spectral-Recovery uses [pytest](https://docs.pytest.org/en/latest/) for testing. To run tests, run the following command from the top-level directory:
+
+```{bash}
+pytest src/spectral_recovery
+```
+
+Writing tests for your proposed changes is encouraged and will make Pull Request processes smoother!
+
 # Pull Request Process
 
-Pull requests are the best way to propose changes to the codebase (we use [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow)). We actively welcome your pull requests:
+Pull requests are the best way to propose changes to the codebase (we use [Github Flow](https://docs.github.com/en/get-started/quickstart/github-flow)). We actively welcome your pull requests we only ask that you:
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
-
-2. Ensure your code has been formatted using [black](https://pypi.org/project/black/), and linted using [flake-8](https://flake8.pycqa.org/en/latest/).
+1. Ensure your code has been formatted using [black](https://pypi.org/project/black/), and linted using [flake-8](https://flake8.pycqa.org/en/latest/).
    
-3. Update the CHANGELOG.md with details of changes to the code, or APIs. This includes new environment variables, exposed ports, useful file locations and container parameters.
-   
-4. Increase the version numbers in any examples files and the CHANGELOG.md to the new version that this Pull Request would represent. We use [Semantic Versioning](https://semver.org/).
-   
-5. You may merge the Pull Request in once you have the sign-off of two project maintainers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
+2. Request the review of two project maintainers. Once two project miantainers have signed-off on the Pull Request it will be merged into the relevant development branch and included in future releases of the spectral_recovery package!
 
 # Report Bugs Using GitHub Issues
 

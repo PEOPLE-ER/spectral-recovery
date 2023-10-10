@@ -38,8 +38,7 @@ for ER monitoring.
 
 The objective of the PEOPLE-ER Spectral Recovery tool is to provide an open source and multi-platform 
 time series data analytics solution for both remote sensing research and ER monitoring purposes, which 
-operates with freely available satellite imagery. It provides flexible methods for satellite 
-EO data time series analysis, by providing users with the ability to select from a variety of spectral 
+operates with freely available satellite imagery. It provides flexible methods for spectral recovery analysis, by providing users with the ability to select from a variety of spectral 
 indices and recovery metrics as well as define reference or baseline conditions. The aim is to provide 
 custom analyses ideal for widespread applications beyond site-specific contexts, with flexible reference 
 conditions enabling direct integration with current ER initiatives and guidelines. The ability to calculate 
@@ -82,3 +81,19 @@ Restoration (PEOPLE-ER) project financed by the European Space Agency (ESA). Mem
 ![image](asset/VTT_Orange_Logo_150per.png){align=center}
 
 ![image](asset/INCDS_logo_150per.jpg){align=center}
+
+## License
+
+Copyright 2023 Hatfield Consultants LLP
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

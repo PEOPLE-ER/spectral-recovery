@@ -70,8 +70,8 @@ class ReferenceSystem:
             )
 
     def recovery_target(self):
-        # TODO: replace return dicts with named tuple
         """Get the recovery target for a reference system"""
+        # TODO: replace return dicts with named tuple
         recovery_target = self.recovery_target_method(
             self.reference_stack, self.reference_range
         )
