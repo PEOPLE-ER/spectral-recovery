@@ -5,7 +5,7 @@ nav:
 - Home: index.md
 - Documentation: # this all needs to be updated
     - using_spectral_recovery.ipynb: 'using_spectral_recovery.ipynb'
-    #- 02_landscape_segmentation.ipynb: '02_landscape_segmentation.ipynb'
+    - Tips, Tricks, and Other Information: 'About.md'
     #- 03_compile_time_series.ipynb: '03_compile_time_series.ipynb'
     #- 04_cluster_analysis.ipynb: '04_cluster_analysis.ipynb'
     #- 05_calculate_dtw.ipynb: '05_calculate_dtw.ipynb'
@@ -16,4 +16,11 @@ plugins:
 
 markdown_extensions:
   - attr_list
+  - pymdownx.arithmatex:
+      generic: true
 theme: flatly
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
