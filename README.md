@@ -52,7 +52,7 @@ The above command points to a directory containing a set of annual composite tif
 
 #### Within Modules (temp. most of this should be in tutorial, not README)
 
-To use the tool within new or exisitng modules, first import the relevant modules from the `spectral_recovery` package.
+To use the tool within new or existing modules, first import the relevant modules from the `spectral_recovery` package.
 
 ```{python}
 import geopandas as gpd
@@ -87,7 +87,7 @@ reference_years = [pd.to_datetime("2011"), pd.to_datetime("2013")]
 # two years prior to the disturbance, 2011-2013.
 
 ```
-Next get a well-formated xarray.DataArray using `read_and_stack_tifs`
+Next get a well-formatted xarray.DataArray using `read_and_stack_tifs`
 
 ```{python}
 xr_stack = raster.read_and_stack_tifs(path_to_tifs="path_to_your_tifs/")
@@ -125,7 +125,7 @@ R80P_result_default = ra.R80P()
 R80P_result_50 = ra.R80P(percent=50) 
 
 ```
-Finally, if you want to write your metric outputs, use `metrics_to_tifs` function. Results will be written to the output direcotry with their metric name (e.g "Y2R.tif", "RRI.tif").
+Finally, if you want to write your metric outputs, use `metrics_to_tifs` function. Results will be written to the output directory with their metric name (e.g "Y2R.tif", "RRI.tif").
 
 ```{python}
 metrics_to_tifs(metrics_array=Y2R_result, out_dir="your/output/dir/")
