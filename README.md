@@ -28,7 +28,7 @@ python -m venv .venv
 pip install --editable .
 ```
 
-Now the `spectral_recovery` package is accesible as if it was installed in `.venv` (WIP: see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
+Now the `spectral_recovery` package is accessible as if it was installed in `.venv` (WIP: see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
 
 When done with a development task, you can simply uninstall the package as you normally would using pip, `pip uninstall spectral_recovery`.
 
@@ -52,7 +52,7 @@ The above command points to a directory containing a set of annual composite tif
 
 #### Within Modules (temp. most of this should be in tutorial, not README)
 
-To use the tool within new or exisitng modules, first import the relevant modules from the `spectral_recovery` package.
+To use the tool within new or existing modules, first import the relevant modules from the `spectral_recovery` package.
 
 ```{python}
 import geopandas as gpd
@@ -87,7 +87,7 @@ reference_years = [pd.to_datetime("2011"), pd.to_datetime("2013")]
 # two years prior to the disturbance, 2011-2013.
 
 ```
-Next get a well-formated xarray.DataArray using `read_and_stack_tifs`
+Next get a well-formatted xarray.DataArray using `read_and_stack_tifs`
 
 ```{python}
 xr_stack = raster.read_and_stack_tifs(path_to_tifs="path_to_your_tifs/")
@@ -125,7 +125,7 @@ R80P_result_default = ra.R80P()
 R80P_result_50 = ra.R80P(percent=50) 
 
 ```
-Finally, if you want to write your metric outputs, use `metrics_to_tifs` function. Results will be written to the output direcotry with their metric name (e.g "Y2R.tif", "RRI.tif").
+Finally, if you want to write your metric outputs, use `metrics_to_tifs` function. Results will be written to the output directory with their metric name (e.g "Y2R.tif", "RRI.tif").
 
 ```{python}
 metrics_to_tifs(metrics_array=Y2R_result, out_dir="your/output/dir/")
@@ -137,3 +137,25 @@ Unit tests can be run with the following command
 pytest
 
 ```
+
+## How to Cite
+
+When using this tool in your work we ask that you please cite the Spectral_Recovery tool as follows:
+
+"Spectral Recovery method developed in the PEOPLE-ER Project, managed by Hatfield Consultants, and financed by the European Space Agency."
+
+## License
+
+Copyright 2023 Hatfield Consultants LLP
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
