@@ -3,16 +3,19 @@ site_url: https://PEOPLE-ER.github.io/Spectral-Recovery/
 
 nav:
 - Home: index.md
-- Documentation: # this all needs to be updated
+- Documentation: 
     - using_spectral_recovery.ipynb: 'using_spectral_recovery.ipynb'
-    - Tips, Tricks, and Other Information: 'About.md'
-    #- 03_compile_time_series.ipynb: '03_compile_time_series.ipynb'
-    #- 04_cluster_analysis.ipynb: '04_cluster_analysis.ipynb'
-    #- 05_calculate_dtw.ipynb: '05_calculate_dtw.ipynb'
+    - Tips, Tricks, and Other Information: 'about.md'
+    - API: 'api.md'
 
 plugins:
   - mkdocs-jupyter:
       include_source: True
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
 
 markdown_extensions:
   - attr_list
