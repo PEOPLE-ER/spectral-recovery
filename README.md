@@ -28,7 +28,7 @@ python -m venv .venv
 pip install --editable .
 ```
 
-Now the `spectral_recovery` package is accesible as if it was installed in `.venv` (WIP: see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
+Now the `spectral_recovery` package is accessible as if it was installed in `.venv` (WIP: see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
 
 When done with a development task, you can simply uninstall the package as you normally would using pip, `pip uninstall spectral_recovery`.
 
