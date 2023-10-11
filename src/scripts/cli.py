@@ -129,7 +129,8 @@ def cli(
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def RRI(obj, timestep):
-    click.echo(f"Computing RRI")
+    click.echo(f"RRI is not released in v0.1.0b1... skipping")
+    return
     if timestep:
         rri = obj.RRI(timestep=timestep)
     else:
