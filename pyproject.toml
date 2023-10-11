@@ -11,7 +11,7 @@ authors = [
 maintainers = [
   {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"}
 ]
-url = "https://https://github.com/PEOPLE-ER/Spectral-Recovery", 
+url = "https://https://github.com/PEOPLE-ER/Spectral-Recovery"
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = [
