@@ -1,38 +1,12 @@
-# Spectral Recovery Tool 
+# Spectral Recovery Tool (pre-release)
 
-### Installation and Environment
+## Overview
 
-First, clone the repository
-
-```{bash}
-git clone https://github.com/PEOPLE-ER/Vegetation-Recovery-Assessment.git
-cd Vegetation-Recovery-Assessment/
-```
-
-#### Installing from Wheel (temp. should be removed when package is on PyPi)
-
-Build the package and install wheel.
+## Installation
 
 ```{bash}
-python3 -m build
-pip3 install dist/spectral_recovery-0.1-py3-none-any.whl
+pip install spectral-recovery==0.1.0b1
 ```
-The `spectral_recovery` package is now available through import statements and a CLI. See the "Using the Spectral Recovery Tool" notebook for example usage.
-
-#### Installing for Development Mode
-
-To download and perform/test development tasks within the project, enter development mode using an "editable install".
-
-```{bash}
-python -m venv .venv
-pip install --editable .
-```
-
-Now the `spectral_recovery` package is accessible as if it was installed in `.venv` (WIP: see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
-
-When done with a development task, you can simply uninstall the package as you normally would using pip, `pip uninstall spectral_recovery`.
-
-### Running
 
 #### From CLI
 
@@ -118,7 +92,7 @@ recovery metric that you want over your restoration area.
 
 ```{bash}
 Y2R_result = ra.Y2R()
-RRI_result = ra.RRI()
+R80P_result = ra.R80P()
 
 # Some metrics can be parameterized, like R80P:
 R80P_result_default = ra.R80P()
