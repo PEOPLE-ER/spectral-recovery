@@ -11,14 +11,13 @@ authors = [
 maintainers = [
   {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"}
 ]
-url = "https://https://github.com/PEOPLE-ER/Spectral-Recovery"
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-version = "0.1.0b1"
+version = "0.1.1b1"
 dependencies = [
     "geopandas",
     "rioxarray",

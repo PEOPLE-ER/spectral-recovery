@@ -119,12 +119,12 @@ def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.Data
     return masked_stack
 
 
-def metrics_to_tifs(
+def _metrics_to_tifs(
     metric: xr.DataArray,
     out_dir: str,
 ) -> None:
     """
-    Write a DataArray of metrics toTIFs.
+    Write a DataArray of metrics to TIFs.
     
     Parameters
     ----------
