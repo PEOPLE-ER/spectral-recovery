@@ -277,7 +277,7 @@ class RestorationArea:
         dnbr = dnbr.expand_dims(dim={"metric": [Metric.dNBR]})
         return dnbr
 
-    def RRI(self, timestep: int = 5):
+    def _RRI(self, timestep: int = 5):
         rri = m.RRI(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
