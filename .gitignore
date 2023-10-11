@@ -114,3 +114,6 @@ scheduler.json
 *.out
 
 .DS_Store
+
+# test_data stuff
+docs/test_data/outputs/*.tif

@@ -23,7 +23,7 @@ The package aims, through both software and supplementary documentation, to make
 ## Installation
 
 ```{bash}
-pip install spectral-recovery==0.1.0b1
+pip install spectral-recovery==0.1.1b1
 ```
 
 ## Documentation
