@@ -5,7 +5,7 @@ nav:
 - Home: index.md
 - Documentation: 
     - using_spectral_recovery.ipynb: 'using_spectral_recovery.ipynb'
-    - Tips, Tricks, and Other Information: 'about.md'
+    - About the tool: 'about.md'
     - API: 'api.md'
 
 plugins:

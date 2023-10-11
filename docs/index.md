@@ -1,5 +1,19 @@
 # Welcome to the PEOPLE-ER Spectral Recovery Docs!
 
+**Authors:**
+
+Sarah Zwiep
+
+Melissa Birch
+
+Marcos Kavlin
+
+**Reviewed/Edited by:**
+
+Dr. Andy Dean
+
+Dr. Nicholas Coops
+
 ![image](asset/pEOple_KV-Ecosystem_Restorarion.jpg){align=center}
 
 ## Problem Statement:
@@ -90,16 +104,4 @@ When using this tool in your work we ask that you please cite the Spectral_Recov
 
 ## License
 
-Copyright 2023 Hatfield Consultants LLP
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+ [Spectral Recovery Documentation](httpps://www.people-er.github.io/Spectral-Recovery) © 2023 by [PEOPLE-ER Project](people-er.info) is licensed under [Attribution-ShareAlike 4.0 International](http://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1)
