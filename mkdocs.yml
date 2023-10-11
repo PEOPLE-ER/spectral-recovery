@@ -4,9 +4,11 @@ site_url: https://PEOPLE-ER.github.io/Spectral-Recovery/
 nav:
 - Home: index.md
 - Documentation: 
-    - About the tool: 'about.md'
-    - API Documentation: 'api.md'
-    - Getting Started with Spectral Recovery: 'getting_started_API.ipynb'
+    - Getting Started:
+      - Quick Overview: 'overview_API.ipynb'
+      - Using the CLI: 'overview_CLI.ipynb'
+    - User Guide: 'about.md'
+    - API Reference: 'api.md'
 
 plugins:
   - mkdocs-jupyter:
