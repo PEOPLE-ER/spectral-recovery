@@ -1,6 +1,6 @@
 # (pre-release) spectral-recovery: spectral recovery analysis of forested ecosystems
 
-[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/main?labpath=docs%2Fnotebooks%2F)
+[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ---
 Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEOPLE-ER/Spectral-Recovery/)
@@ -9,7 +9,7 @@ Documentation: [https://people-er.github.io/Spectral-Recovery/](https://people-e
 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
-Interactive Notebooks: [https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/main?labpath=docs%2Fnotebooks%2F](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/main?labpath=docs%2Fnotebooks%2F)
+Interactive Notebooks: Coming soon!
 
 ---
 ## Overview
@@ -29,11 +29,11 @@ pip install spectral-recovery==0.1.1b1
 ## Documentation
 
 - View background information, static tutorials, and API references in our [project documentation.](https://people-er.github.io/Spectral-Recovery/)
-- Try out an [interactive notebook](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/main?labpath=docs%2Fnotebooks%2F).
+- Try out an interactive notebook (Coming soon!)
 
 ## Contributing
 
-- Report bugs, suggest features, and see what others are saying our [GitHub Issues](https://github.com/PEOPLE-ER/Spectral-Recovery/issues) page.
+- Report bugs, suggest features, and see what others are saying on our [GitHub Issues](https://github.com/PEOPLE-ER/Spectral-Recovery/issues) page.
 - Start discussions about the tool on our [discussion page](https://github.com/PEOPLE-ER/Spectral-Recovery/discussions).
 - Want to contribute code? See our [CONTRIBUTING](https://github.com/PEOPLE-ER/Spectral-Recovery/blob/main/CONTRIBUTING.md) document for more information.
 
