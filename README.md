@@ -1,142 +1,41 @@
-# Spectral Recovery Tool 
+# (pre-release) spectral-recovery: spectral recovery analysis of forested ecosystems
 
-### Installation and Environment
+[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-First, clone the repository
+---
+Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEOPLE-ER/Spectral-Recovery/)
 
-```{bash}
-git clone https://github.com/PEOPLE-ER/Vegetation-Recovery-Assessment.git
-cd Vegetation-Recovery-Assessment/
-```
+Documentation: [https://people-er.github.io/Spectral-Recovery/](https://people-er.github.io/Spectral-Recovery/)
 
-#### Installing from Wheel (temp. should be removed when package is on PyPi)
+PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
-Build the package and install wheel.
+Interactive Notebooks: Coming soon!
 
-```{bash}
-python3 -m build
-pip3 install dist/spectral_recovery-0.1-py3-none-any.whl
-```
-The `spectral_recovery` package is now available through import statements and a CLI. See the "Using the Spectral Recovery Tool" notebook for example usage.
+---
+## Overview
 
-#### Installing for Development Mode
+**spectral-recovery** is an open-source project and Python package that provides computationally simple, centralized, and reproducible methods for performing [spectral recovery analysis](https://people-er.github.io/Spectral-Recovery/about/#13-looking-at-recovery-trajectories) of forests using satellite imagery.
 
-To download and perform/test development tasks within the project, enter development mode using an "editable install".
+The package provides straight-forward interfaces to help coordinate the many moving parts of spectral recovery analysis. Users provide restoration site locations, restoration dates, and annual composites of spectral data, while spectral-recovery handles computing the spectral indices, recovery targets, recovery metrics, and more!
 
-```{bash}
-python -m venv .venv
-pip install --editable .
-```
+The package aims, through both software and supplementary documentation, to make spectral recovery analysis more approachable, encouraging the use and adoption of well-founded remote sensing techniques to aid [Ecosystem Restoration](https://people-er.github.io/Spectral-Recovery/about/#11-ecosystem-restoration) research and projects.
 
-Now the `spectral_recovery` package is accessible as if it was installed in `.venv` (WIP: see "Using the Spectral Recovery Tool" notebook for usage examples). This installation lets you quickly develop the package without building new distributions. 
-
-When done with a development task, you can simply uninstall the package as you normally would using pip, `pip uninstall spectral_recovery`.
-
-### Running
-
-#### From CLI
-
-The CLI for the spectral recovery tool can be accessed using the `specrec` command. Try out the help command to see the different options and arguments you can pass.
+## Installation
 
 ```{bash}
-specrec --help
+pip install spectral-recovery==0.1.1b1
 ```
 
-Below is an example of how you would call the `specrec` tool to get the Y2R and the RRI recovery metrics for your restoration area:
+## Documentation
 
-```{bash}
-specrec -i NBR -i NDVI path/to/annual/composites/ output/path/ path/to/restoration/polygon.gpkg 2015 path/to/reference/polygon.gpkg 2013 2014 Y2R -p 80 RRI -t 5
-```
+- View background information, static tutorials, and API references in our [project documentation.](https://people-er.github.io/Spectral-Recovery/)
+- Try out an interactive notebook (Coming soon!)
 
-The above command points to a directory containing a set of annual composite tifs, a restoration polygon whose restoration event began in 2015, and a reference polygon with reference years 2013-2014. The `-i` flags at the start of the command indicate that the recovery metrics should be computed using the NBR and NDVI indices, while the subcommands at the end (`Y2R`, `RRI`, etc.) are the choices of recovery metrics to compute for each index.
+## Contributing
 
-#### Within Modules (temp. most of this should be in tutorial, not README)
-
-To use the tool within new or existing modules, first import the relevant modules from the `spectral_recovery` package.
-
-```{python}
-import geopandas as gpd
-import pandas as pd
-
-from spectral_recovery.restoration import RestorationArea, ReferenceSystem
-from spectral_recovery.io import raster
-from spectral_recovery.enums import Metric, Index
-```
-
-Read in your polygon data, set the dates of your timeseries, restoration event, and reference years.
-
-```{python}
-# Read in restoration polygon:
-restoration_poly = gpd.read_file("path/to/restoration/polygon.gpkg")
-
-# Read in reference polygons:
-# If you want a recovery target based on historic conditions in the
-# restoration area then use `reference_poly = restoration_poly`
-reference_poly = gpd.read_file("path/to/reference/polygon.gpkg")
-
-
-# the year of the restoration and disturbance events
-restoration_start = pd.to_datetime("2015")
-disturbance_start = pd.to_datetime("2014")
-
-# the reference years
-reference_years = [pd.to_datetime("2011"), pd.to_datetime("2013")]
-
-# All together, this defines a timeseries from 2010-2022 where a restoration 
-# started in 2015 from a disturbance in 2014. A recovery target is derived from the 
-# two years prior to the disturbance, 2011-2013.
-
-```
-Next get a well-formatted xarray.DataArray using `read_and_stack_tifs`
-
-```{python}
-xr_stack = raster.read_and_stack_tifs(path_to_tifs="path_to_your_tifs/")
-```
-
-Next, if you want to use spectral indices in your recovery metrics, compute the indices! Your annual composites must contain the required bands for each index (e.g NBR needs the NIR and Red bands), otherwise the computation will fail.
-
-```{python}
-indices_to_compute = [Index.nbr, Index.ndvi]
-indices_stack = xr_stack.satts.indices(indices_to_compute)
-```
-
-Then, create a `RestorationArea` object with the indices, dates, and polygons.
-
-```{python}
-ra = RestorationArea(
-    restoration_polygon=restoration_poly,
-    restoration_start=restoration_start,
-    disturbance_start=disturbance_start,
-    reference_polygon=restoration_poly,
-    reference_system=reference_years,
-    composite_stack=indices_stack 
-)
-```
-
-Finally, generate recovery metrics! Simply call the methods for each 
-recovery metric that you want over your restoration area.
-
-```{bash}
-Y2R_result = ra.Y2R()
-RRI_result = ra.RRI()
-
-# Some metrics can be parameterized, like R80P:
-R80P_result_default = ra.R80P()
-R80P_result_50 = ra.R80P(percent=50) 
-
-```
-Finally, if you want to write your metric outputs, use `metrics_to_tifs` function. Results will be written to the output directory with their metric name (e.g "Y2R.tif", "RRI.tif").
-
-```{python}
-metrics_to_tifs(metrics_array=Y2R_result, out_dir="your/output/dir/")
-```
-### Tests (temp. this should be move to CONTRIBUTING or something similar)
-
-Unit tests can be run with the following command
-```{bash}
-pytest
-
-```
+- Report bugs, suggest features, and see what others are saying on our [GitHub Issues](https://github.com/PEOPLE-ER/Spectral-Recovery/issues) page.
+- Start discussions about the tool on our [discussion page](https://github.com/PEOPLE-ER/Spectral-Recovery/discussions).
+- Want to contribute code? See our [CONTRIBUTING](https://github.com/PEOPLE-ER/Spectral-Recovery/blob/main/CONTRIBUTING.md) document for more information.
 
 ## How to Cite
 
@@ -152,7 +51,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

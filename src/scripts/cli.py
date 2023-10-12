@@ -12,7 +12,7 @@ from dask.distributed import Client, LocalCluster
 
 from spectral_recovery.enums import Index, Metric
 from spectral_recovery.restoration import RestorationArea
-from spectral_recovery.io.raster import read_and_stack_tifs, metrics_to_tifs
+from spectral_recovery.io.raster import read_and_stack_tifs, _metrics_to_tifs
 
 INDEX_CHOICE = [i.value for i in Index]
 METRIC_CHOICE = [str(m) for m in Metric]
@@ -129,7 +129,8 @@ def cli(
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def RRI(obj, timestep):
-    click.echo(f"Computing RRI")
+    click.echo(f"RRI is not released in v0.1.0b1... skipping")
+    return
     if timestep:
         rri = obj.RRI(timestep=timestep)
     else:
@@ -177,7 +178,7 @@ def dNBR(obj, timestep):
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
 @click.option("-t", "--timestep", type=int, required=False)
-def R80P(obj, percent):
+def R80P(obj, percent, timestep):
     click.echo(f"Computing R80P")
     if percent:
         if timestep:
@@ -197,8 +198,8 @@ def write_metrics(result, **kwargs):
     concated_metrics = xr.concat(result, dim="metric")
     click.echo(f"Writing metrics to '{kwargs['out']}'...")
     kwargs["out"].mkdir(parents=True, exist_ok=True)
-    metrics_to_tifs(
-        metrics_array=concated_metrics,
+    _metrics_to_tifs(
+        metric=concated_metrics,
         out_dir=kwargs["out"],
     )
     click.echo(f"Finished.")

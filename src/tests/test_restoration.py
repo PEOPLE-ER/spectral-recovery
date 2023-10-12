@@ -539,7 +539,7 @@ class TestRestorationAreaMetrics:
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.RRI()
+        result = valid_resto_area._RRI()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.RRI]})
 
         assert result.equals(expected_result)

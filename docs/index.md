@@ -1,5 +1,7 @@
 # Welcome to the PEOPLE-ER Spectral Recovery Docs!
 
+![image](asset/pEOple_KV-Ecosystem_Restorarion.jpg){align=center}
+
 **Authors:**
 
 Sarah Zwiep
@@ -13,8 +15,6 @@ Marcos Kavlin
 Dr. Andy Dean
 
 Dr. Nicholas Coops
-
-![image](asset/pEOple_KV-Ecosystem_Restorarion.jpg){align=center}
 
 ## Problem Statement:
 
