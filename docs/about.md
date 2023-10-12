@@ -98,7 +98,7 @@ _Figure 2. Tool conceptual workflow diagram._
 
 ## 2.3 TOOL INPUTS
 
-Necessary inputs for the tool include a time series composite, covering one or more restoration sites, a selection of spectral indices, and a selection of recovery metrics. An optional input to the tool is one or more reference sites. These inputs are explained below, and more information concerning the formats required for the tool inputs can be found in the tool's Technical Documentation.
+Necessary inputs for the tool include a time series composite, covering one or more restoration sites, a choice of which spectral indices the tool should use to assess recovery, and a selection of recovery metrics. An optional input to the tool is one or more reference sites. These inputs are explained below, and more information concerning the formats required for the tool inputs can be found in the tool's Technical Documentation.
 
 ## 2.4 TIME SERIES COMPOSITE
 
@@ -119,6 +119,8 @@ Recommendations:
 ## 2.5 RESTORATION SITES
 
 The tool accepts one restoration site, as a vector file (see technical documentation for further information). Restoration site polygons delineate the areas that are intended to be assessed for recovery or health (i.e., areas of disturbance). Each restoration site polygon will have the spectral indices calculated, and recovery metrics will be returned.
+
+In addition, if no reference sites are provided (see 2.8 below), the restoration site will determine the recovery target via the historical approach (see 1.4 above). The default recovery target method in the tool uses the average value of the two years prior to the disturbance, however this default method can be customized to fit each application. Custom options include the ability to manually set the timeframe (when and how many years) before the disturbance that is used to calculate the average historic condition. This could be useful to parameterize if the disturbance was gradual instead of sudden and so no exact disturbance dates exist, or if it is known due to historical, traditional, or local knowledge when the forest was in a desirable state. 
 
  Recommendations:
 
@@ -149,6 +151,8 @@ The tool requires a list of spectral indices that should be calculated. Currentl
 
 The tool calculates the selected recovery metrics as identified in an input list. Recovery metrics are calculated for each pixel in the restoration polygons, for each spectral index chosen.
 
+The tool also provides per-polygon recovery metrics, which summarize the progress of the restoration site as a whole. This informs on how well the recovery is progressing generally and includes measures such as percent recovered. Percent of a restoration site recovered could be a valuable measure of success by itself, as restoration practitioners may simply require a certain percentage (e.g., 80%) of a restoration site to reach recovery target values to determine that no further management efforts are necessary. 
+
 | Variable  | Description  |
 | --- | --- |
 | Ds  | Index value: Disturbance start  |
@@ -173,7 +177,7 @@ The tool calculates the selected recovery metrics as identified in an input list
 
 ## 2.8 REFERENCE SITES
 
-The tool accepts an optional input of one or more reference sites, as vector files (see technical documentation for further information). Reference site polygons delineate the areas that are intended to be used to determine the recovery target. In other words, these are areas of the landscape which are known to either be relatively healthy, stable, or have desired traits, which the restoration sites will be compared against. Each reference site polygon will have the spectral indices calculated, and the average value across the reference sites for each spectral index will be the recovery target value for that index. If no reference sites are provided, the recovery target is calculated via the default historical method (i.e., using average historical spectral values of the restoration site).
+The tool accepts an optional input of one or more reference sites, as vector files (see technical documentation for further information). Reference site polygons delineate the areas that are intended to be used to determine the recovery target. In other words, these are areas of the landscape which are known to either be relatively healthy, stable, or have desired traits, which the restoration sites will be compared against. Each reference site polygon will have the spectral indices calculated, and the average value across the reference sites for each spectral index will be the recovery target value for that index. If no reference sites are provided, the recovery target is calculated via the default historical method (i.e., using average historical spectral values of the restoration site). The tool’s reference approach to determining a recovery target is similar to the historical approach in that it uses the values of spectral indices. However, instead of taking the average value of pre-disturbance conditions, the recovery target is determined by the average index value across the reference sites at the current timestep. This means that the recovery progress of the restoration site is compared to the current and contextual conditions within the landscape.  
 
 Recommendations:
 
