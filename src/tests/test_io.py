@@ -8,7 +8,7 @@ from unittest.mock import patch
 from spectral_recovery.enums import BandCommon, Index
 from spectral_recovery.io.raster import (
     read_and_stack_tifs,
-    metrics_to_tifs,
+    _metrics_to_tifs,
 )
 
 
