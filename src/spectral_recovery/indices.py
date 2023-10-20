@@ -59,6 +59,16 @@ def ndvi(stack: xr.DataArray):
     return ndvi
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.swir2])
 @maintain_rio_attrs
 def nbr(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -67,6 +77,16 @@ def nbr(stack):
     return nbr
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.green])
 @maintain_rio_attrs
 def gndvi(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -75,6 +95,16 @@ def gndvi(stack):
     return gndvi
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.red, BandCommon.blue])
 @maintain_rio_attrs
 def evi(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -84,6 +114,16 @@ def evi(stack):
     return evi
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.red])
 @maintain_rio_attrs
 def avi(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -92,6 +132,16 @@ def avi(stack):
     return avi
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.red])
 @maintain_rio_attrs
 def savi(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -100,6 +150,16 @@ def savi(stack):
     return savi
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.green, BandCommon.nir])
 @maintain_rio_attrs
 def ndwi(stack):
     green = stack.sel(band=BandCommon.green)
@@ -108,6 +168,18 @@ def ndwi(stack):
     return ndwi
 
 
+# TODO: with tassel-cap indices, make sure the data provided is the correct value range (not DN)
+@compatible_with([Platform.landsat_tm])
+@requires_bands(
+    [
+        BandCommon.blue,
+        BandCommon.green,
+        BandCommon.red,
+        BandCommon.nir,
+        BandCommon.swir1,
+        BandCommon.swir2,
+    ]
+)
 @maintain_rio_attrs
 def tcg(stack):
     blue = stack.sel(band=BandCommon.blue)
@@ -127,6 +199,17 @@ def tcg(stack):
     return tcg
 
 
+@compatible_with([Platform.landsat_tm])
+@requires_bands(
+    [
+        BandCommon.blue,
+        BandCommon.green,
+        BandCommon.red,
+        BandCommon.nir,
+        BandCommon.swir1,
+        BandCommon.swir2,
+    ]
+)
 @maintain_rio_attrs
 def tcw(stack):
     blue = stack.sel(band=BandCommon.blue)
@@ -146,6 +229,17 @@ def tcw(stack):
     return tcw
 
 
+@compatible_with([Platform.landsat_tm])
+@requires_bands(
+    [
+        BandCommon.blue,
+        BandCommon.green,
+        BandCommon.red,
+        BandCommon.nir,
+        BandCommon.swir1,
+        BandCommon.swir2,
+    ]
+)
 @maintain_rio_attrs
 def tcb(stack):
     blue = stack.sel(band=BandCommon.blue)
@@ -165,6 +259,16 @@ def tcb(stack):
     return tcb
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.red])
 @maintain_rio_attrs
 def sr(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -173,6 +277,16 @@ def sr(stack):
     return sr
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.swir1])
 @maintain_rio_attrs
 def ndmi(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -181,6 +295,8 @@ def ndmi(stack):
     return ndmi
 
 
+# TODO: compatibility
+@requires_bands([BandCommon.nir, BandCommon.green])
 @maintain_rio_attrs
 def gci(stack):
     nir = stack.sel(band=BandCommon.nir)
@@ -189,6 +305,16 @@ def gci(stack):
     return gci
 
 
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.swir1, BandCommon.nir])
 @maintain_rio_attrs
 def ndii(stack):
     swir1 = stack.sel(band=BandCommon.swir1)
@@ -197,7 +323,7 @@ def ndii(stack):
     return ndii
 
 
-indices_map = {
+_indices_map = {
     Index.ndvi: ndvi,
     Index.nbr: nbr,
     Index.gndvi: gndvi,
@@ -213,3 +339,42 @@ indices_map = {
     Index.gci: gci,
     Index.ndii: ndii,
 }
+
+
+def compute_indices(
+    image_stack: xr.DataArray, indices: list[Index], platform: Platform
+):
+    """Compute spectral indices on a stack of images
+
+    Parameters
+    ----------
+    image_stack : xr.DataArray
+        stack of imagees. The 'band' dimension coordinates must contain
+        enums.BandCommon types.
+    indices : list[Index]
+        list of spectral indices to compute
+    platform : Platform
+        platform from which images were collected
+
+    Returns
+    -------
+        xr.DataArray: stack of images with spectral indices stacked along
+        the band dimension.
+    """
+    try:
+        image_stack.attrs["platform"] = platform
+    except AttributeError:
+        image_stack = image_stack.assign_attrs(platform=platform)
+    index = {}
+    for index in indices:
+        try:
+            index[index] = _indices_map[index](image_stack)
+        except KeyError:
+            index_error_msg = (
+                f"Index {index} is not a valid index. Valid indices are:"
+                f" {list(_indices_map.keys())}"
+            )
+            raise ValueError(index_error_msg) from None
+
+    index_stack = xr.concat(index.items(), dim=pdIndex(index.keys(), name="band"))
+    return index_stack
