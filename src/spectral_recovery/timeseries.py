@@ -8,8 +8,6 @@ import numpy as np
 from typing import Union, Tuple
 from datetime import datetime
 from shapely.geometry import box
-from spectral_recovery.indices import indices_map
-from spectral_recovery.enums import Index, BandCommon
 
 DATETIME_FREQ = "YS"
 REQ_DIMS = ["band", "time", "y", "x"]
@@ -123,29 +121,29 @@ class _SatelliteTimeSeries:
                 return False
         return True
 
-    # NOTE: conceptually, does having this method in this class work?
-    def indices(self, indices_list) -> xr.DataArray:
-        """Compute indices
+    # # NOTE: conceptually, does having this method in this class work?
+    # def indices(self, indices_list) -> xr.DataArray:
+    #     """Compute indices
 
-        Parameters
-        ----------
-        indices_list : list of str
-            The list of indices to compute/produce.
+    #     Parameters
+    #     ----------
+    #     indices_list : list of str
+    #         The list of indices to compute/produce.
 
-        Returns
-        --------
-        xr.DataArray
-            A 4D (band, time, y, x) DataArray with indices
-            stacked inside the band dimension.
-        """
-        indices_dict = {}
-        for indice_input in indices_list:
-            indice = Index(indice_input)
-            indices_dict[indice] = indices_map[indice](self._obj)
-        indices = xr.concat(
-            indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band")
-        )
-        return indices
+    #     Returns
+    #     --------
+    #     xr.DataArray
+    #         A 4D (band, time, y, x) DataArray with indices
+    #         stacked inside the band dimension.
+    #     """
+    #     indices_dict = {}
+    #     for indice_input in indices_list:
+    #         indice = Index(indice_input)
+    #         indices_dict[indice] = indices_map[indice](self._obj)
+    #     indices = xr.concat(
+    #         indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band")
+    #     )
+    #     return indices
 
     def stats(self, dims, percentile = 0.8) -> xr.DataArray:
         """Compute statistics over a set of dimensions
