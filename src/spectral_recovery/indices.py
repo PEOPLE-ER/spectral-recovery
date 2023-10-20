@@ -1,8 +1,56 @@
-from spectral_recovery.utils import maintain_rio_attrs
-from spectral_recovery.enums import Index, BandCommon
+import functools
 import xarray as xr
 
+from typing import List
+from pandas import Index as pdIndex
 
+from spectral_recovery.utils import maintain_rio_attrs
+from spectral_recovery.enums import Index, BandCommon, Platform
+
+
+def compatible_with(platform: List[Platform]):
+    def comptaible_with_decorator(func):
+        """A wrapper for assigning platform compatibility to a function."""
+
+        @functools.wraps(func)
+        def comptaible_with_wrapper(*args, **kwargs):
+            if kwargs["stack"].attrs["platform"] not in platform:
+                raise ValueError(
+                    f"Function {func.__name__} is not compatible with platform"
+                    f" {kwargs['stack'].attrs['platform']}"
+                )
+            return func(*args, **kwargs)
+        return comptaible_with_wrapper
+    return comptaible_with_decorator
+
+
+def requires_bands(bands: List[BandCommon]):
+    def requires_bands_decorator(func):
+        """A wrapper for requiring bands in a function."""
+
+        @functools.wraps(func)
+        def requires_bands_wrapper(*args, **kwargs):
+            for band in kwargs["stack"]["band"]:
+                if band not in bands:
+                    raise ValueError(
+                        f"Function {func.__name__} requires bands {bands} but"
+                        f" image_stack only contains {kwargs['stack']['band']}"
+                    )
+            return func(*args, **kwargs)
+        return requires_bands_wrapper
+    return requires_bands_decorator
+
+
+@compatible_with(
+    [
+        Platform.landsat,
+        Platform.landsat_oli,
+        Platform.landsat_tm,
+        Platform.landsat_etm,
+        Platform.sentinel_2,
+    ]
+)
+@requires_bands([BandCommon.nir, BandCommon.red])
 @maintain_rio_attrs
 def ndvi(stack: xr.DataArray):
     nir = stack.sel(band=BandCommon.nir)
