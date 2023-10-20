@@ -173,7 +173,7 @@ class RestorationArea:
                         "The disturbance start year must be less than the restoration"
                         " start year."
                     ) from None
-        
+
         if restoration_start is not None:
             try:
                 _ = len(restoration_start)
@@ -192,7 +192,7 @@ class RestorationArea:
                 )
 
         if reference_polygon is None:
-             # Build the reference polygon from the restoration polygon
+            # Build the reference polygon from the restoration polygon
             self.reference_system = ReferenceSystem(
                 reference_polygons=restoration_polygon,
                 reference_range=reference_years,

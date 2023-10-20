@@ -20,7 +20,9 @@ def compatible_with(platform: List[Platform]):
                     f" {kwargs['stack'].attrs['platform']}"
                 )
             return func(*args, **kwargs)
+
         return comptaible_with_wrapper
+
     return comptaible_with_decorator
 
 
@@ -37,7 +39,9 @@ def requires_bands(bands: List[BandCommon]):
                         f" image_stack only contains {kwargs['stack']['band']}"
                     )
             return func(*args, **kwargs)
+
         return requires_bands_wrapper
+
     return requires_bands_decorator
 
 

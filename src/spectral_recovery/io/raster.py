@@ -35,10 +35,10 @@ def read_and_stack_tifs(
     -------
     stacked_data : xr.DataArray
         A 4D DataArray containing all rasters passed in
-        `path_to_tifs` and optionally masked. The 'band' dimension coordinates 
+        `path_to_tifs` and optionally masked. The 'band' dimension coordinates
         will be either enums.Index or enums.BandCommon types, and 'time' dimension
-        will be datetime object dervied from the filename. 
-    
+        will be datetime object dervied from the filename.
+
     Notes
     -----
     Files must be named in the format 'YYYY.tif' where 'YYYY' is a valid year.
@@ -114,7 +114,9 @@ def _stack_bands(bands, coords, dim_name) -> xr.DataArray:
 def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.DataArray:
     """Mask a ND stack with 2D mask"""
     if len(mask.dims) != 2:
-        raise ValueError(f"Only 2D masks are supported. {len(mask.dims)}D mask provided.")
+        raise ValueError(
+            f"Only 2D masks are supported. {len(mask.dims)}D mask provided."
+        )
     masked_stack = stack.where(mask, fill)
     return masked_stack
 
@@ -125,7 +127,7 @@ def _metrics_to_tifs(
 ) -> None:
     """
     Write a DataArray of metrics to TIFs.
-    
+
     Parameters
     ----------
     metric : xr.DataArray

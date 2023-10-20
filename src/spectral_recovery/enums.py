@@ -43,10 +43,11 @@ class Metric(Enum):
 
     def __str__(self) -> str:
         return self.value
-    
+
+
 class Platform(Enum):
     landsat_etm = 2
     landsat_tm = 3
     landsat_oli = 4
-    landsat = 5 # for a mix of oli/tm/etm+ landsat platforms
+    landsat = 5  # for a mix of oli/tm/etm+ landsat platforms
     sentinel_2 = 6
