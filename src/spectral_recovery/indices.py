@@ -14,11 +14,15 @@ def compatible_with(platform: List[Platform]):
 
         @functools.wraps(func)
         def comptaible_with_wrapper(*args, **kwargs):
-            if kwargs["stack"].attrs["platform"] not in platform:
+            if args:
+                stack = args[0]
+            else:
+                stack = kwargs["stack"]
+            if stack.attrs["platform"] not in platform:
                 raise ValueError(
                     f"Function {func.__name__} is not compatible with platform"
-                    f" {kwargs['stack'].attrs['platform']}"
-                )
+                    f" {stack.attrs['platform']}. Only compatible with {platform}"
+                ) from None
             return func(*args, **kwargs)
 
         return comptaible_with_wrapper
@@ -32,12 +36,16 @@ def requires_bands(bands: List[BandCommon]):
 
         @functools.wraps(func)
         def requires_bands_wrapper(*args, **kwargs):
-            for band in kwargs["stack"]["band"]:
-                if band not in bands:
+            if args:
+                stack = args[0]
+            else:
+                stack = kwargs["stack"]
+            for band in bands:
+                if band not in stack["band"].values:
                     raise ValueError(
                         f"Function {func.__name__} requires bands {bands} but"
-                        f" image_stack only contains {kwargs['stack']['band']}"
-                    )
+                        f" image_stack only contains {stack['band'].values}"
+                    ) from None
             return func(*args, **kwargs)
 
         return requires_bands_wrapper
@@ -353,7 +361,7 @@ def compute_indices(
     Parameters
     ----------
     image_stack : xr.DataArray
-        stack of imagees. The 'band' dimension coordinates must contain
+        stack of images. The 'band' dimension coordinates must contain
         enums.BandCommon types.
     indices : list[Index]
         list of spectral indices to compute
@@ -370,15 +378,14 @@ def compute_indices(
     except AttributeError:
         image_stack = image_stack.assign_attrs(platform=platform)
     index = {}
-    for index in indices:
+    for index_choice in indices:
         try:
-            index[index] = _indices_map[index](image_stack)
+            index[index_choice] = _indices_map[index_choice](image_stack)
         except KeyError:
             index_error_msg = (
-                f"Index {index} is not a valid index. Valid indices are:"
+                f"Index {index_choice} is not a valid index. Valid indices are:"
                 f" {list(_indices_map.keys())}"
             )
             raise ValueError(index_error_msg) from None
-
-    index_stack = xr.concat(index.items(), dim=pdIndex(index.keys(), name="band"))
+    index_stack = xr.concat(index.values(), dim=pdIndex(index.keys(), name="band"))
     return index_stack
