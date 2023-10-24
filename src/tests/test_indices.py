@@ -9,6 +9,8 @@ from spectral_recovery.enums import Index, Platform,BandCommon
 from spectral_recovery.indices import (
     compute_indices,
     _indices_map,
+    requires_bands,
+    compatible_with,
 )
 
 
@@ -50,7 +52,8 @@ class TestComputeIndices:
 
             for call_obj in mock_nbr.call_args_list:
                 args, kwargs = call_obj
-                assert args[0].attrs["platform"] == Platform.landsat
+                input_xr_call = args[0]
+                assert input_xr_call.attrs["platform"] == Platform.landsat
 
     def test_output_has_correct_band_dimension(self):
         """
@@ -85,3 +88,49 @@ class TestComputeIndices:
                 [Index.nbr, "not_an_index"],
                 Platform.landsat,
             )
+
+class TestRequiresBandsDecorator:
+
+    def test_valid_bands_runs_without_err(self):
+        @requires_bands([BandCommon.blue, BandCommon.red])
+        def to_be_decorated(stack):
+            return "hello"
+        
+        test_stack = xr.DataArray(
+            [[[[0]]],[[[0]]]],
+            dims=["band", "time", "y", "x"],
+            coords={"band": [BandCommon.blue, BandCommon.red]}
+        )
+        assert to_be_decorated(test_stack) == "hello"
+    
+    def test_bands_not_in_stack_throws_value_err(self):
+        @requires_bands([BandCommon.blue, BandCommon.red])
+        def to_be_decorated(stack):
+            return "hello"
+        
+        test_stack = xr.DataArray(
+            [[[[0]]],[[[0]]]],
+            dims=["band", "time", "y", "x"],
+            coords={"band": [BandCommon.blue, BandCommon.nir]}
+        )
+        with pytest.raises(ValueError):
+            to_be_decorated(test_stack)
+
+class TestCompatiableWithDecorator:
+
+    def test_supported_platform_in_stack_runs_without_err(self):
+        @compatible_with([Platform.landsat, Platform.sentinel_2])
+        def to_be_decorated(stack):
+            return "hello"
+
+        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": Platform.landsat})
+        assert to_be_decorated(test_stack) == "hello"
+    
+    def test_platform_diff_than_decorator_throws_value_err(self):
+        @compatible_with([Platform.landsat_tm, Platform.landsat_etm])
+        def to_be_decorated(stack):
+            return "hello"
+
+        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": Platform.sentinel_2})
+        with pytest.raises(ValueError):
+            to_be_decorated(test_stack)
