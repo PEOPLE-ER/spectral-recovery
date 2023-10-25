@@ -9,6 +9,7 @@ from unittest.mock import patch
 from unittest.mock import MagicMock
 from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
+from tests.utils import SAME_XR
 
 from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.restoration import ReferenceSystem, RestorationArea
@@ -409,22 +410,6 @@ class TestRestorationAreaInit:
                     reference_years=ref_years,
                     composite_stack=bad_stack,
                 )
-
-
-# NOTE: SAME_XR is a hacky solution to get around "ValueErrors" that
-# are thrown if you try to assert a mocked function was called with
-# more than one DataArray. The need for this sol. is likely a symptom of bad design
-# in RestorationArea... but for now it stays to ensure correctness.
-# Solution from: https://stackoverflow.com/questions/44640717
-class SAME_XR:
-    def __init__(self, xr: xr.DataArray):
-        self.xr = xr
-
-    def __eq__(self, other):
-        return isinstance(other, xr.DataArray) and other.equals(self.xr)
-
-    def __repr__(self):
-        return repr(self.xr)
 
 
 class TestRestorationAreaMetrics:

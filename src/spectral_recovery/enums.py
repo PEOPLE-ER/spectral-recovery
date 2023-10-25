@@ -43,3 +43,11 @@ class Metric(Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+class Platform(Enum):
+    # NOTE: do we want to support Landsat_MSS?
+    landsat_etm = 2
+    landsat_tm = 3
+    landsat_oli = 4
+    sentinel_2 = 5

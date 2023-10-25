@@ -319,38 +319,33 @@ class TestRRI:
         ],
     )
     def test_correct_default(self, obs, restoration_start, dist_start, expected):
-        print( RRI(
-            image_stack=obs,
-            rest_start=restoration_start,
-            dist_start=dist_start,), expected.data)
+        print(
+            RRI(
+                image_stack=obs,
+                rest_start=restoration_start,
+                dist_start=dist_start,
+            ),
+            expected.data,
+        )
         assert RRI(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
         ).equals(expected)
-    
+
     def test_correct_multi_dimension_result(self):
         obs = xr.DataArray(
-    [[[[50, 2],
-         [30, 2]],
-
-        [[20, 1],
-         [25, 1]],
-
-        [[20, 1.],
-         [20, 1.]],
-
-        [[30, 2],
-         [15, 1]],
-
-        [[40, 3],
-         [20, 1]],
-
-        [[50, 4],
-         [25, 1]],
-
-        [[50, 5],
-         [30, 1]]]],
+            [
+                [
+                    [[50, 2], [30, 2]],
+                    [[20, 1], [25, 1]],
+                    [[20, 1.0], [20, 1.0]],
+                    [[30, 2], [15, 1]],
+                    [[40, 3], [20, 1]],
+                    [[50, 4], [25, 1]],
+                    [[50, 5], [30, 1]],
+                ]
+            ],
             coords={"time": self.year_period_RI},
             dims=["band", "time", "y", "x"],
         ).rio.write_crs("4326")
@@ -369,7 +364,7 @@ class TestRRI:
         # 4. 1
         # t/f we want:
         # 1. (50-20)/30 = 1
-        # 2. (5-1)/1 = 4 
+        # 2. (5-1)/1 = 4
         # 3. (30-25)/5 = 1
         # 4. 1-1/1 = 0
         expected = xr.DataArray(
@@ -380,8 +375,8 @@ class TestRRI:
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
-            timestep=timestep
-            )
+            timestep=timestep,
+        )
         print(result, expected)
         assert result.equals(expected)
 
@@ -402,7 +397,7 @@ class TestRRI:
                     dims=["band", "y", "x"],
                 ).rio.write_crs("4326"),
             ),
-            ( # denom = 70 - 60 = 10, max of t+0 and t+1 = 70, 70-60 = 10, 10/10 = 1
+            (  # denom = 70 - 60 = 10, max of t+0 and t+1 = 70, 70-60 = 10, 10/10 = 1
                 xr.DataArray(
                     [[[[70]], [[60]], [[70]], [[80]], [[90]], [[100]], [[80]]]],
                     coords={"time": year_period_RI},
@@ -480,7 +475,7 @@ class TestRRI:
                 dist_start=dist_start,
                 timestep=timestep,
             )
-    
+
     def test_0_denom_sets_nan(self):
         obs = xr.DataArray(
             [[[[10]], [[10]], [[70]], [[80]], [[90]], [[100]], [[110]]]],
@@ -504,7 +499,7 @@ class TestRRI:
             dist_start=dist_start,
             timestep=timestep,
         ).equals(expected)
-    
+
     def test_use_dist_avg_uses_avg_of_dist(self):
         obs = xr.DataArray(
             [[[[80]], [[80]], [[60]], [[70]], [[50]], [[100]], [[120]]]],
@@ -523,15 +518,14 @@ class TestRRI:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        result =  RRI(
+        result = RRI(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
             timestep=timestep,
-            use_dist_avg=True
+            use_dist_avg=True,
         )
         assert result.equals(expected)
-
 
 
 class TestR80P:

@@ -10,6 +10,7 @@ from spectral_recovery.utils import maintain_rio_attrs
 NEG_TIMESTEP_MSG = f"timestep cannot be negative."
 VALID_PERC_MSP = f"percent must be between 0 and 100."
 
+
 @maintain_rio_attrs
 def dNBR(
     image_stack: xr.DataArray,
@@ -46,7 +47,8 @@ def dNBR(
     except KeyError as e:
         if int(rest_post_t) > year_dt(image_stack["time"].data.max(), int):
             raise ValueError(
-                f"timestep={timestep}, but {rest_start}+{timestep}={rest_post_t} not within time coordinates: {image_stack.coords['time'].values}. "
+                f"timestep={timestep}, but {rest_start}+{timestep}={rest_post_t} not"
+                f" within time coordinates: {image_stack.coords['time'].values}. "
             )
         else:
             raise e
@@ -238,7 +240,9 @@ def RRI(
     ]
     if any(rest_t_tm1) == 0:
         raise ValueError(
-            f"timestep={timestep}, but ({rest_start}-1)+{timestep}={rest_post_tm1} or {rest_start}+{timestep}={rest_post_t} not within time coordinates: {image_stack.coords['time'].values}. "
+            f"timestep={timestep}, but ({rest_start}-1)+{timestep}={rest_post_tm1} or"
+            f" {rest_start}+{timestep}={rest_post_t} not within time coordinates:"
+            f" {image_stack.coords['time'].values}. "
         )
     max_rest_t_tm1 = image_stack.sel(time=rest_t_tm1).max(dim=["time"])
 
@@ -251,7 +255,10 @@ def RRI(
         ]
         if any(dist_pre_1_2) == 0:
             raise ValueError(
-                f"use_dist_avg={use_dist_avg} uses the 2 years prior to disturbance start, but {dist_start}-2={dist_pre_1} or {dist_start}-1={dist_pre_2} not within time coordinates: {image_stack.coords['time'].values}."
+                f"use_dist_avg={use_dist_avg} uses the 2 years prior to disturbance"
+                f" start, but {dist_start}-2={dist_pre_1} or"
+                f" {dist_start}-1={dist_pre_2} not within time coordinates:"
+                f" {image_stack.coords['time'].values}."
             )
         dist_pre = image_stack.sel(time=dist_pre_1_2).max(dim=["time"])
 
@@ -276,7 +283,7 @@ def RRI(
 
         # Find if/where dist_start - dist_e == 0, set to NaN to avoid divide by zero
         # NaN - X will always be NaN, so no need to worry about the other side of the equation
-        # Note: this is likely a safer way to do this that doesn't count on x / NaN. We could 
+        # Note: this is likely a safer way to do this that doesn't count on x / NaN. We could
         # mask where 0, set to num, and then use that mask aftwards to set to NaN.
         zero_denom_mask = dist_start - dist_e == 0
         dist_start = xr.where(zero_denom_mask, np.nan, dist_start)

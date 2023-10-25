@@ -8,11 +8,10 @@ import numpy as np
 from typing import Union, Tuple
 from datetime import datetime
 from shapely.geometry import box
-from spectral_recovery.indices import indices_map
-from spectral_recovery.enums import Index, BandCommon
 
 DATETIME_FREQ = "YS"
 REQ_DIMS = ["band", "time", "y", "x"]
+
 
 def _datetime_to_index(
     value: Union[datetime, Tuple[datetime]], return_list: bool = False
@@ -49,8 +48,9 @@ class _SatelliteTimeSeries:
         The xarray.DataArray to which this accessor is attached.
     _valid : bool
         Flag for whether the DataArray is a valid annual composite.
-    
+
     """
+
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self._valid = None
@@ -81,7 +81,7 @@ class _SatelliteTimeSeries:
 
     def contains_spatial(self, polygons: gpd.GeoDataFrame) -> bool:
         """Check if DataArray spatially contains polygons.
-        
+
         Parameters
         ----------
         polygons : gpd.GeoDataFrame
@@ -103,12 +103,12 @@ class _SatelliteTimeSeries:
 
     def contains_temporal(self, years: Union[datetime, Tuple[datetime]]) -> bool:
         """Check if stack contains year/year range.
-        
+
         Parameters
         ----------
         years : Union[datetime, Tuple[datetime]]
             The year or year range to check if the DataArray temporally contains.
-        
+
         Returns
         -------
         bool
@@ -123,37 +123,37 @@ class _SatelliteTimeSeries:
                 return False
         return True
 
-    # NOTE: conceptually, does having this method in this class work?
-    def indices(self, indices_list) -> xr.DataArray:
-        """Compute indices
+    # # NOTE: conceptually, does having this method in this class work?
+    # def indices(self, indices_list) -> xr.DataArray:
+    #     """Compute indices
 
-        Parameters
-        ----------
-        indices_list : list of str
-            The list of indices to compute/produce.
+    #     Parameters
+    #     ----------
+    #     indices_list : list of str
+    #         The list of indices to compute/produce.
 
-        Returns
-        --------
-        xr.DataArray
-            A 4D (band, time, y, x) DataArray with indices
-            stacked inside the band dimension.
-        """
-        indices_dict = {}
-        for indice_input in indices_list:
-            indice = Index(indice_input)
-            indices_dict[indice] = indices_map[indice](self._obj)
-        indices = xr.concat(
-            indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band")
-        )
-        return indices
+    #     Returns
+    #     --------
+    #     xr.DataArray
+    #         A 4D (band, time, y, x) DataArray with indices
+    #         stacked inside the band dimension.
+    #     """
+    #     indices_dict = {}
+    #     for indice_input in indices_list:
+    #         indice = Index(indice_input)
+    #         indices_dict[indice] = indices_map[indice](self._obj)
+    #     indices = xr.concat(
+    #         indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band")
+    #     )
+    #     return indices
 
-    def stats(self, dims, percentile = 0.8) -> xr.DataArray:
+    def stats(self, dims, percentile=0.8) -> xr.DataArray:
         """Compute statistics over a set of dimensions
-        
+
         Parameters
         ----------
         dims : list of str
-            The dimensions over which to compute statistics. Must be a 
+            The dimensions over which to compute statistics. Must be a
             subset of the DataArray's dimensions.
         percentile : float
             The percentile to compute.
@@ -174,4 +174,3 @@ class _SatelliteTimeSeries:
         stats["sum"] = self._obj.std(dim=dims, skipna=True)
         stats_xr = xr.concat(stats.values(), dim=pd.Index(stats.keys(), name="stats"))
         return stats_xr
-

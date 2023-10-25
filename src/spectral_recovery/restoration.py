@@ -112,30 +112,31 @@ class RestorationArea:
         The spatial deliniation of the restoration event. There
         must only be one geometry in the GeoDataframe and it must be
         of type shapely.Polygon or shapely.MultiPolygon.
+    restoration_polygon : GeoDataFrame
+        The spatial delinitation of the reference area(s).
+    reference_years : datetime or Tuple of datetimes
+        The year or range of years from which to get values for computing
+        the recovery target.
+    composite_stack : xr.DataArray
+        A 4D (band, time, y, x) DataArray of images from which indices and
+        metrics will be computed. The spatial bounds of the DataArray must
+        contain `restoration_polygon` and (optional) `reference_polygons`,
+        and the temporal bounds must contain `restoration_start`.
     disturbance_start : str or datetime
         The year the disturbance began. Value must be within
         the time dimension coordinates of `composite_stack` param.
     restoration_start : str or datetime
         The year the restoration event began. Value must be within
         the time dimension coordinates of `composite_stack` param.
-    reference_polygons : int or list of int or ReferenceSystem
-        The reference system for the restoration area. If ints, then
-        a ref sys will created as a Historic Reference System and
-        will reference the dates indicated by ints as the reference times.
-    composite_stack : xr.DataArray
-        A 4D (band, time, y, x) DataArray of images from which indices and
-        metrics will be computed. The spatial bounds of the DataArray must
-        contain `restoration_polygon` and (optional) `reference_polygons`,
-        and the temporal bounds must contain `restoration_start`.
 
     """
 
     def __init__(
         self,
         restoration_polygon: gpd.GeoDataFrame,
-        reference_polygon: gpd.GeoDataFrame,
         reference_years: str | List[datetime],
         composite_stack: xr.DataArray,
+        reference_polygon: gpd.GeoDataFrame = None,
         disturbance_start: str | datetime = None,
         restoration_start: str | datetime = None,
     ) -> None:
@@ -172,7 +173,7 @@ class RestorationArea:
                         "The disturbance start year must be less than the restoration"
                         " start year."
                     ) from None
-        
+
         if restoration_start is not None:
             try:
                 _ = len(restoration_start)
@@ -190,12 +191,22 @@ class RestorationArea:
                     str(self.restoration_start.year - 1)
                 )
 
-        self.reference_system = ReferenceSystem(
-            reference_polygons=reference_polygon,
-            reference_range=reference_years,
-            reference_stack=composite_stack,
-            recovery_target_method=None,
-        )
+        if reference_polygon is None:
+            # Build the reference polygon from the restoration polygon
+            self.reference_system = ReferenceSystem(
+                reference_polygons=restoration_polygon,
+                reference_range=reference_years,
+                reference_stack=composite_stack,
+                recovery_target_method=None,
+            )
+        else:
+            # Build the reference polygon from the reference polygon
+            self.reference_system = ReferenceSystem(
+                reference_polygons=reference_polygon,
+                reference_range=reference_years,
+                reference_stack=composite_stack,
+                recovery_target_method=None,
+            )
         if self.restoration_start < self.disturbance_start:
             raise ValueError(
                 "The disturbance start year must be less than the restoration start"

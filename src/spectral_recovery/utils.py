@@ -3,6 +3,7 @@ import functools
 import pandas as pd
 
 from datetime import datetime, timezone
+from rioxarray.exceptions import MissingCRS
 from typing import List, Union
 
 
@@ -52,7 +53,11 @@ def maintain_rio_attrs(func):
             # NOTE: this only works for Python 3.6+ where dicts keep insertion order by default
             xarray_obj = next(iter(kwargs.values()))
         indice = func(*args, **kwargs)
-        indice.rio.write_crs(xarray_obj.rio.crs, inplace=True)
+        try:
+            indice.rio.write_crs(xarray_obj.rio.crs, inplace=True)
+        except MissingCRS:
+            # TODO: add warning log here?
+            pass
         indice.rio.update_encoding(xarray_obj.encoding, inplace=True)
         return indice
 
