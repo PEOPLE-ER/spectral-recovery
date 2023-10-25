@@ -10,7 +10,7 @@ from typing import List, Dict
 from rasterio._err import CPLE_AppDefinedError
 from pandas.core.tools.datetimes import DateParseError
 
-from spectral_recovery.enums import BandCommon, Index
+from spectral_recovery.enums import BandCommon, Index, Platform
 
 DATETIME_FREQ = "YS"
 REQ_DIMS = ["band", "time", "y", "x"]
@@ -20,6 +20,7 @@ VALID_YEAR = re.compile(r"^\d{4}$")
 
 def read_and_stack_tifs(
     path_to_tifs: List[str] | str,
+    platform: List[Platform] | Platform,
     path_to_mask: str = None,
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
@@ -74,6 +75,8 @@ def read_and_stack_tifs(
         with rioxarray.open_rasterio(Path(path_to_mask), chunks="auto") as mask:
             stacked_data = _mask_stack(stacked_data, mask)
 
+    stacked_data.attrs["platform"] = platform
+    
     return stacked_data
 
 

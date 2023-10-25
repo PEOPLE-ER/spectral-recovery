@@ -22,12 +22,11 @@ class TestComputeIndices:
         with patch.dict(_indices_map, {Index.nbr: mock_nbr, Index.ndvi: mock_ndvi}):
             input_xr = xr.DataArray(
                     [[[[0]]],[[[0]]]],
-                    dims=["band", "time", "y", "x"] 
+                    dims=["band", "time", "y", "x"],
                     )
             compute_indices(
                 input_xr,
                 [Index.nbr, Index.ndvi],
-                Platform.landsat,
             )
 
             mock_nbr.assert_called_with(
@@ -36,24 +35,6 @@ class TestComputeIndices:
             mock_ndvi.assert_called_with(
                 SAME_XR(input_xr)
             )
-
-    def test_platform_param_attached_to_image_stack_before_call(self):
-        mock_nbr = Mock(return_value=xr.DataArray([0], dims=["time"]))
-        with patch.dict(_indices_map, {Index.nbr: mock_nbr}):
-            input_xr = xr.DataArray(
-                    [[[[0]]],[[[0]]]],
-                    dims=["band", "time", "y", "x"]
-            )
-            compute_indices(
-                input_xr,
-                [Index.nbr],
-                Platform.landsat,
-            )
-
-            for call_obj in mock_nbr.call_args_list:
-                args, kwargs = call_obj
-                input_xr_call = args[0]
-                assert input_xr_call.attrs["platform"] == Platform.landsat
 
     def test_output_has_correct_band_dimension(self):
         """
@@ -71,7 +52,6 @@ class TestComputeIndices:
             res = compute_indices(
                 input_xr,
                 [Index.nbr, Index.ndvi],
-                Platform.landsat,
             )
             assert (res["band"].values == [Index.nbr, Index.ndvi]).all()
             assert res.dims == ("time", "band")
@@ -85,8 +65,7 @@ class TestComputeIndices:
                     [[[[0]]],[[[0]]]],
                     dims=["band", "time", "y", "x"]
                 ),
-                [Index.nbr, "not_an_index"],
-                Platform.landsat,
+                ["not_an_index"],
             )
 
 class TestRequiresBandsDecorator:
@@ -119,11 +98,11 @@ class TestRequiresBandsDecorator:
 class TestCompatiableWithDecorator:
 
     def test_supported_platform_in_stack_runs_without_err(self):
-        @compatible_with([Platform.landsat, Platform.sentinel_2])
+        @compatible_with([Platform.landsat_oli, Platform.sentinel_2])
         def to_be_decorated(stack):
             return "hello"
 
-        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": Platform.landsat})
+        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": Platform.landsat_oli})
         assert to_be_decorated(test_stack) == "hello"
     
     def test_platform_diff_than_decorator_throws_value_err(self):

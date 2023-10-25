@@ -13,17 +13,13 @@ def compatible_with(platform: List[Platform]):
         """A wrapper for assigning platform compatibility to a function."""
 
         @functools.wraps(func)
-        def comptaible_with_wrapper(*args, **kwargs):
-            if args:
-                stack = args[0]
-            else:
-                stack = kwargs["stack"]
+        def comptaible_with_wrapper(stack, *args, **kwargs):
             if stack.attrs["platform"] not in platform:
                 raise ValueError(
                     f"Function {func.__name__} is not compatible with platform"
                     f" {stack.attrs['platform']}. Only compatible with {platform}"
                 ) from None
-            return func(*args, **kwargs)
+            return func(stack, *args, **kwargs)
 
         return comptaible_with_wrapper
 
@@ -35,18 +31,14 @@ def requires_bands(bands: List[BandCommon]):
         """A wrapper for requiring bands in a function."""
 
         @functools.wraps(func)
-        def requires_bands_wrapper(*args, **kwargs):
-            if args:
-                stack = args[0]
-            else:
-                stack = kwargs["stack"]
+        def requires_bands_wrapper(stack, *args, **kwargs):
             for band in bands:
                 if band not in stack["band"].values:
                     raise ValueError(
                         f"Function {func.__name__} requires bands {bands} but"
                         f" image_stack only contains {stack['band'].values}"
                     ) from None
-            return func(*args, **kwargs)
+            return func(stack, *args, **kwargs)
 
         return requires_bands_wrapper
 
@@ -55,7 +47,7 @@ def requires_bands(bands: List[BandCommon]):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -73,7 +65,7 @@ def ndvi(stack: xr.DataArray):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -91,7 +83,7 @@ def nbr(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -109,7 +101,7 @@ def gndvi(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -128,7 +120,7 @@ def evi(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -146,7 +138,7 @@ def avi(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -164,7 +156,7 @@ def savi(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -273,7 +265,7 @@ def tcb(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -291,7 +283,7 @@ def sr(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -319,7 +311,7 @@ def gci(stack):
 
 @compatible_with(
     [
-        Platform.landsat,
+        
         Platform.landsat_oli,
         Platform.landsat_tm,
         Platform.landsat_etm,
@@ -353,8 +345,12 @@ _indices_map = {
 }
 
 
+def bad_index_choice(stack):
+    raise ValueError("Not a valid index function.") from None
+
+
 def compute_indices(
-    image_stack: xr.DataArray, indices: list[Index], platform: Platform
+    image_stack: xr.DataArray, indices: list[Index]
 ):
     """Compute spectral indices on a stack of images
 
@@ -373,15 +369,11 @@ def compute_indices(
         xr.DataArray: stack of images with spectral indices stacked along
         the band dimension.
     """
-    try:
-        image_stack.attrs["platform"] = platform
-    except AttributeError:
-        image_stack = image_stack.assign_attrs(platform=platform)
     index = {}
     for index_choice in indices:
         try:
-            index[index_choice] = _indices_map[index_choice](image_stack)
-        except KeyError:
+            index[index_choice] = _indices_map.get(index_choice, bad_index_choice)(image_stack)
+        except ValueError:
             index_error_msg = (
                 f"Index {index_choice} is not a valid index. Valid indices are:"
                 f" {list(_indices_map.keys())}"

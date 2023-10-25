@@ -46,8 +46,8 @@ class Metric(Enum):
 
 
 class Platform(Enum):
+    # NOTE: do we want to support Landsat_MSS?
     landsat_etm = 2
     landsat_tm = 3
     landsat_oli = 4
-    landsat = 5  # for a mix of oli/tm/etm+ landsat platforms
-    sentinel_2 = 6
+    sentinel_2 = 5
