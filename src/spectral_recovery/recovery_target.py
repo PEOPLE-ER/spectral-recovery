@@ -26,7 +26,6 @@ def historic_average(
     historic_average : xr.DataArray
         A 1D DataArray of historic average.
     """
-    # TODO: force there to always be a band dimension.
     dims_to_average_over = tuple(
         item for item in stack.dims if (item != "band" and item != "poly_id")
     )
@@ -34,9 +33,9 @@ def historic_average(
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
-    historic_average = ranged_stack.mean(dim=dims_to_average_over, skipna=True)
+    historic_average = ranged_stack.median(dim=dims_to_average_over, skipna=True)
     if "poly_id" in stack.dims:
-        historic_average = historic_average.mean(dim="poly_id", skipna=True)
+        historic_average = historic_average.median(dim="poly_id", skipna=True)
 
     historic_average = historic_average.assign_coords(
         band=stack.coords["band"]
