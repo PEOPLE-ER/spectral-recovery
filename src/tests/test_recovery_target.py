@@ -36,6 +36,39 @@ class TestHistoricAverage:
         out_stack = historic_average(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
 
+    def test_odd_time_dim_returns_median(self):
+        test_data = [
+            [
+                [[1.0]],  # Time 1, band 1
+                [[1.0]],  # Time 1, band 2
+            ],
+            [
+                [[3.0]],  # Time 2, band 1
+                [[5.0]],  # Time 2, band 2
+            ],
+            [
+                [[9.0]],  # Time 3, band 1
+                [[7.0]],  # Time 3, band 2
+            ],
+        ]
+        test_stack = xr.DataArray(
+            test_data,
+            dims=["time", "band", "y", "x"],
+            coords={
+                "time": [0, 1, 2],
+            },
+        )
+        expected_data = [3.0, 5.0]
+        expected_stack = xr.DataArray(
+            expected_data,
+            dims=["band"],
+            coords={
+                "band": [0, 1],
+            },
+        )
+        out_stack = historic_average(test_stack, [0, 2])
+        assert_equal(out_stack, expected_stack)
+
     def test_nan_timeseries_is_nan(self):
         test_data = [
             [
