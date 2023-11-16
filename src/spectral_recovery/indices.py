@@ -14,11 +14,12 @@ def compatible_with(platform: List[Platform]):
 
         @functools.wraps(func)
         def comptaible_with_wrapper(stack, *args, **kwargs):
-            if stack.attrs["platform"] not in platform:
-                raise ValueError(
-                    f"Function {func.__name__} is not compatible with platform"
-                    f" {stack.attrs['platform']}. Only compatible with {platform}"
-                ) from None
+            for input_platform in stack.attrs["platform"]:
+                if input_platform not in platform:
+                    raise ValueError(
+                        f"Function {func.__name__} is not compatible with platform"
+                        f" {stack.attrs['platform']}. Only compatible with {platform}"
+                    ) from None
             return func(stack, *args, **kwargs)
 
         return comptaible_with_wrapper
@@ -114,7 +115,7 @@ def evi(stack):
     nir = stack.sel(band=BandCommon.nir)
     red = stack.sel(band=BandCommon.red)
     blue = stack.sel(band=BandCommon.blue)
-    evi = 2.5 * ((nir - red)) / (nir + 6.0 * red - 7.5 * blue + 1)
+    evi = 2.5 * ((nir - red) / (nir + 6.0 * red - 7.5 * blue + 1)).drop_vars("band")
     return evi
 
 

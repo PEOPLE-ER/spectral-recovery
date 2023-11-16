@@ -8,11 +8,12 @@ from datetime import datetime
 from pandas import Timestamp
 
 from spectral_recovery.recovery_target import historic_average
-from spectral_recovery.utils import to_datetime
 from spectral_recovery.enums import Metric
 from spectral_recovery.timeseries import _SatelliteTimeSeries
+from spectral_recovery.config import VALID_YEAR
 
 from spectral_recovery import metrics as m
+
 
 
 # TODO: split date into start and end dates.
@@ -44,12 +45,12 @@ class ReferenceSystem:
         self,
         reference_polygons: gpd.GeoDataFrame,
         reference_stack: xr.DataArray,
-        reference_range: Union[int, List[int]],
+        reference_range: Union[datetime, List[datetime]],
         recovery_target_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
         self.reference_polygons = reference_polygons
-        self.reference_range = to_datetime(reference_range)
+        self.reference_range = reference_range
         self.recovery_target_method = recovery_target_method or historic_average
         try:
             if self._within(reference_stack):
@@ -112,7 +113,7 @@ class RestorationArea:
         The spatial deliniation of the restoration event. There
         must only be one geometry in the GeoDataframe and it must be
         of type shapely.Polygon or shapely.MultiPolygon.
-    restoration_polygon : GeoDataFrame
+    reference_polygon : GeoDataFrame
         The spatial delinitation of the reference area(s).
     reference_years : datetime or Tuple of datetimes
         The year or range of years from which to get values for computing
@@ -134,11 +135,11 @@ class RestorationArea:
     def __init__(
         self,
         restoration_polygon: gpd.GeoDataFrame,
-        reference_years: str | List[datetime],
+        reference_years: str | List[str],
         composite_stack: xr.DataArray,
         reference_polygon: gpd.GeoDataFrame = None,
-        disturbance_start: str | datetime = None,
-        restoration_start: str | datetime = None,
+        disturbance_start: str = None,
+        restoration_start: str = None,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
@@ -153,17 +154,19 @@ class RestorationArea:
                 " both are None."
             ) from None
         if disturbance_start is not None:
-            try:
-                _ = len(disturbance_start)
+            if not isinstance(disturbance_start, str):
                 raise TypeError(
-                    "Iterable passed to disturbance_start, but disturbance_start must"
-                    " be a Timestamp."
+                    "disturbance_start must be a string."
                 ) from None
-            except:
-                if type(disturbance_start) is Timestamp:
-                    self.disturbance_start = disturbance_start
+            else:
+                year = VALID_YEAR.match(disturbance_start)
+                if year:
+                    self.disturbance_start = pd.to_datetime(disturbance_start)
                 else:
-                    self.disturbance_start = to_datetime(disturbance_start)
+                    raise ValueError(
+                        "Could not parse {disturbance_start} into a year. Please ensure "
+                        "the year is in the format 'YYYY'." 
+                    )
             if restoration_start is None:
                 self.restoration_start = pd.to_datetime(
                     str(self.disturbance_start.year + 1)
@@ -175,38 +178,42 @@ class RestorationArea:
                     ) from None
 
         if restoration_start is not None:
-            try:
-                _ = len(restoration_start)
+            if not isinstance(restoration_start, str):
                 raise TypeError(
-                    "Iterable passed to restoration_start, but restoration_start must"
-                    " be a Timestamp."
+                    "restoration_start must be a string."
                 ) from None
-            except:
-                if type(restoration_start) is Timestamp:
-                    self.restoration_start = restoration_start
+            else:
+                year = VALID_YEAR.match(restoration_start)
+                if year:
+                    self.restoration_start = pd.to_datetime(restoration_start)
                 else:
-                    self.restoration_start = to_datetime(restoration_start)
+                    raise ValueError(
+                        "Could not parse {restoration_start} into a year. Please ensure "
+                        "the year is in the format 'YYYY'." 
+                    )
             if disturbance_start is None:
                 self.disturbance_start = pd.to_datetime(
                     str(self.restoration_start.year - 1)
                 )
 
-        if reference_polygon is None:
-            # Build the reference polygon from the restoration polygon
-            self.reference_system = ReferenceSystem(
-                reference_polygons=restoration_polygon,
-                reference_range=reference_years,
-                reference_stack=composite_stack,
-                recovery_target_method=None,
-            )
+        if isinstance(reference_years, str):
+            year = VALID_YEAR.match(reference_years)
+            if year:
+                self.reference_years = pd.to_datetime(reference_years)
         else:
-            # Build the reference polygon from the reference polygon
-            self.reference_system = ReferenceSystem(
-                reference_polygons=reference_polygon,
-                reference_range=reference_years,
-                reference_stack=composite_stack,
-                recovery_target_method=None,
-            )
+            try:
+                _ = iter(reference_years)
+                if len(reference_years) == 2:
+                    self.reference_years = [pd.to_datetime(reference_years[0]), pd.to_datetime(reference_years[1])]
+                else:
+                    raise ValueError(
+                        "reference_years must be a string or iterable of 2 strings."
+                    ) from None
+            except TypeError:
+                raise TypeError(
+                    "reference_years must be a string or iterable of 2 strings."
+                ) from None
+                
         if self.restoration_start < self.disturbance_start:
             raise ValueError(
                 "The disturbance start year must be less than the restoration start"
@@ -226,6 +233,25 @@ class RestorationArea:
                 " ensure there are no missing years and that the DataArray object"
                 " contains 'band', 'time', 'y' and 'x' dimensions."
             ) from None
+
+        if reference_polygon is None:
+            # Build the reference polygon from the restoration polygon
+            self.reference_system = ReferenceSystem(
+                reference_polygons=self.restoration_polygon,
+                reference_range=self.reference_years,
+                reference_stack=composite_stack,
+                recovery_target_method=None,
+            )
+        else:
+            # Build the reference polygon from the reference polygon
+            # Use the unclipped composite_stack instead of self.stack because
+            # self.stack is clipped to restoration_polygons.
+            self.reference_system = ReferenceSystem(
+                reference_polygons=reference_polygon,
+                reference_range=self.reference_years,
+                reference_stack=composite_stack,
+                recovery_target_method=None,
+            )
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
 

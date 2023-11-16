@@ -11,11 +11,8 @@ from rasterio._err import CPLE_AppDefinedError
 from pandas.core.tools.datetimes import DateParseError
 
 from spectral_recovery.enums import BandCommon, Index, Platform
+from spectral_recovery.config import VALID_YEAR, REQ_DIMS
 
-DATETIME_FREQ = "YS"
-REQ_DIMS = ["band", "time", "y", "x"]
-
-VALID_YEAR = re.compile(r"^\d{4}$")
 
 
 def read_and_stack_tifs(
@@ -76,7 +73,7 @@ def read_and_stack_tifs(
             stacked_data = _mask_stack(stacked_data, mask)
 
     stacked_data.attrs["platform"] = platform
-    
+
     return stacked_data
 
 

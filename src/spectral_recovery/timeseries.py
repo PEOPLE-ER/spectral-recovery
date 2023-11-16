@@ -8,9 +8,7 @@ import numpy as np
 from typing import Union, Tuple
 from datetime import datetime
 from shapely.geometry import box
-
-DATETIME_FREQ = "YS"
-REQ_DIMS = ["band", "time", "y", "x"]
+from spectral_recovery.config import DATETIME_FREQ, REQ_DIMS
 
 
 def _datetime_to_index(
@@ -22,8 +20,9 @@ def _datetime_to_index(
     else:
         try:
             if len(value) > 2:
+                print(type(value))
                 raise ValueError(
-                    "Passed value={value} but `datetime` must be a single Timestamp or"
+                    f"Passed value={value} but `datetime` must be a single Timestamp or"
                     " an iterable with exactly two Timestamps."
                 )
             dt_range = pd.date_range(start=value[0], end=value[0], freq=DATETIME_FREQ)
@@ -71,6 +70,7 @@ class _SatelliteTimeSeries:
         """
         if self._valid is None:
             years = self._obj.coords["time"].dt.year.values
+            # TODO: catch value error ("not broadcastable") here, indicates missing years
             if not set(self._obj.dims) == set(REQ_DIMS):
                 self._valid = False
             elif not np.all((years == list(range(min(years), max(years) + 1)))):
