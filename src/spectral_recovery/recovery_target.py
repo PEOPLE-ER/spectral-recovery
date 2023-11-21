@@ -12,15 +12,15 @@ def median_target(
     """
     Compute the median recovery target.
 
-    Sequentially computes the median over time and spatial dimensions. If there
-    is a "poly_id" dimension, the median is automatically computed along that
-    dimension after the time and space dimensions.
-
+    Sequentially computes the median over time and, optionally, the spatial
+    dimensions (x and y). If there is a "poly_id" dimension, then the median is
+    automatically computed along that dimension after the time and space dimensions.
+    
     Parameters
     ----------
     stack : xr.DataArray
         DataArray of images to derive historic average from. Must have at least
-        4 labelled dimensions: "time", "band", "y" and "x". Optional 5th dimension
+        4 labelled dimensions: "time", "band", "y" and "x" and optionally,
         "poly_id".
     reference_date : Union[datetime, Tuple[datetime]]
         The date or date range to compute the median over.
