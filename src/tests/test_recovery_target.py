@@ -129,20 +129,20 @@ class TestHistoricAverage:
 
     def test_multi_poly_averages_individual_polygon(self):
         test_data = [
-            [
-                [
-                    [[1.0, 1.0], [np.nan, np.nan]],  # y 1, x1  # y 2, x1  # band 1
+            [ # Polygon 1
+                [ # Time 1
+                    [[1.0, 2.0], [3.0, 4.0]],  # y1, x1  # y2, x1  # band 1
                 ],
-                [
-                    [[3.0, 6.0], [np.nan, np.nan]],  # y 1  # band 1
+                [ # Time 2
+                    [[5.0, 6.0], [8.0, 9.0]],  # y1, x2   # band 1
                 ],
             ],
-            [
+            [ # Polygon 2
                 [
-                    [[np.nan, np.nan], [np.nan, 2.0]],  # y 1, x1  # y 2, x1  # band 1
+                    [[1.0, 2.0], [3.0, 4.0]],  # y 1, x1  # y 2, x1  # band 1
                 ],
                 [
-                    [[np.nan, np.nan], [np.nan, 6.0]],  # y 1  # band 1
+                    [[5.0, 6.0], [8.0, 9.0]],  # y 1  # band 1
                 ],
             ],
         ]
@@ -153,7 +153,7 @@ class TestHistoricAverage:
                 "time": [0, 1],
             },
         )
-        expected_data = [3.375]
+        expected_data = [4.75]
         expected_stack = xr.DataArray(
             expected_data,
             dims=["band"],
