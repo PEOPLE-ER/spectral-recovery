@@ -1,21 +1,20 @@
 import xarray as xr
 
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 from datetime import datetime
 
 """ Methods for computing recovery targets """
 
 
-def historic_average(
-    stack: xr.DataArray, reference_date: Union[datetime, Tuple[datetime]]
+def median_target(
+    stack: xr.DataArray, reference_date: Union[datetime, Tuple[datetime]], space: bool = True
 ) -> xr.DataArray:
     """
-    Compute the average within a stack over all dimensions except time. 
+    Compute the median recovery target.
 
-    Sequentially computes the median on the time dimension, the y and x dimension.
-    If there is a "poly_id" dimension, the median is computed along that dimension
-    after the x dimension. The final result is a median value for each band in the
-    band dimension.
+    Sequentially computes the median over time and spatial dimensions. If there
+    is a "poly_id" dimension, the median is automatically computed along that
+    dimension after the time and space dimensions.
 
     Parameters
     ----------
@@ -23,6 +22,10 @@ def historic_average(
         DataArray of images to derive historic average from. Must have at least
         4 labelled dimensions: "time", "band", "y" and "x". Optional 5th dimension
         "poly_id".
+    reference_date : Union[datetime, Tuple[datetime]]
+        The date or date range to compute the median over.
+    space : bool
+        If True, compute median over the y and x dimensions.
 
     Returns
     -------
@@ -34,19 +37,20 @@ def historic_average(
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
-    # NOTE: unexplained bug here if we take median over all dims at once. Instead, get time then y/x then poly_id.
-    historic_average = ranged_stack.median(dim="time", skipna=True).median(dim=["y", "x"], skipna=True)
 
+    median_target = ranged_stack.median(dim="time", skipna=True)
+    if space:
+        median_target = median_target.median(dim=["y", "x"], skipna=True)
     if "poly_id" in stack.dims:
-        historic_average = historic_average.median(dim="poly_id", skipna=True)
+        median_target = median_target.median(dim="poly_id", skipna=True)
 
-    historic_average = historic_average.assign_coords(
+    median_target = median_target.assign_coords(
         band=stack.coords["band"]
     )  # re-assign lost coords.
-    return historic_average
+    return median_target
 
 
-def windowed_polygon_average(
+def windowed_median_target(
     stack: xr.DataArray, poly_id: str, window: int = 3
 ) -> xr.DataArray:
     return NotImplementedError

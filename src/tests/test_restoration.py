@@ -741,9 +741,38 @@ class TestReferenceSystemInit:
                 reference_range=reference_date,
                 recovery_target_method=None,
             )
+    
+    def test_historic_reference_system_bool_default_is_False(self, image_stack):
+        reference_polys = gpd.read_file(
+            "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+        )
+        reference_date = pd.to_datetime("2008")
+
+        rs = ReferenceSystem(
+            reference_polygons=reference_polys,
+            reference_stack=image_stack,
+            reference_range=reference_date,
+            recovery_target_method=None,
+        )
+        assert rs.hist_ref_sys == True
+    
+    def test_historic_reference_system_bool_is_set_True(self, image_stack):
+        reference_polys = gpd.read_file(
+            "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+        )
+        reference_date = pd.to_datetime("2008")
+
+        rs = ReferenceSystem(
+            reference_polygons=reference_polys,
+            reference_stack=image_stack,
+            reference_range=reference_date,
+            recovery_target_method=None,
+            historic_reference_system=True,
+        )
+        assert rs.hist_ref_sys == True
 
 
-class TestReferenceSystemrecovery_target:
+class TestReferenceSystemRecoveryTarget:
     class SimpleReferenceSystem(ReferenceSystem):
         """Sub-class ReferenceSystem and overwrite __init__ to isolate `recovery_target` method."""
 
