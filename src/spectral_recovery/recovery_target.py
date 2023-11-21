@@ -9,13 +9,13 @@ from datetime import datetime
 def historic_average(
     stack: xr.DataArray, reference_date: Union[datetime, Tuple[datetime]]
 ) -> xr.DataArray:
-    # TODO: should this just return a simple list?
-    # TODO: should this take _just_ pd datetimeIndex?
     """
     Compute the average within a stack over all dimensions except time. 
 
-    Will average over time, then y/x, then poly_id (if present). Resulting
-    DataArray will have one target value per band.
+    Sequentially computes the median on the time dimension, the y and x dimension.
+    If there is a "poly_id" dimension, the median is computed along that dimension
+    after the x dimension. The final result is a median value for each band in the
+    band dimension.
 
     Parameters
     ----------
@@ -28,6 +28,7 @@ def historic_average(
     -------
     historic_average : xr.DataArray
         A 1D DataArray of historic average.
+
     """
     if isinstance(reference_date, list):
         ranged_stack = stack.sel(time=slice(*reference_date))
