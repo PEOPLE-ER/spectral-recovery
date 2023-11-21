@@ -11,7 +11,7 @@ from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
 from tests.utils import SAME_XR
 
-from spectral_recovery.recovery_target import historic_average
+from spectral_recovery.recovery_target import median_target
 from spectral_recovery.restoration import ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
 from  spectral_recovery.config import DATETIME_FREQ
@@ -84,6 +84,7 @@ class TestRestorationAreaInit:
             else:
                 assert resto_a.reference_system.reference_range == ref_years_dt
 
+    
     def test_only_dist_year_defaults_resto_year_to_next_year(self):
         resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
         dist_start = "2015"
@@ -613,7 +614,7 @@ class TestReferenceSystemInit:
             rs.reference_polygons, reference_polys, check_geom_type=True
         )
         assert rs.reference_range == reference_date
-        assert rs.recovery_target_method == historic_average
+        assert rs.recovery_target_method == median_target
         # the polygon overlaps only with the lower-right pixel of the stack.
 
     def test_init_correctly_clips_with_single_polygon(self, image_stack):
@@ -754,7 +755,7 @@ class TestReferenceSystemInit:
             reference_range=reference_date,
             recovery_target_method=None,
         )
-        assert rs.hist_ref_sys == True
+        assert rs.hist_ref_sys == False
     
     def test_historic_reference_system_bool_is_set_True(self, image_stack):
         reference_polys = gpd.read_file(
@@ -773,19 +774,27 @@ class TestReferenceSystemInit:
 
 
 class TestReferenceSystemRecoveryTarget:
-    class SimpleReferenceSystem(ReferenceSystem):
-        """Sub-class ReferenceSystem and overwrite __init__ to isolate `recovery_target` method."""
 
-        def __init__(self, recovery_target, stack, date):
-            """Set only attributes that are required by `recovery_target`, assume arb. types"""
-            self.recovery_target_method = recovery_target
-            self.reference_stack = stack
-            self.reference_range = date
+    def test_false_hist_ref_sys_calls_recovery_target_with_space_true(self, mocker):
+        mocker.patch.object(ReferenceSystem, "__init__", return_value=None)
+        rs = ReferenceSystem()
+        rs.recovery_target_method = MagicMock(return_value=None)
+        rs.reference_stack = 0
+        rs.reference_range = 0
+        rs.hist_ref_sys = False
 
-    def test_recovery_target_is_called_with_args(self):
-        mock_value = 3.0
-        mock_recovery_target = MagicMock(return_value=mock_value)
-        rs = self.SimpleReferenceSystem(mock_recovery_target, 1.0, 2.0)
-        output = rs.recovery_target()
-        expected = {"recovery_target": mock_value}
-        assert output == expected
+        rs.recovery_target()
+        rs.recovery_target_method.assert_called_once()
+        rs.recovery_target_method.assert_called_with(reference_stack=0, reference_range=0, space=True)
+    
+    def test_hist_ref_sys_calls_recovery_target_with_space_false(self, mocker):
+        mocker.patch.object(ReferenceSystem, "__init__", return_value=None)
+        rs = ReferenceSystem()
+        rs.recovery_target_method = MagicMock(return_value=None)
+        rs.reference_stack = 0
+        rs.reference_range = 0
+        rs.hist_ref_sys = True
+
+        rs.recovery_target()
+        rs.recovery_target_method.assert_called_once()
+        rs.recovery_target_method.assert_called_with(reference_stack=0, reference_range=0, space=False)
