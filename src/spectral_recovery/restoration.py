@@ -6,6 +6,7 @@ from pandas import Index
 from typing import Callable, Optional, Union, List
 from datetime import datetime
 from pandas import Timestamp
+import seaborn as sns
 
 from spectral_recovery.recovery_target import historic_average
 from spectral_recovery.enums import Metric
@@ -335,3 +336,18 @@ class RestorationArea:
         )
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
+    
+    def plot_spectral_timeseries(self):
+        """Plot a spectral timeseries of the RestorationArea"""
+        stats = self.stack.satts.stats()
+        stats = stats.sel(stats=["median", "min", "max", "mean", "std"])
+        stats = stats.to_dataframe("value").reset_index()
+        stats["Time"] = stats["time"].dt.year
+        stats = stats.rename(columns={"stats": "Statistic"})
+        stats = stats.melt(id_vars=["time", "Statistic"], var_name="Band", value_name="Value")
+        g = sns.FacetGrid(stats, col="Band", hue="Statistic", sharey=False, sharex=False)
+        g.map(sns.lineplot, "Time", "Value")
+        g.add_legend()
+        g.show()
+
+
