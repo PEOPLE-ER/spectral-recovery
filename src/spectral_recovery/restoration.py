@@ -76,11 +76,11 @@ class ReferenceSystem:
         """Get the recovery target for a reference system"""
         if self.hist_ref_sys:
             recovery_target = self.recovery_target_method(
-                self.reference_stack, self.reference_range, space=False
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=False
             )
         else:
             recovery_target = self.recovery_target_method(
-                self.reference_stack, self.reference_range, space=True
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=True
             )
         return {"recovery_target": recovery_target}
 
