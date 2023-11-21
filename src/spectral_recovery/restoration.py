@@ -247,16 +247,18 @@ class RestorationArea:
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
                 recovery_target_method=None,
+                historic_reference_system=True,
             )
         else:
             # Build the reference polygon from the reference polygon
             # Use the unclipped composite_stack instead of self.stack because
-            # self.stack is clipped to restoration_polygons.
+            # self.stack is clipped to restoration_polygons at this point.
             self.reference_system = ReferenceSystem(
                 reference_polygons=reference_polygon,
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
