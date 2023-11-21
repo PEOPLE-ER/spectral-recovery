@@ -2,13 +2,12 @@ import xarray as xr
 import geopandas as gpd
 import pandas as pd
 from pandas import Index
-import seaborn as sns
 
 from typing import Callable, Optional, Union, List
 from datetime import datetime
 from pandas import Timestamp
 
-from spectral_recovery.recovery_target import historic_average
+from spectral_recovery.recovery_target import median_target
 from spectral_recovery.enums import Metric
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.config import VALID_YEAR
@@ -44,15 +43,17 @@ class ReferenceSystem:
 
     def __init__(
         self,
-        reference_polygons: gpd.GeoDataFrame,
         reference_stack: xr.DataArray,
         reference_range: Union[datetime, List[datetime]],
+        reference_polygons: gpd.GeoDataFrame,
+        historic_reference_system: bool = False,
         recovery_target_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
+        self.hist_ref_sys = historic_reference_system
         self.reference_polygons = reference_polygons
         self.reference_range = reference_range
-        self.recovery_target_method = recovery_target_method or historic_average
+        self.recovery_target_method = recovery_target_method or median_target
         try:
             if self._within(reference_stack):
                 self.reference_stack = reference_stack
@@ -73,10 +74,14 @@ class ReferenceSystem:
 
     def recovery_target(self):
         """Get the recovery target for a reference system"""
-        # TODO: replace return dicts with named tuple
-        recovery_target = self.recovery_target_method(
-            self.reference_stack, self.reference_range
-        )
+        if self.hist_ref_sys:
+            recovery_target = self.recovery_target_method(
+                self.reference_stack, self.reference_range, space=False
+            )
+        else:
+            recovery_target = self.recovery_target_method(
+                self.reference_stack, self.reference_range, space=True
+            )
         return {"recovery_target": recovery_target}
 
     def _within(self, stack: xr.DataArray) -> bool:
@@ -336,17 +341,3 @@ class RestorationArea:
         )
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
-    
-    def plot_spectral_timeseries(self):
-        """Plot a spectral timeseries of the RestorationArea"""
-        stats = self.stack.satts.stats()
-        stats = stats.sel(stats=["median", "min", "max", "mean", "std"])
-        stats = stats.to_dataframe("value").reset_index()
-        stats["Time"] = stats["time"].dt.year
-        stats = stats.rename(columns={"stats": "Statistic"})
-        stats = stats.melt(id_vars=["time", "Statistic"], var_name="Band", value_name="Value")
-        g = sns.FacetGrid(stats, col="Band", hue="Statistic", sharey=False, sharex=False)
-        g.map(sns.lineplot, "Time", "Value")
-        g.add_legend()
-        g.show()
-
