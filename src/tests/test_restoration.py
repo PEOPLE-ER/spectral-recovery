@@ -449,7 +449,7 @@ class TestRestorationAreaMetrics:
                 composite_stack=stack,
             )
 
-            mock_target_return = {"recovery_target": self.baseline_array}
+            mock_target_return = self.baseline_array
             resto_area.reference_system.recovery_target = MagicMock(
                 return_value=mock_target_return
             )
@@ -798,3 +798,5 @@ class TestReferenceSystemRecoveryTarget:
         rs.recovery_target()
         rs.recovery_target_method.assert_called_once()
         rs.recovery_target_method.assert_called_with(reference_stack=0, reference_range=0, space=False)
+    
+    # TODO: test the return value is correct

@@ -297,7 +297,7 @@ class RestorationArea:
         recovery_target = self.reference_system.recovery_target()
         y2r = m.Y2R(
             image_stack=post_restoration,
-            recovery_target=recovery_target["recovery_target"],
+            recovery_target=recovery_target,
             rest_start=str(self.restoration_start.year),
             percent=percent_of_target,
         )
@@ -337,7 +337,7 @@ class RestorationArea:
         r80p = m.R80P(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
-            recovery_target=recovery_target["recovery_target"],
+            recovery_target=recovery_target,
             timestep=timestep,
             percent=percent_of_target,
         )
