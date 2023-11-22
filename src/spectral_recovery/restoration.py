@@ -82,7 +82,7 @@ class ReferenceSystem:
             recovery_target = self.recovery_target_method(
                 reference_stack=self.reference_stack, reference_range=self.reference_range, space=True
             )
-        return {"recovery_target": recovery_target}
+        return recovery_target
 
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
