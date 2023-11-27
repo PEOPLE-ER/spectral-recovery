@@ -46,7 +46,7 @@ class ReferenceSystem:
         reference_stack: xr.DataArray,
         reference_range: Union[datetime, List[datetime]],
         reference_polygons: gpd.GeoDataFrame,
-        historic_reference_system: bool = False,
+        historic_reference_system: bool,
         recovery_target_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
@@ -76,12 +76,16 @@ class ReferenceSystem:
         """Get the recovery target for a reference system"""
         if self.hist_ref_sys:
             recovery_target = self.recovery_target_method(
-                reference_stack=self.reference_stack, reference_range=self.reference_range, space=False
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=False, hist_ref_sys=self.hist_ref_sys
             )
         else:
             recovery_target = self.recovery_target_method(
-                reference_stack=self.reference_stack, reference_range=self.reference_range, space=True
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=True, hist_ref_sys=self.hist_ref_sys
             )
+        if recovery_target.dims == ("band","y", "x"):
+            raise ValueError(
+                "Recovery target using reference polygons must be computed along the space dimensions."
+            ) from None
         return recovery_target
 
     def _within(self, stack: xr.DataArray) -> bool:
