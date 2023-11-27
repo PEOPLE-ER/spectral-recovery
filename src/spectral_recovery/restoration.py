@@ -76,11 +76,11 @@ class ReferenceSystem:
         """Get the recovery target for a reference system"""
         if self.hist_ref_sys:
             recovery_target = self.recovery_target_method(
-                reference_stack=self.reference_stack, reference_range=self.reference_range, space=False, hist_ref_sys=self.hist_ref_sys
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=False,
             )
         else:
             recovery_target = self.recovery_target_method(
-                reference_stack=self.reference_stack, reference_range=self.reference_range, space=True, hist_ref_sys=self.hist_ref_sys
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=True,
             )
         if not self.hist_ref_sys:
             if recovery_target.dims == ("band","y", "x"):
