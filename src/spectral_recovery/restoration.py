@@ -6,6 +6,9 @@ from pandas import Index
 from typing import Callable, Optional, Union, List
 from datetime import datetime
 from pandas import Timestamp
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 import seaborn as sns
 
 from spectral_recovery.recovery_target import historic_average
@@ -340,14 +343,54 @@ class RestorationArea:
     def plot_spectral_timeseries(self):
         """Plot a spectral timeseries of the RestorationArea"""
         stats = self.stack.satts.stats()
-        stats = stats.sel(stats=["median", "min", "max", "mean", "std"])
+        stats = stats.sel(stats=["median", "mean",])
         stats = stats.to_dataframe("value").reset_index()
-        stats["Time"] = stats["time"].dt.year
+        stats["time"] = stats["time"].dt.year
+        # TODO: add +- std
+        reco_targets = self.reference_system.recovery_target()["recovery_target"]
+        reco_targets = reco_targets.to_dataframe("reco_targets").reset_index()[["band", "reco_targets"]]
+        stats = stats.merge(reco_targets, how="left", on="band")
         stats = stats.rename(columns={"stats": "Statistic"})
-        stats = stats.melt(id_vars=["time", "Statistic"], var_name="Band", value_name="Value")
-        g = sns.FacetGrid(stats, col="Band", hue="Statistic", sharey=False, sharex=False)
-        g.map(sns.lineplot, "Time", "Value")
-        g.add_legend()
-        g.show()
+
+        sns.set_theme()
+        # TODO: clarify which hue is assigned to which statistic
+        g = sns.FacetGrid(stats, col="band", hue="Statistic", sharey=False, sharex=False, height=5, aspect=1.5, legend_out=True)
+        g.map_dataframe(sns.lineplot, "time", "value")
+        g.map_dataframe(sns.lineplot, "time", "reco_targets", color="black", linestyle="dotted")
+        # Add verticle line for disturbance and restoration start years
+        g.map(plt.axvline, x=self.disturbance_start.year, color="red", linestyle="dashed", lw=1)
+        g.map(plt.axvline, x=self.restoration_start.year, color="green", linestyle="dashed", lw=1)
+        # TODO: fix this for reference years that are just one year
+        g.map(plt.axvline, x=self.reference_years[0].year, color="blue", linestyle="dashed", lw=1)
+        if self.reference_years[1].year != self.disturbance_start.year:
+            g.map(plt.axvline, x=self.reference_years[1].year, color="blue", linestyle="dashed")
+        for ax in g.axes.flat:
+            ax.axvspan(self.reference_years[0].year, self.reference_years[1].year, alpha=0.1, color='blue')
+            ax.axvspan(self.disturbance_start.year, self.restoration_start.year, alpha=0.1, color='red')
+            ax.axvspan(self.restoration_start.year, self.end_year.year, alpha=0.1, color='green')
+        print(g._legend_data.values())
+
+        # custom_lines = [Line2D([0], [0], color='orange', lw=2),
+        #                 Line2D([0], [0], color='green', lw=2),
+        #                 Line2D([0], [0], color='black', linestyle="dotted", lw=2),
+        #                 Line2D([0], [0], color='red', linestyle="dashed", lw=2),
+        #                 Line2D([0], [0], color='green', linestyle="dashed", lw=2),
+        #                 Line2D([0], [0], color='blue', linestyle="dashed", lw=2)]
+        # custom_data = dict(zip(["mea4n", "median", "recovery target", "disturbanc window", "recovery window", "reference window"], custom_lines))
+
+        median_line = Line2D([0], [0], color='orange', lw=2)
+        mean_line = Line2D([0], [0], color='blue', lw=2)
+        recovery_target_line = Line2D([0], [0], color='black', linestyle="dotted", lw=1)
+        disturbance_window_line = Line2D([0], [0], color='red', linestyle="dashed", lw=1)
+        disturbance_window_patch = Patch(facecolor='red', alpha=0.1)
+        recovery_window_line = Line2D([0], [0], color='green', linestyle="dashed", lw=1)
+        recovery_window_patch = Patch(facecolor='green', alpha=0.1)
+        reference_years = Line2D([0], [0], color='blue', linestyle="dashed", lw=1)
+        reference_years_patch = Patch(facecolor='blue', alpha=0.1)
+
+        custom_handles = [median_line, mean_line, recovery_target_line, (disturbance_window_line, disturbance_window_patch), (recovery_window_line, recovery_window_patch), (reference_years, reference_years_patch)]
+        plt.legend(labels=["median", "mean", "recovery target", "disturbance window", "recovery window", "reference year(s)"], handles=custom_handles, loc='upper center', bbox_to_anchor=(0.04, -0.1),
+          fancybox=True, ncol=6)
+        plt.show()
 
 
