@@ -338,8 +338,14 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-    def plot_spectral_timeseries(self):
-        """Plot a spectral timeseries of the RestorationArea"""
+    def plot_spectral_timeseries(self, path: str) -> None:
+        """Create and write plot of spectral timeseries of the RestorationArea
+        
+        Parameters
+        ----------
+        path : str
+            The path to save the plot to.
+        """
 
         stats = self.stack.satts.stats()
         stats = stats.sel(
@@ -359,10 +365,8 @@ class RestorationArea:
         stats = stats.rename(columns={"stats": "Statistic"})
 
         sns.set_theme()
-        # sns.color_palette("colorblind")
         # TODO: clarify which hue is assigned to which statistic
         palette = sns.color_palette("deep")
-        # palette.insert(0, palette.pop())
 
         with sns.color_palette(palette):
             g = sns.FacetGrid(
@@ -376,17 +380,18 @@ class RestorationArea:
                 legend_out=True,
             )
             g.map_dataframe(sns.lineplot, "time", "value")
-            g.map_dataframe(
-                sns.lineplot,
-                "time",
-                "reco_targets",
-                color="black",
-                linestyle="dotted",
-                lw=1,
-            )
+
+        g.map_dataframe(
+            sns.lineplot,
+            "time",
+            "reco_targets",
+            color="black",
+            linestyle="dotted",
+            lw=1,
+        )
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
-        print(g.axes)
+        g.axes[0,0].set_ylabel('Spectral Value')
         # g.axes[0,0].set_xlabel('axes label 1')
         # g.axes[0,1].set_xlabel('axes label 2')
         # Add verticle line for disturbance and restoration start years
@@ -440,14 +445,6 @@ class RestorationArea:
                 color=palette[2],
             )
 
-        # custom_lines = [Line2D([0], [0], color='orange', lw=2),
-        #                 Line2D([0], [0], color='green', lw=2),
-        #                 Line2D([0], [0], color='black', linestyle="dotted", lw=2),
-        #                 Line2D([0], [0], color='red', linestyle="dashed", lw=2),
-        #                 Line2D([0], [0], color='green', linestyle="dashed", lw=2),
-        #                 Line2D([0], [0], color='blue', linestyle="dashed", lw=2)]
-        # custom_data = dict(zip(["mea4n", "median", "recovery target", "disturbanc window", "recovery window", "reference window"], custom_lines))
-
         median_line = Line2D([0], [0], color=palette[0], lw=2)
         mean_line = Line2D([0], [0], color=palette[1], lw=2)
         recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
@@ -470,7 +467,8 @@ class RestorationArea:
             (recovery_window_line, recovery_window_patch),
             (reference_years, reference_years_patch),
         ]
-        plt.legend(
+        middle_ax = g.axes.flat[len(g.axes.flat) // 2]
+        middle_ax.legend(
             labels=[
                 "median",
                 "mean",
@@ -480,9 +478,12 @@ class RestorationArea:
                 "reference year(s)",
             ],
             handles=custom_handles,
-            loc="upper center",
-            bbox_to_anchor=(0.04, -0.1),
+            loc='upper center', 
+            bbox_to_anchor=(0.5, -0.2),
             fancybox=True,
             ncol=6,
         )
-        plt.show()
+        plt.suptitle("Spectral Timeseries")
+        plt.tight_layout()
+        plt.savefig(path, dpi=300, bbox_inches="tight")
+    
