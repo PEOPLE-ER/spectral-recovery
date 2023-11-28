@@ -102,7 +102,7 @@ class TestCompatiableWithDecorator:
         def to_be_decorated(stack):
             return "hello"
 
-        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": Platform.landsat_oli})
+        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": [Platform.landsat_oli]})
         assert to_be_decorated(test_stack) == "hello"
     
     def test_platform_diff_than_decorator_throws_value_err(self):
@@ -110,6 +110,6 @@ class TestCompatiableWithDecorator:
         def to_be_decorated(stack):
             return "hello"
 
-        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": Platform.sentinel_2})
+        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": [Platform.sentinel_2]})
         with pytest.raises(ValueError):
             to_be_decorated(test_stack)

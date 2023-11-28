@@ -7,7 +7,7 @@ from typing import Callable, Optional, Union, List
 from datetime import datetime
 from pandas import Timestamp
 
-from spectral_recovery.recovery_target import historic_average
+from spectral_recovery.recovery_target import median_target
 from spectral_recovery.enums import Metric
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.config import VALID_YEAR
@@ -43,15 +43,17 @@ class ReferenceSystem:
 
     def __init__(
         self,
-        reference_polygons: gpd.GeoDataFrame,
         reference_stack: xr.DataArray,
         reference_range: Union[datetime, List[datetime]],
+        reference_polygons: gpd.GeoDataFrame,
+        historic_reference_system: bool,
         recovery_target_method: Optional[Callable] = None,
     ) -> None:
         # TODO: convert date inputs into standard form (pd.dt?)
+        self.hist_ref_sys = historic_reference_system
         self.reference_polygons = reference_polygons
         self.reference_range = reference_range
-        self.recovery_target_method = recovery_target_method or historic_average
+        self.recovery_target_method = recovery_target_method or median_target
         try:
             if self._within(reference_stack):
                 self.reference_stack = reference_stack
@@ -72,11 +74,20 @@ class ReferenceSystem:
 
     def recovery_target(self):
         """Get the recovery target for a reference system"""
-        # TODO: replace return dicts with named tuple
-        recovery_target = self.recovery_target_method(
-            self.reference_stack, self.reference_range
-        )
-        return {"recovery_target": recovery_target}
+        if self.hist_ref_sys:
+            recovery_target = self.recovery_target_method(
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=False,
+            )
+        else:
+            recovery_target = self.recovery_target_method(
+                reference_stack=self.reference_stack, reference_range=self.reference_range, space=True,
+            )
+        if not self.hist_ref_sys:
+            if recovery_target.dims == ("band","y", "x"):
+                raise ValueError(
+                    "Recovery target using reference polygons must be computed along the space dimensions."
+                ) from None
+        return recovery_target
 
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
@@ -241,16 +252,18 @@ class RestorationArea:
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
                 recovery_target_method=None,
+                historic_reference_system=True,
             )
         else:
             # Build the reference polygon from the reference polygon
             # Use the unclipped composite_stack instead of self.stack because
-            # self.stack is clipped to restoration_polygons.
+            # self.stack is clipped to restoration_polygons at this point.
             self.reference_system = ReferenceSystem(
                 reference_polygons=reference_polygon,
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
@@ -289,7 +302,7 @@ class RestorationArea:
         recovery_target = self.reference_system.recovery_target()
         y2r = m.Y2R(
             image_stack=post_restoration,
-            recovery_target=recovery_target["recovery_target"],
+            recovery_target=recovery_target,
             rest_start=str(self.restoration_start.year),
             percent=percent_of_target,
         )
@@ -329,7 +342,7 @@ class RestorationArea:
         r80p = m.R80P(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
-            recovery_target=recovery_target["recovery_target"],
+            recovery_target=recovery_target,
             timestep=timestep,
             percent=percent_of_target,
         )
