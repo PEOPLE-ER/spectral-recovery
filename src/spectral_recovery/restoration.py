@@ -392,8 +392,6 @@ class RestorationArea:
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
         g.axes[0,0].set_ylabel('Spectral Value')
-        # g.axes[0,0].set_xlabel('axes label 1')
-        # g.axes[0,1].set_xlabel('axes label 2')
         # Add verticle line for disturbance and restoration start years
         g.map(
             plt.axvline,
@@ -467,8 +465,7 @@ class RestorationArea:
             (recovery_window_line, recovery_window_patch),
             (reference_years, reference_years_patch),
         ]
-        middle_ax = g.axes.flat[len(g.axes.flat) // 2]
-        middle_ax.legend(
+        plt.figlegend(
             labels=[
                 "median",
                 "mean",
@@ -478,8 +475,8 @@ class RestorationArea:
                 "reference year(s)",
             ],
             handles=custom_handles,
-            loc='upper center', 
-            bbox_to_anchor=(0.5, -0.2),
+            loc='lower center', 
+            bbox_to_anchor=(0.5, -0.05),
             fancybox=True,
             ncol=6,
         )
