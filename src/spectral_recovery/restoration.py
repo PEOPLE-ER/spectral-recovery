@@ -19,7 +19,6 @@ from spectral_recovery.config import VALID_YEAR
 from spectral_recovery import metrics as m
 
 
-
 # TODO: split date into start and end dates.
 # TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
 class ReferenceSystem:
@@ -159,9 +158,7 @@ class RestorationArea:
             ) from None
         if disturbance_start is not None:
             if not isinstance(disturbance_start, str):
-                raise TypeError(
-                    "disturbance_start must be a string."
-                ) from None
+                raise TypeError("disturbance_start must be a string.") from None
             else:
                 year = VALID_YEAR.match(disturbance_start)
                 if year:
@@ -169,7 +166,7 @@ class RestorationArea:
                 else:
                     raise ValueError(
                         "Could not parse {disturbance_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'." 
+                        "the year is in the format 'YYYY'."
                     )
             if restoration_start is None:
                 self.restoration_start = pd.to_datetime(
@@ -183,9 +180,7 @@ class RestorationArea:
 
         if restoration_start is not None:
             if not isinstance(restoration_start, str):
-                raise TypeError(
-                    "restoration_start must be a string."
-                ) from None
+                raise TypeError("restoration_start must be a string.") from None
             else:
                 year = VALID_YEAR.match(restoration_start)
                 if year:
@@ -193,7 +188,7 @@ class RestorationArea:
                 else:
                     raise ValueError(
                         "Could not parse {restoration_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'." 
+                        "the year is in the format 'YYYY'."
                     )
             if disturbance_start is None:
                 self.disturbance_start = pd.to_datetime(
@@ -208,7 +203,10 @@ class RestorationArea:
             try:
                 _ = iter(reference_years)
                 if len(reference_years) == 2:
-                    self.reference_years = [pd.to_datetime(reference_years[0]), pd.to_datetime(reference_years[1])]
+                    self.reference_years = [
+                        pd.to_datetime(reference_years[0]),
+                        pd.to_datetime(reference_years[1]),
+                    ]
                 else:
                     raise ValueError(
                         "reference_years must be a string or iterable of 2 strings."
@@ -217,7 +215,7 @@ class RestorationArea:
                 raise TypeError(
                     "reference_years must be a string or iterable of 2 strings."
                 ) from None
-                
+
         if self.restoration_start < self.disturbance_start:
             raise ValueError(
                 "The disturbance start year must be less than the restoration start"
@@ -339,36 +337,108 @@ class RestorationArea:
         )
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
-    
+
     def plot_spectral_timeseries(self):
         """Plot a spectral timeseries of the RestorationArea"""
+
         stats = self.stack.satts.stats()
-        stats = stats.sel(stats=["median", "mean",])
+        stats = stats.sel(
+            stats=[
+                "median",
+                "mean",
+            ]
+        )
         stats = stats.to_dataframe("value").reset_index()
         stats["time"] = stats["time"].dt.year
         # TODO: add +- std
         reco_targets = self.reference_system.recovery_target()["recovery_target"]
-        reco_targets = reco_targets.to_dataframe("reco_targets").reset_index()[["band", "reco_targets"]]
+        reco_targets = reco_targets.to_dataframe("reco_targets").reset_index()[
+            ["band", "reco_targets"]
+        ]
         stats = stats.merge(reco_targets, how="left", on="band")
         stats = stats.rename(columns={"stats": "Statistic"})
 
         sns.set_theme()
+        # sns.color_palette("colorblind")
         # TODO: clarify which hue is assigned to which statistic
-        g = sns.FacetGrid(stats, col="band", hue="Statistic", sharey=False, sharex=False, height=5, aspect=1.5, legend_out=True)
-        g.map_dataframe(sns.lineplot, "time", "value")
-        g.map_dataframe(sns.lineplot, "time", "reco_targets", color="black", linestyle="dotted")
-        # Add verticle line for disturbance and restoration start years
-        g.map(plt.axvline, x=self.disturbance_start.year, color="red", linestyle="dashed", lw=1)
-        g.map(plt.axvline, x=self.restoration_start.year, color="green", linestyle="dashed", lw=1)
-        # TODO: fix this for reference years that are just one year
-        g.map(plt.axvline, x=self.reference_years[0].year, color="blue", linestyle="dashed", lw=1)
-        if self.reference_years[1].year != self.disturbance_start.year:
-            g.map(plt.axvline, x=self.reference_years[1].year, color="blue", linestyle="dashed")
+        palette = sns.color_palette("deep")
+        # palette.insert(0, palette.pop())
+
+        with sns.color_palette(palette):
+            g = sns.FacetGrid(
+                stats,
+                col="band",
+                hue="Statistic",
+                sharey=False,
+                sharex=False,
+                height=5,
+                aspect=1.5,
+                legend_out=True,
+            )
+            g.map_dataframe(sns.lineplot, "time", "value")
+            g.map_dataframe(
+                sns.lineplot,
+                "time",
+                "reco_targets",
+                color="black",
+                linestyle="dotted",
+                lw=1,
+            )
         for ax in g.axes.flat:
-            ax.axvspan(self.reference_years[0].year, self.reference_years[1].year, alpha=0.1, color='blue')
-            ax.axvspan(self.disturbance_start.year, self.restoration_start.year, alpha=0.1, color='red')
-            ax.axvspan(self.restoration_start.year, self.end_year.year, alpha=0.1, color='green')
-        print(g._legend_data.values())
+            ax.set_xlabel("Year")
+        print(g.axes)
+        # g.axes[0,0].set_xlabel('axes label 1')
+        # g.axes[0,1].set_xlabel('axes label 2')
+        # Add verticle line for disturbance and restoration start years
+        g.map(
+            plt.axvline,
+            x=self.restoration_start.year,
+            color=palette[2],
+            linestyle="dashed",
+            lw=1,
+        )
+        g.map(
+            plt.axvline,
+            x=self.disturbance_start.year,
+            color=palette[3],
+            linestyle="dashed",
+            lw=1,
+        )
+        # TODO: fix this for reference years that are just one year
+        g.map(
+            plt.axvline,
+            x=self.reference_years[0].year,
+            color=palette[4],
+            linestyle="dashed",
+            lw=1,
+        )
+        if self.reference_years[1].year != self.disturbance_start.year:
+            g.map(
+                plt.axvline,
+                x=self.reference_years[1].year,
+                color=palette[4],
+                linestyle="dashed",
+                lw=1,
+            )
+        for ax in g.axes.flat:
+            ax.axvspan(
+                self.reference_years[0].year,
+                self.reference_years[1].year,
+                alpha=0.1,
+                color=palette[4],
+            )
+            ax.axvspan(
+                self.disturbance_start.year,
+                self.restoration_start.year,
+                alpha=0.1,
+                color=palette[3],
+            )
+            ax.axvspan(
+                self.restoration_start.year,
+                self.end_year.year,
+                alpha=0.1,
+                color=palette[2],
+            )
 
         # custom_lines = [Line2D([0], [0], color='orange', lw=2),
         #                 Line2D([0], [0], color='green', lw=2),
@@ -378,19 +448,41 @@ class RestorationArea:
         #                 Line2D([0], [0], color='blue', linestyle="dashed", lw=2)]
         # custom_data = dict(zip(["mea4n", "median", "recovery target", "disturbanc window", "recovery window", "reference window"], custom_lines))
 
-        median_line = Line2D([0], [0], color='orange', lw=2)
-        mean_line = Line2D([0], [0], color='blue', lw=2)
-        recovery_target_line = Line2D([0], [0], color='black', linestyle="dotted", lw=1)
-        disturbance_window_line = Line2D([0], [0], color='red', linestyle="dashed", lw=1)
-        disturbance_window_patch = Patch(facecolor='red', alpha=0.1)
-        recovery_window_line = Line2D([0], [0], color='green', linestyle="dashed", lw=1)
-        recovery_window_patch = Patch(facecolor='green', alpha=0.1)
-        reference_years = Line2D([0], [0], color='blue', linestyle="dashed", lw=1)
-        reference_years_patch = Patch(facecolor='blue', alpha=0.1)
+        median_line = Line2D([0], [0], color=palette[0], lw=2)
+        mean_line = Line2D([0], [0], color=palette[1], lw=2)
+        recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
+        recovery_window_line = Line2D(
+            [0], [0], color=palette[2], linestyle="dashed", lw=1
+        )
+        recovery_window_patch = Patch(facecolor=palette[2], alpha=0.1)
+        disturbance_window_line = Line2D(
+            [0], [0], color=palette[3], linestyle="dashed", lw=1
+        )
+        disturbance_window_patch = Patch(facecolor=palette[3], alpha=0.1)
+        reference_years = Line2D([0], [0], color=palette[4], linestyle="dashed", lw=1)
+        reference_years_patch = Patch(facecolor=palette[4], alpha=0.1)
 
-        custom_handles = [median_line, mean_line, recovery_target_line, (disturbance_window_line, disturbance_window_patch), (recovery_window_line, recovery_window_patch), (reference_years, reference_years_patch)]
-        plt.legend(labels=["median", "mean", "recovery target", "disturbance window", "recovery window", "reference year(s)"], handles=custom_handles, loc='upper center', bbox_to_anchor=(0.04, -0.1),
-          fancybox=True, ncol=6)
+        custom_handles = [
+            median_line,
+            mean_line,
+            recovery_target_line,
+            (disturbance_window_line, disturbance_window_patch),
+            (recovery_window_line, recovery_window_patch),
+            (reference_years, reference_years_patch),
+        ]
+        plt.legend(
+            labels=[
+                "median",
+                "mean",
+                "recovery target",
+                "disturbance window",
+                "recovery window",
+                "reference year(s)",
+            ],
+            handles=custom_handles,
+            loc="upper center",
+            bbox_to_anchor=(0.04, -0.1),
+            fancybox=True,
+            ncol=6,
+        )
         plt.show()
-
-
