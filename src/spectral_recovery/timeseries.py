@@ -90,7 +90,7 @@ class _SatelliteTimeSeries:
         Returns
         -------
         bool
-            True if the DataArray contains the polygons, False otherwise.
+            True if the DataArray spatially contains the polygons, False otherwise.
         """
         # NOTE: if this changes to looking at individual polygons
         # rather than the bbox of all polygons, consider this algo:
@@ -122,55 +122,28 @@ class _SatelliteTimeSeries:
             if not (pd.to_datetime(str(year)) in self._obj.coords["time"].values):
                 return False
         return True
+    
+    def stats(self) -> xr.DataArray:
+        """Compute timeseries statistics.
 
-    # # NOTE: conceptually, does having this method in this class work?
-    # def indices(self, indices_list) -> xr.DataArray:
-    #     """Compute indices
-
-    #     Parameters
-    #     ----------
-    #     indices_list : list of str
-    #         The list of indices to compute/produce.
-
-    #     Returns
-    #     --------
-    #     xr.DataArray
-    #         A 4D (band, time, y, x) DataArray with indices
-    #         stacked inside the band dimension.
-    #     """
-    #     indices_dict = {}
-    #     for indice_input in indices_list:
-    #         indice = Index(indice_input)
-    #         indices_dict[indice] = indices_map[indice](self._obj)
-    #     indices = xr.concat(
-    #         indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band")
-    #     )
-    #     return indices
-
-    def stats(self, dims, percentile=0.8) -> xr.DataArray:
-        """Compute statistics over a set of dimensions
-
-        Parameters
-        ----------
-        dims : list of str
-            The dimensions over which to compute statistics. Must be a
-            subset of the DataArray's dimensions.
-        percentile : float
-            The percentile to compute.
+        Reduces the object along the y and x dimensions. Reduction
+        methods (stats methods) are applied sequentially, first along
+        the y and then along the x dimension.
 
         Returns
         -------
         stats_xr : xr.DataArray
-            A new DataArray with statistics stacked along 'stats'
-            dimension.
+            A 3D DataArray containing time, band and stats dimensions.
+            The computed statistics accessible as named coordinates in the 
+            "stats" dimension. 
         """
+        dims = ["y", "x"]
+        stat_funcs = ["mean", "median", "max", "min", "std"]
         stats = {}
-        stats["mean"] = self._obj.mean(dim=dims, skipna=True)
-        stats["max"] = self._obj.max(dim=dims, skipna=True)
-        stats["min"] = self._obj.min(dim=dims, skipna=True)
-        stats["median"] = self._obj.median(dim=dims, skipna=True)
-        stats["quantile"] = self._obj.quantile(q=percentile, dim=dims, skipna=True)
-        stats["std"] = self._obj.std(dim=dims, skipna=True)
-        stats["sum"] = self._obj.std(dim=dims, skipna=True)
+        for func_n in stat_funcs:
+            func = getattr(self._obj, func_n)
+            res = func(dim=dims, skipna=True)
+            stats[func.__name__] = res
+
         stats_xr = xr.concat(stats.values(), dim=pd.Index(stats.keys(), name="stats"))
         return stats_xr
