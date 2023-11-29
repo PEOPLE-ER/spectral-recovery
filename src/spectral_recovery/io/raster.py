@@ -63,19 +63,43 @@ def read_and_stack_tifs(
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
     if band_names is None:
         try:
-            band_names = _to_band_or_index_name(stacked_data.attrs["long_name"])
+            band_names_new = _to_band_or_index_name(stacked_data.attrs["long_name"])
         except KeyError:
             raise ValueError(
-                "Band descriptions/names not found in TIFs. Please provide band "
+                "Band descriptions not found in TIFs. Please provide band "
                 " names for bands {stack_data.band.values} using the `band_names`"
                 " argument."
             )
     else:
-        band_names_sorted = dict(sorted(band_names.items())).values()
-        band_names = _to_band_or_index_name(band_names_sorted)
+        band_names_old = stacked_data.band.values
+        for b in band_names.keys():
+            if b not in band_names_old:
+                raise ValueError(
+                    f"Band {b} not found in TIFs. Please provide a mapping for only"
+                    f" bands: {band_names_old}"
+                ) from None
 
-    stacked_data = stacked_data.assign_coords(band=list(band_names.values()))
+        if not all([k in band_names_old for k in band_names.keys()]):
+            raise ValueError(
+                f"Band names {band_names.keys()} not found in TIFs. Please provide a"
+                f" mapping for bands: {band_names_old}"
+            ) from None
+        # This is working on the assumption that bands are always integers when no band
+        # description is provided e.g band_names_old == [0,1,2]
+        for band_num in band_names_old:
+            if band_num not in band_names.keys():
+                raise ValueError(
+                    f"Band {band_num} not found in `band_names` dictionary. Please"
+                    f" provide a mapping for all bands: {band_names_old}"
+                ) from None
+            else:
+                band_names[band_num] = _to_band_or_index_name([band_names[band_num]])[0]
 
+        band_names_new = [
+            band_names[k] for k in band_names_old
+        ]  # this silently discards any bands in bands_names that are not in the TIFs
+
+    stacked_data = stacked_data.assign_coords(band=band_names_new)
     # TODO: catch missing dimension error here
     stacked_data = stacked_data.transpose(*REQ_DIMS)
     stacked_data = stacked_data.sortby("time")
@@ -91,21 +115,21 @@ def read_and_stack_tifs(
 
 def _to_band_or_index_name(names_list: List[str]) -> Dict[str, BandCommon | Index]:
     """Convert a list of band or index names to BandCommon or Index enums"""
-    valid_names_mapping = {}
+    valid_names = []
     for name in names_list:
         try:
             val = BandCommon[name.lower()]
-            valid_names_mapping[name] = val
+            valid_names.append(val)
             continue
         except ValueError:
             pass
         try:
             val = Index[name.lower()]
-            valid_names_mapping[name] = val
+            valid_names.append(val)
         except ValueError:
             # TODO: add accepted values to error message and direct user to documentation
             raise ValueError
-    return valid_names_mapping
+    return valid_names
 
 
 def _str_is_year(year_str) -> bool:
