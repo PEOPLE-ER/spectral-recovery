@@ -14,10 +14,10 @@ from spectral_recovery.enums import BandCommon, Index, Platform
 from spectral_recovery.config import VALID_YEAR, REQ_DIMS
 
 
-
 def read_and_stack_tifs(
     path_to_tifs: List[str] | str,
     platform: List[Platform] | Platform,
+    band_names: Dict[int, str | BandCommon | Index] = None,
     path_to_mask: str = None,
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
@@ -61,7 +61,19 @@ def read_and_stack_tifs(
             ) from None
 
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
-    band_names = _to_band_or_index_name(stacked_data.attrs["long_name"])
+    if band_names is None:
+        try:
+            band_names = _to_band_or_index_name(stacked_data.attrs["long_name"])
+        except KeyError:
+            raise ValueError(
+                "Band descriptions/names not found in TIFs. Please provide band "
+                " names for bands {stack_data.band.values} using the `band_names`"
+                " argument."
+            )
+    else:
+        band_names_sorted = dict(sorted(band_names.items())).values()
+        band_names = _to_band_or_index_name(band_names_sorted)
+
     stacked_data = stacked_data.assign_coords(band=list(band_names.values()))
 
     # TODO: catch missing dimension error here
