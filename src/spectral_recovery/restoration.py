@@ -6,6 +6,10 @@ from pandas import Index
 from typing import Callable, Optional, Union, List
 from datetime import datetime
 from pandas import Timestamp
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+import seaborn as sns
 
 from spectral_recovery.recovery_target import median_target
 from spectral_recovery.enums import Metric
@@ -13,7 +17,6 @@ from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.config import VALID_YEAR
 
 from spectral_recovery import metrics as m
-
 
 
 # TODO: split date into start and end dates.
@@ -82,11 +85,6 @@ class ReferenceSystem:
             recovery_target = self.recovery_target_method(
                 reference_stack=self.reference_stack, reference_range=self.reference_range, space=True,
             )
-        if not self.hist_ref_sys:
-            if recovery_target.dims == ("band","y", "x"):
-                raise ValueError(
-                    "Recovery target using reference polygons must be computed along the space dimensions."
-                ) from None
         return recovery_target
 
     def _within(self, stack: xr.DataArray) -> bool:
@@ -166,9 +164,7 @@ class RestorationArea:
             ) from None
         if disturbance_start is not None:
             if not isinstance(disturbance_start, str):
-                raise TypeError(
-                    "disturbance_start must be a string."
-                ) from None
+                raise TypeError("disturbance_start must be a string.") from None
             else:
                 year = VALID_YEAR.match(disturbance_start)
                 if year:
@@ -176,7 +172,7 @@ class RestorationArea:
                 else:
                     raise ValueError(
                         "Could not parse {disturbance_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'." 
+                        "the year is in the format 'YYYY'."
                     )
             if restoration_start is None:
                 self.restoration_start = pd.to_datetime(
@@ -190,9 +186,7 @@ class RestorationArea:
 
         if restoration_start is not None:
             if not isinstance(restoration_start, str):
-                raise TypeError(
-                    "restoration_start must be a string."
-                ) from None
+                raise TypeError("restoration_start must be a string.") from None
             else:
                 year = VALID_YEAR.match(restoration_start)
                 if year:
@@ -200,7 +194,7 @@ class RestorationArea:
                 else:
                     raise ValueError(
                         "Could not parse {restoration_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'." 
+                        "the year is in the format 'YYYY'."
                     )
             if disturbance_start is None:
                 self.disturbance_start = pd.to_datetime(
@@ -215,7 +209,10 @@ class RestorationArea:
             try:
                 _ = iter(reference_years)
                 if len(reference_years) == 2:
-                    self.reference_years = [pd.to_datetime(reference_years[0]), pd.to_datetime(reference_years[1])]
+                    self.reference_years = [
+                        pd.to_datetime(reference_years[0]),
+                        pd.to_datetime(reference_years[1]),
+                    ]
                 else:
                     raise ValueError(
                         "reference_years must be a string or iterable of 2 strings."
@@ -224,7 +221,7 @@ class RestorationArea:
                 raise TypeError(
                     "reference_years must be a string or iterable of 2 strings."
                 ) from None
-                
+
         if self.restoration_start < self.disturbance_start:
             raise ValueError(
                 "The disturbance start year must be less than the restoration start"
@@ -348,3 +345,151 @@ class RestorationArea:
         )
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
+
+    def plot_spectral_timeseries(self, path: str) -> None:
+        """Create and write plot of spectral timeseries of the RestorationArea
+        
+        Parameters
+        ----------
+        path : str
+            The path to save the plot to.
+        """
+
+        stats = self.stack.satts.stats()
+        stats = stats.sel(
+            stats=[
+                "median",
+                "mean",
+            ]
+        )
+        stats = stats.to_dataframe("value").reset_index()
+        stats["time"] = stats["time"].dt.year
+        # TODO: add +- std
+        reco_targets = self.reference_system.recovery_target()["recovery_target"]
+        reco_targets = reco_targets.to_dataframe("reco_targets").reset_index()[
+            ["band", "reco_targets"]
+        ]
+        stats = stats.merge(reco_targets, how="left", on="band")
+        stats = stats.rename(columns={"stats": "Statistic"})
+
+        sns.set_theme()
+        palette = sns.color_palette("deep")
+
+        # Plot per-band statistic lineplots
+        with sns.color_palette(palette):
+            g = sns.FacetGrid(
+                stats,
+                col="band",
+                hue="Statistic",
+                sharey=False,
+                sharex=False,
+                height=5,
+                aspect=1.5,
+                legend_out=True,
+            )
+            g.map_dataframe(sns.lineplot, "time", "value")
+        # Add recovery target line
+        g.map_dataframe(
+            sns.lineplot,
+            "time",
+            "reco_targets",
+            color="black",
+            linestyle="dotted",
+            lw=1,
+        )
+        for ax in g.axes.flat:
+            ax.set_xlabel("Year")
+        g.axes[0,0].set_ylabel("Index Value")
+
+        # Plot spectral trajectory windows: reference, disturbance, recovery
+        g.map(
+            plt.axvline,
+            x=self.restoration_start.year,
+            color=palette[2],
+            linestyle="dashed",
+            lw=1,
+        )
+        g.map(
+            plt.axvline,
+            x=self.disturbance_start.year,
+            color=palette[3],
+            linestyle="dashed",
+            lw=1,
+        )
+        g.map(
+            plt.axvline,
+            x=self.reference_years[0].year,
+            color=palette[4],
+            linestyle="dashed",
+            lw=1,
+        )
+        if self.reference_years[1].year != self.disturbance_start.year:
+            g.map(
+                plt.axvline,
+                x=self.reference_years[1].year,
+                color=palette[4],
+                linestyle="dashed",
+                lw=1,
+            )
+        for ax in g.axes.flat:
+            ax.axvspan(
+                self.reference_years[0].year,
+                self.reference_years[1].year,
+                alpha=0.1,
+                color=palette[4],
+            )
+            ax.axvspan(
+                self.disturbance_start.year,
+                self.restoration_start.year,
+                alpha=0.1,
+                color=palette[3],
+            )
+            ax.axvspan(
+                self.restoration_start.year,
+                self.end_year.year,
+                alpha=0.1,
+                color=palette[2],
+            )
+
+        # Create custom legend for Facet grid.
+        median_line = Line2D([0], [0], color=palette[0], lw=2)
+        mean_line = Line2D([0], [0], color=palette[1], lw=2)
+        recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
+        recovery_window_line = Line2D(
+            [0], [0], color=palette[2], linestyle="dashed", lw=1
+        )
+        recovery_window_patch = Patch(facecolor=palette[2], alpha=0.1)
+        disturbance_window_line = Line2D(
+            [0], [0], color=palette[3], linestyle="dashed", lw=1
+        )
+        disturbance_window_patch = Patch(facecolor=palette[3], alpha=0.1)
+        reference_years = Line2D([0], [0], color=palette[4], linestyle="dashed", lw=1)
+        reference_years_patch = Patch(facecolor=palette[4], alpha=0.1)
+
+        custom_handles = [
+            median_line,
+            mean_line,
+            recovery_target_line,
+            (disturbance_window_line, disturbance_window_patch),
+            (recovery_window_line, recovery_window_patch),
+            (reference_years, reference_years_patch),
+        ]
+        plt.figlegend(
+            labels=[
+                "median",
+                "mean",
+                "recovery target",
+                "disturbance window",
+                "recovery window",
+                "reference year(s)",
+            ],
+            handles=custom_handles,
+            loc="lower center", 
+            bbox_to_anchor=(0.5, -0.05),
+            fancybox=True,
+            ncol=6,
+        )
+        plt.suptitle("Spectral Timeseries")
+        plt.tight_layout()
+        plt.savefig(path, dpi=300, bbox_inches="tight")
+    

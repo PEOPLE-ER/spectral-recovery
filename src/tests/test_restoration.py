@@ -609,6 +609,7 @@ class TestReferenceSystemInit:
             reference_stack=image_stack,
             reference_range=reference_date,
             recovery_target_method=None,
+            historic_reference_system=False,
         )
         assert_geodataframe_equal(
             rs.reference_polygons, reference_polys, check_geom_type=True
@@ -628,6 +629,7 @@ class TestReferenceSystemInit:
             reference_stack=image_stack,
             reference_range=reference_date,
             recovery_target_method=None,
+            historic_reference_system=False,
         )
         # create 4d data array with dims poly_id, band, time, y, x
         expected_stack = xr.DataArray(
@@ -649,6 +651,7 @@ class TestReferenceSystemInit:
             reference_stack=image_stack,
             reference_range=reference_date,
             recovery_target_method=None,
+            historic_reference_system=False,
         )
         # The multipolygon contains 2 polygons, which overlap with the lower-left and upper-right pixels.
         # Note: remember that arrays are flipped in the y-axis, so the lower-left pixel is at the top of the array.
@@ -691,6 +694,7 @@ class TestReferenceSystemInit:
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
     def test_overlapping_polygon_throws_value_err(self, image_stack):
@@ -707,6 +711,7 @@ class TestReferenceSystemInit:
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
     def test_multipolygon_with_some_polygons_out_of_bounds_throws_value_err(
@@ -725,6 +730,7 @@ class TestReferenceSystemInit:
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
     def test_out_of_bounds_date_throws_value_err(self, image_stack):
@@ -741,21 +747,22 @@ class TestReferenceSystemInit:
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
     
-    def test_historic_reference_system_bool_default_is_False(self, image_stack):
-        reference_polys = gpd.read_file(
-            "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
-        )
-        reference_date = pd.to_datetime("2008")
+    # def test_historic_reference_system_bool_default_is_False(self, image_stack):
+    #     reference_polys = gpd.read_file(
+    #         "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+    #     )
+    #     reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
-            reference_polygons=reference_polys,
-            reference_stack=image_stack,
-            reference_range=reference_date,
-            recovery_target_method=None,
-        )
-        assert rs.hist_ref_sys == False
+    #     rs = ReferenceSystem(
+    #         reference_polygons=reference_polys,
+    #         reference_stack=image_stack,
+    #         reference_range=reference_date,
+    #         recovery_target_method=None,
+    #     )
+    #     assert rs.hist_ref_sys == False
     
     def test_historic_reference_system_bool_is_set_True(self, image_stack):
         reference_polys = gpd.read_file(
