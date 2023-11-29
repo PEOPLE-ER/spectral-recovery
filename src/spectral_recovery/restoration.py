@@ -378,9 +378,9 @@ class RestorationArea:
         stats = stats.rename(columns={"stats": "Statistic"})
 
         sns.set_theme()
-        # TODO: clarify which hue is assigned to which statistic
         palette = sns.color_palette("deep")
 
+        # Plot per-band statistic lineplots
         with sns.color_palette(palette):
             g = sns.FacetGrid(
                 stats,
@@ -393,7 +393,7 @@ class RestorationArea:
                 legend_out=True,
             )
             g.map_dataframe(sns.lineplot, "time", "value")
-
+        # Add recovery target line
         g.map_dataframe(
             sns.lineplot,
             "time",
@@ -404,8 +404,9 @@ class RestorationArea:
         )
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
-        g.axes[0,0].set_ylabel('Spectral Value')
-        # Add verticle line for disturbance and restoration start years
+        g.axes[0,0].set_ylabel("Index Value")
+
+        # Plot spectral trajectory windows: reference, disturbance, recovery
         g.map(
             plt.axvline,
             x=self.restoration_start.year,
@@ -420,7 +421,6 @@ class RestorationArea:
             linestyle="dashed",
             lw=1,
         )
-        # TODO: fix this for reference years that are just one year
         g.map(
             plt.axvline,
             x=self.reference_years[0].year,
@@ -456,6 +456,7 @@ class RestorationArea:
                 color=palette[2],
             )
 
+        # Create custom legend for Facet grid.
         median_line = Line2D([0], [0], color=palette[0], lw=2)
         mean_line = Line2D([0], [0], color=palette[1], lw=2)
         recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
@@ -488,7 +489,7 @@ class RestorationArea:
                 "reference year(s)",
             ],
             handles=custom_handles,
-            loc='lower center', 
+            loc="lower center", 
             bbox_to_anchor=(0.5, -0.05),
             fancybox=True,
             ncol=6,
