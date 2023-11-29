@@ -404,7 +404,7 @@ class RestorationArea:
         )
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
-        g.axes[0,0].set_ylabel('Spectral Value')
+        g.axes[0,0].set_ylabel("Index Value")
         # Add verticle line for disturbance and restoration start years
         g.map(
             plt.axvline,
@@ -488,7 +488,7 @@ class RestorationArea:
                 "reference year(s)",
             ],
             handles=custom_handles,
-            loc='lower center', 
+            loc="lower center", 
             bbox_to_anchor=(0.5, -0.05),
             fancybox=True,
             ncol=6,
