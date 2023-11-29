@@ -206,7 +206,7 @@ class TestReadAndStackTifs:
 
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
-            band_names={1: "blue", 2: "red", 3: "nir"}, 
+            band_names={0: "blue", 1: "red", 2: "nir"}, 
             platform=[Platform.landsat_oli],
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
