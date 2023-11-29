@@ -82,11 +82,6 @@ class ReferenceSystem:
             recovery_target = self.recovery_target_method(
                 reference_stack=self.reference_stack, reference_range=self.reference_range, space=True,
             )
-        if not self.hist_ref_sys:
-            if recovery_target.dims == ("band","y", "x"):
-                raise ValueError(
-                    "Recovery target using reference polygons must be computed along the space dimensions."
-                ) from None
         return recovery_target
 
     def _within(self, stack: xr.DataArray) -> bool:
