@@ -388,6 +388,10 @@ class RestorationArea:
                 legend_out=True,
             )
             g.map_dataframe(sns.lineplot, "time", "value")
+        
+        g.set(xticks=stats["time"].unique())
+        g.set_xticklabels(rotation=45)
+
         # Add recovery target line
         g.map_dataframe(
             sns.lineplot,
