@@ -459,6 +459,8 @@ class RestorationArea:
         median_line = Line2D([0], [0], color=palette[0], lw=2)
         mean_line = Line2D([0], [0], color=palette[1], lw=2)
         recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
+        recovery_target_patch = Patch(facecolor="black", alpha=0.4)
+
         recovery_window_line = Line2D(
             [0], [0], color=palette[2], linestyle="dashed", lw=1
         )
@@ -473,19 +475,19 @@ class RestorationArea:
         custom_handles = [
             median_line,
             mean_line,
-            recovery_target_line,
+            (recovery_target_line, recovery_target_patch),
+            (reference_years, reference_years_patch),
             (disturbance_window_line, disturbance_window_patch),
             (recovery_window_line, recovery_window_patch),
-            (reference_years, reference_years_patch),
         ]
         plt.figlegend(
             labels=[
                 "median",
                 "mean",
                 "recovery target",
+                "reference year(s)",
                 "disturbance window",
                 "recovery window",
-                "reference year(s)",
             ],
             handles=custom_handles,
             loc="lower center", 
