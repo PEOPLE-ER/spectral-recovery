@@ -79,11 +79,11 @@ class ReferenceSystem:
         """Get the recovery target for a reference system"""
         if self.hist_ref_sys:
             recovery_target = self.recovery_target_method(
-                reference_stack=self.reference_stack, reference_range=self.reference_range, space=False,
+                stack=self.reference_stack, reference_date=self.reference_range, space=False,
             )
         else:
             recovery_target = self.recovery_target_method(
-                reference_stack=self.reference_stack, reference_range=self.reference_range, space=True,
+                stack=self.reference_stack, reference_date=self.reference_range, space=True,
             )
         return recovery_target
 
@@ -110,9 +110,6 @@ class ReferenceSystem:
         return True
 
 
-# TODO: split reference_system param to reference_polygon and reference_date params
-# and then allow the reference polygons to be passed directly to RestorationArea.
-# This will make RestorationArea the sole object responsible for instatiating a ReferenceSystem
 class RestorationArea:
     """A Restoration Area (RA).
 
@@ -365,13 +362,14 @@ class RestorationArea:
         stats = stats.to_dataframe("value").reset_index()
         stats["time"] = stats["time"].dt.year
         # TODO: add +- std
-        reco_targets = self.reference_system.recovery_target()["recovery_target"]
+        reco_targets = self.reference_system.recovery_target()
         reco_targets = reco_targets.to_dataframe("reco_targets").reset_index()[
             ["band", "reco_targets"]
         ]
         stats = stats.merge(reco_targets, how="left", on="band")
         stats = stats.rename(columns={"stats": "Statistic"})
 
+        # Set theme and colour palette for plots
         sns.set_theme()
         palette = sns.color_palette("deep")
 
