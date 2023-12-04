@@ -418,28 +418,30 @@ class RestorationArea:
             linestyle="dashed",
             lw=1,
         )
-        g.map(
-            plt.axvline,
-            x=self.reference_years[0].year,
-            color=palette[4],
-            linestyle="dashed",
-            lw=1,
-        )
-        if self.reference_years[1].year != self.disturbance_start.year:
+        if self.reference_system.hist_ref_sys:
             g.map(
                 plt.axvline,
-                x=self.reference_years[1].year,
+                x=self.reference_years[0].year,
                 color=palette[4],
                 linestyle="dashed",
                 lw=1,
             )
+            if self.reference_years[1].year != self.disturbance_start.year:
+                g.map(
+                    plt.axvline,
+                    x=self.reference_years[1].year,
+                    color=palette[4],
+                    linestyle="dashed",
+                    lw=1,
+                )
         for ax in g.axes.flat:
-            ax.axvspan(
-                self.reference_years[0].year,
-                self.reference_years[1].year,
-                alpha=0.1,
-                color=palette[4],
-            )
+            if self.reference_system.hist_ref_sys:
+                ax.axvspan(
+                    self.reference_years[0].year,
+                    self.reference_years[1].year,
+                    alpha=0.1,
+                    color=palette[4],
+                )
             ax.axvspan(
                 self.disturbance_start.year,
                 self.restoration_start.year,
@@ -473,20 +475,28 @@ class RestorationArea:
         custom_handles = [
             median_line,
             mean_line,
-            (recovery_target_line, recovery_target_patch),
-            (reference_years, reference_years_patch),
             (disturbance_window_line, disturbance_window_patch),
             (recovery_window_line, recovery_window_patch),
         ]
-        plt.figlegend(
-            labels=[
+        
+        labels=[
                 "median",
                 "mean",
-                "recovery target",
                 "reference year(s)",
                 "disturbance window",
                 "recovery window",
-            ],
+        ]
+        if self.reference_system.hist_ref_sys:
+            custom_handles.insert(2, (recovery_target_line, recovery_target_patch),)
+            custom_handles.insert(3, (reference_years, reference_years_patch))
+            labels.insert(2, "recovery target (historic)")
+           
+        else:
+            custom_handles.insert(2, recovery_target_line,)
+            labels.insert(2, "recovery target (reference)")
+
+        plt.figlegend(
+            labels=labels,
             handles=custom_handles,
             loc="lower center", 
             bbox_to_anchor=(0.5, -0.05),
