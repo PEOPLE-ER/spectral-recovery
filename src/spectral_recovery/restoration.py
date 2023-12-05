@@ -343,8 +343,8 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-    def plot_spectral_timeseries(self, path: str) -> None:
-        """Create and write plot of spectral timeseries of the RestorationArea
+    def plot_spectral_trajectory(self, path: str) -> None:
+        """Create spectral trajectory plot of the RestorationArea
         
         Parameters
         ----------
@@ -482,18 +482,18 @@ class RestorationArea:
         labels=[
                 "median",
                 "mean",
-                "reference year(s)",
                 "disturbance window",
                 "recovery window",
         ]
         if self.reference_system.hist_ref_sys:
             custom_handles.insert(2, (recovery_target_line, recovery_target_patch),)
             custom_handles.insert(3, (reference_years, reference_years_patch))
-            labels.insert(2, "recovery target (historic)")
+            labels.insert(2, "historic recovery target (per-pixel)")
+            labels.insert(3, "reference year(s)")
            
         else:
             custom_handles.insert(2, recovery_target_line,)
-            labels.insert(2, "recovery target (reference)")
+            labels.insert(2, "reference recovery target (per-polygon)")
 
         plt.figlegend(
             labels=labels,
@@ -503,7 +503,7 @@ class RestorationArea:
             fancybox=True,
             ncol=6,
         )
-        plt.suptitle("Spectral Timeseries")
+        plt.suptitle("Spectral Trajectory of RestorationArea Site")
         plt.tight_layout()
         plt.savefig(path, dpi=300, bbox_inches="tight")
     
