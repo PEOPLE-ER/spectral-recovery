@@ -401,7 +401,7 @@ class RestorationArea:
         )
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
-        g.axes[0,0].set_ylabel("Index Value")
+        g.axes[0,0].set_ylabel("Band/Index Value")
 
         # Plot spectral trajectory windows: reference, disturbance, recovery
         g.map(
@@ -488,12 +488,12 @@ class RestorationArea:
         if self.reference_system.hist_ref_sys:
             custom_handles.insert(2, (recovery_target_line, recovery_target_patch),)
             custom_handles.insert(3, (reference_years, reference_years_patch))
-            labels.insert(2, "historic recovery target (per-pixel)")
+            labels.insert(2, "historic recovery target (mean)")
             labels.insert(3, "reference year(s)")
            
         else:
             custom_handles.insert(2, recovery_target_line,)
-            labels.insert(2, "reference recovery target (per-polygon)")
+            labels.insert(2, "reference recovery target")
 
         plt.figlegend(
             labels=labels,
