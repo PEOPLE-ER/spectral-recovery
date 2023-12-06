@@ -343,8 +343,8 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-    def plot_spectral_timeseries(self, path: str) -> None:
-        """Create and write plot of spectral timeseries of the RestorationArea
+    def plot_spectral_trajectory(self, path: str) -> None:
+        """Create spectral trajectory plot of the RestorationArea
         
         Parameters
         ----------
@@ -386,6 +386,10 @@ class RestorationArea:
                 legend_out=True,
             )
             g.map_dataframe(sns.lineplot, "time", "value")
+        
+        g.set(xticks=stats["time"].unique())
+        g.set_xticklabels(rotation=45)
+
         # Add recovery target line
         g.map_dataframe(
             sns.lineplot,
@@ -397,7 +401,7 @@ class RestorationArea:
         )
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
-        g.axes[0,0].set_ylabel("Index Value")
+        g.axes[0,0].set_ylabel("Band/Index Value")
 
         # Plot spectral trajectory windows: reference, disturbance, recovery
         g.map(
@@ -414,28 +418,30 @@ class RestorationArea:
             linestyle="dashed",
             lw=1,
         )
-        g.map(
-            plt.axvline,
-            x=self.reference_years[0].year,
-            color=palette[4],
-            linestyle="dashed",
-            lw=1,
-        )
-        if self.reference_years[1].year != self.disturbance_start.year:
+        if self.reference_system.hist_ref_sys:
             g.map(
                 plt.axvline,
-                x=self.reference_years[1].year,
+                x=self.reference_years[0].year,
                 color=palette[4],
                 linestyle="dashed",
                 lw=1,
             )
+            if self.reference_years[1].year != self.disturbance_start.year:
+                g.map(
+                    plt.axvline,
+                    x=self.reference_years[1].year,
+                    color=palette[4],
+                    linestyle="dashed",
+                    lw=1,
+                )
         for ax in g.axes.flat:
-            ax.axvspan(
-                self.reference_years[0].year,
-                self.reference_years[1].year,
-                alpha=0.1,
-                color=palette[4],
-            )
+            if self.reference_system.hist_ref_sys:
+                ax.axvspan(
+                    self.reference_years[0].year,
+                    self.reference_years[1].year,
+                    alpha=0.1,
+                    color=palette[4],
+                )
             ax.axvspan(
                 self.disturbance_start.year,
                 self.restoration_start.year,
@@ -453,6 +459,8 @@ class RestorationArea:
         median_line = Line2D([0], [0], color=palette[0], lw=2)
         mean_line = Line2D([0], [0], color=palette[1], lw=2)
         recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
+        recovery_target_patch = Patch(facecolor="black", alpha=0.4)
+
         recovery_window_line = Line2D(
             [0], [0], color=palette[2], linestyle="dashed", lw=1
         )
@@ -467,27 +475,35 @@ class RestorationArea:
         custom_handles = [
             median_line,
             mean_line,
-            recovery_target_line,
             (disturbance_window_line, disturbance_window_patch),
             (recovery_window_line, recovery_window_patch),
-            (reference_years, reference_years_patch),
         ]
-        plt.figlegend(
-            labels=[
+        
+        labels=[
                 "median",
                 "mean",
-                "recovery target",
                 "disturbance window",
                 "recovery window",
-                "reference year(s)",
-            ],
+        ]
+        if self.reference_system.hist_ref_sys:
+            custom_handles.insert(2, (recovery_target_line, recovery_target_patch),)
+            custom_handles.insert(3, (reference_years, reference_years_patch))
+            labels.insert(2, "historic recovery target (mean)")
+            labels.insert(3, "reference year(s)")
+           
+        else:
+            custom_handles.insert(2, recovery_target_line,)
+            labels.insert(2, "reference recovery target")
+
+        plt.figlegend(
+            labels=labels,
             handles=custom_handles,
             loc="lower center", 
             bbox_to_anchor=(0.5, -0.05),
             fancybox=True,
             ncol=6,
         )
-        plt.suptitle("Spectral Timeseries")
+        plt.suptitle("Spectral Trajectory of RestorationArea Site")
         plt.tight_layout()
         plt.savefig(path, dpi=300, bbox_inches="tight")
     
