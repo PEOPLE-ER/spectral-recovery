@@ -34,7 +34,7 @@ class TestY2R:
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
                 xr.DataArray(
-                    [[[[70]], [[80]]]],  # meets recovery target
+                    [[[[70]], [[80]]]],  # meets recovery target in 1 year
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
@@ -94,13 +94,43 @@ class TestY2R:
             ),
         ],
     )
-    def test_default_y2r(self, recovery_target, obs, expected):
-        print(expected)
+    def test_single_target_y2r(self, recovery_target, obs, expected):
         assert Y2R(
             image_stack=obs,
             recovery_target=recovery_target,
             rest_start="2020",
         ).equals(expected)
+
+    @pytest.mark.parametrize(
+        ("recovery_target", "obs", "expected"),
+        [
+            ( # Meets one target, but not the other
+                xr.DataArray([[[100, 80]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+                xr.DataArray(
+                    [[[[70, 30]], [[80, 40]]]],  
+                    coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
+                    dims=["band", "time", "y", "x"],
+                ).rio.write_crs("4326"),
+                xr.DataArray([[[1.0, np.nan]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+            ),
+            ( # Meets one target first year then meets next target second year
+                xr.DataArray([[[100, 80]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+                xr.DataArray(
+                    [[[[70, 30]], [[80, 40]], [[80, 65]]]],  
+                    coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021"), pd.to_datetime("2022")]},
+                    dims=["band", "time", "y", "x"],
+                ).rio.write_crs("4326"),
+                xr.DataArray([[[1.0, 2.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+            ),
+        ]
+    )
+    def test_per_pixel_target(self, recovery_target, obs, expected):
+        assert Y2R(
+            image_stack=obs,
+            recovery_target=recovery_target,
+            rest_start="2020",
+        ).equals(expected)
+
 
     @pytest.mark.parametrize(
         ("recovery_target", "obs", "percent", "expected"),

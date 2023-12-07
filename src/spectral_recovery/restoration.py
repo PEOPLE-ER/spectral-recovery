@@ -343,12 +343,12 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-    def plot_spectral_trajectory(self, path: str) -> None:
+    def plot_spectral_trajectory(self, path: str = None) -> None:
         """Create spectral trajectory plot of the RestorationArea
         
         Parameters
         ----------
-        path : str
+        path : str, optional
             The path to save the plot to.
         """
 
@@ -505,5 +505,8 @@ class RestorationArea:
         )
         plt.suptitle("Spectral Trajectory of RestorationArea Site")
         plt.tight_layout()
-        plt.savefig(path, dpi=300, bbox_inches="tight")
+        if path:
+            plt.savefig(path, dpi=300, bbox_inches="tight")
+        else:
+            plt.show()
     
