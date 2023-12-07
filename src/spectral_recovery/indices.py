@@ -300,7 +300,7 @@ def ndmi(stack):
     return ndmi
 
 
-# TODO: compatibility
+# TODO: Platform compatibility
 @requires_bands([BandCommon.nir, BandCommon.green])
 @maintain_rio_attrs
 def gci(stack):
@@ -347,11 +347,11 @@ _indices_map = {
 
 
 def bad_index_choice(stack):
-    raise ValueError("Not a valid index function.") from None
+    raise ValueError("No index function implemented for current index.") from None
 
 
 def compute_indices(
-    image_stack: xr.DataArray, indices: list[Index]
+    image_stack: xr.DataArray, indices: list[str]
 ):
     """Compute spectral indices on a stack of images
 
@@ -370,15 +370,23 @@ def compute_indices(
         xr.DataArray: stack of images with spectral indices stacked along
         the band dimension.
     """
+    indices = _to_index_enums(indices)
+    print(indices)
     index = {}
     for index_choice in indices:
-        try:
-            index[index_choice] = _indices_map.get(index_choice, bad_index_choice)(image_stack)
-        except ValueError:
-            index_error_msg = (
-                f"Index {index_choice} is not a valid index. Valid indices are:"
-                f" {list(_indices_map.keys())}"
-            )
-            raise ValueError(index_error_msg) from None
+        index[index_choice] = _indices_map.get(index_choice, bad_index_choice)(image_stack)
     index_stack = xr.concat(index.values(), dim=pdIndex(index.keys(), name="band"))
     return index_stack
+
+def _to_index_enums(indices: List[str]) -> List[Index]:
+    """Convert a list of index names to Index enums"""
+    valid_names = []
+    for name in indices:
+        try:
+            val = Index[name.lower()]
+            valid_names.append(val)
+        except KeyError:
+            raise ValueError(
+                f"Index {name} not found. Valid indices are: {list(Index)}"
+            ) from None
+    return valid_names
