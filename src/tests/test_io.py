@@ -86,7 +86,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=tif_paths,
-            platform=[Platform.landsat_oli],
+            platform=["landsat_oli"],
             )
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
@@ -145,7 +145,7 @@ class TestReadAndStackTifs:
         ):
             read_and_stack_tifs(
                 path_to_tifs=filenames,
-                platform=[Platform.landsat_oli]
+                platform=["landsat_oli"]
             )
 
     @patch(
@@ -163,7 +163,7 @@ class TestReadAndStackTifs:
 
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
-            platform=[Platform.landsat_oli]
+            platform=["landsat_oli"]
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
     
@@ -182,7 +182,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
             band_names={0: "blue", 1: "red", 2: "nir"},
-            platform=[Platform.landsat_oli],
+            platform=["landsat_oli"],
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
     
@@ -202,7 +202,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
             band_names={0: "blue", 1: "red", 2: "nir"}, 
-            platform=[Platform.landsat_oli],
+            platform=["landsat_oli"],
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
     
@@ -223,7 +223,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
             band_names={1: "blue", 0: "red", 2: "nir"}, 
-            platform=[Platform.landsat_oli],
+            platform=["landsat_oli"],
         )
         # assert 
         print(stacked_tifs["band"].data, expected_bands)
@@ -246,7 +246,7 @@ class TestReadAndStackTifs:
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"}, 
-                platform=[Platform.landsat_oli],
+                platform=["landsat_oli"],
             )
     
 
@@ -267,7 +267,7 @@ class TestReadAndStackTifs:
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
-                platform=[Platform.landsat_oli],
+                platform=["landsat_oli"],
             )
 
     @patch(
@@ -286,7 +286,7 @@ class TestReadAndStackTifs:
         ):
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames, 
-                platform=[Platform.landsat_oli],
+                platform=["landsat_oli"],
             )
     
 
@@ -322,7 +322,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
-            platform=Platform.landsat_oli
+            platform=["landsat_oli"]
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
 
@@ -337,6 +337,6 @@ class TestReadAndStackTifs:
                 )
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=[f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
-            platform=[Platform.landsat_oli, Platform.landsat_tm],
+            platform=["landsat_oli", "landsat_tm"],
         )
         assert stacked_tifs.attrs["platform"] == [Platform.landsat_oli, Platform.landsat_tm]
