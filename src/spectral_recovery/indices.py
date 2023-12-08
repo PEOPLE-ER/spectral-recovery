@@ -386,6 +386,6 @@ def _to_index_enums(indices: List[str]) -> List[Index]:
             valid_names.append(val)
         except KeyError:
             raise ValueError(
-                f"Index {name} not found. Valid indices are: {list(Index)}"
+                f"Index {name} not found. Valid indices are: {[str(i) for i in list(Index)]}"
             ) from None
     return valid_names
