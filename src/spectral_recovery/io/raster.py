@@ -16,7 +16,7 @@ from spectral_recovery.config import VALID_YEAR, REQ_DIMS
 
 def read_and_stack_tifs(
     path_to_tifs: List[str] | str,
-    platform: List[Platform] | Platform,
+    platform: List[str] | str,
     band_names: Dict[int, str | BandCommon | Index] = None,
     path_to_mask: str = None,
 ):
@@ -63,7 +63,7 @@ def read_and_stack_tifs(
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
     if band_names is None:
         try:
-            band_names_new = _to_band_or_index_name(stacked_data.attrs["long_name"])
+            band_names_new = _to_band_or_index_enums(stacked_data.attrs["long_name"])
         except KeyError:
             raise ValueError(
                 "Band descriptions not found in TIFs. Please provide band "
@@ -93,7 +93,7 @@ def read_and_stack_tifs(
                     f" provide a mapping for all bands: {band_names_old}"
                 ) from None
             else:
-                band_names[band_num] = _to_band_or_index_name([band_names[band_num]])[0]
+                band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[0]
 
         band_names_new = [
             band_names[k] for k in band_names_old
@@ -108,12 +108,25 @@ def read_and_stack_tifs(
         with rioxarray.open_rasterio(Path(path_to_mask), chunks="auto") as mask:
             stacked_data = _mask_stack(stacked_data, mask)
 
-    stacked_data.attrs["platform"] = platform
+    stacked_data.attrs["platform"] = _to_platform_enums(platform)
 
     return stacked_data
 
+def _to_platform_enums(platform: List[str]) -> List[Platform]:
+    """Convert a list of platform names to Platform enums"""
+    valid_names = []
+    for name in platform:
+        try:
+            val = Platform[name.lower()]
+            valid_names.append(val)
+        except ValueError:
+            raise ValueError(
+                f"Platform {name} not found. Valid platforms are: {list(Platform)}"
+            ) from None
+    return valid_names
 
-def _to_band_or_index_name(names_list: List[str]) -> Dict[str, BandCommon | Index]:
+
+def _to_band_or_index_enums(names_list: List[str]) -> Dict[str, BandCommon | Index]:
     """Convert a list of band or index names to BandCommon or Index enums"""
     valid_names = []
     for name in names_list:
@@ -127,8 +140,10 @@ def _to_band_or_index_name(names_list: List[str]) -> Dict[str, BandCommon | Inde
             val = Index[name.lower()]
             valid_names.append(val)
         except ValueError:
-            # TODO: add accepted values to error message and direct user to documentation
-            raise ValueError
+            raise ValueError(
+                f"Band or index {name} not found. Valid bands and indices are:"
+                f" {list(BandCommon)} and {list(Index)}"
+            ) from None
     return valid_names
 
 

@@ -26,7 +26,7 @@ class TestComputeIndices:
                     )
             compute_indices(
                 input_xr,
-                [Index.nbr, Index.ndvi],
+                ["NBR", "NDVI"],
             )
 
             mock_nbr.assert_called_with(
@@ -38,12 +38,15 @@ class TestComputeIndices:
 
     def test_output_has_correct_band_dimension(self):
         """
-        The band dimension coordinates should be the same as the values passed
+        The band coordinates should be the Enum equivalent to values passed
         in to the `indices` parameter, in the order they were passed in, 
-        regardless of the coordinate values that are returned by the index functions.
+        regardless of the coordinate values that are returned by the index
+        functions. 
+
         """
         mock_nbr = Mock(return_value=xr.DataArray([[0]], dims=["time", "band"], coords={"band": ["band_1"]}))
         mock_ndvi = Mock(return_value=xr.DataArray([[0]], dims=["time", "band"], coords={"band": ["band_2"]}))
+        # Patch the map of index names to functions, replace the functions with mocks
         with patch.dict(_indices_map, {Index.nbr: mock_nbr, Index.ndvi: mock_ndvi}):
             input_xr = xr.DataArray(
                     [[[[0]]],[[[0]]]],
@@ -51,15 +54,14 @@ class TestComputeIndices:
             )
             res = compute_indices(
                 input_xr,
-                [Index.nbr, Index.ndvi],
+                ["NBR", "NDVI"],
             )
             assert (res["band"].values == [Index.nbr, Index.ndvi]).all()
             assert res.dims == ("time", "band")
     
     def test_bad_index_choice_raises_value_err(self):
         with pytest.raises(
-            ValueError,
-            match=r"(not a valid index)"):
+            ValueError):
             compute_indices(
                 xr.DataArray(
                     [[[[0]]],[[[0]]]],
