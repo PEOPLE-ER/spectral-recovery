@@ -750,20 +750,6 @@ class TestReferenceSystemInit:
                 historic_reference_system=False,
             )
     
-    # def test_historic_reference_system_bool_default_is_False(self, image_stack):
-    #     reference_polys = gpd.read_file(
-    #         "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
-    #     )
-    #     reference_date = pd.to_datetime("2008")
-
-    #     rs = ReferenceSystem(
-    #         reference_polygons=reference_polys,
-    #         reference_stack=image_stack,
-    #         reference_range=reference_date,
-    #         recovery_target_method=None,
-    #     )
-    #     assert rs.hist_ref_sys == False
-    
     def test_historic_reference_system_bool_is_set_True(self, image_stack):
         reference_polys = gpd.read_file(
             "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
@@ -792,7 +778,7 @@ class TestReferenceSystemRecoveryTarget:
 
         rs.recovery_target()
         rs.recovery_target_method.assert_called_once()
-        rs.recovery_target_method.assert_called_with(reference_stack=0, reference_range=0, space=True)
+        rs.recovery_target_method.assert_called_with(stack=0, reference_date=0, space=True)
     
     def test_hist_ref_sys_calls_recovery_target_with_space_false(self, mocker):
         mocker.patch.object(ReferenceSystem, "__init__", return_value=None)
@@ -804,6 +790,6 @@ class TestReferenceSystemRecoveryTarget:
 
         rs.recovery_target()
         rs.recovery_target_method.assert_called_once()
-        rs.recovery_target_method.assert_called_with(reference_stack=0, reference_range=0, space=False)
+        rs.recovery_target_method.assert_called_with(stack=0, reference_date=0, space=False)
     
     # TODO: test the return value is correct
