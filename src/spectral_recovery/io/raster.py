@@ -26,6 +26,11 @@ def read_and_stack_tifs(
     ----------
     path_to_tifs : list of str
         List of paths to TIFs or path to directory containing TIFs.
+    platform : {"}
+        Platform(s) from which TIF imagery was derived Must be one of: 'landsat_etm', 'landsat_tm',
+    band_names : dict, optional
+        Dictionary mapping band numbers to band names. If not provided, 
+        band names will be read from the TIFs band descriptions.
     path_to_mask : str, optional
         Path to a 2D data mask to apply over all TIFs.
 
@@ -67,7 +72,7 @@ def read_and_stack_tifs(
         except KeyError:
             raise ValueError(
                 "Band descriptions not found in TIFs. Please provide band "
-                " names for bands {stack_data.band.values} using the `band_names`"
+                " names for bands {stack_data.band.values} using the `band_names=`"
                 " argument."
             )
     else:
@@ -129,9 +134,9 @@ def _to_platform_enums(platform: List[str]) -> List[Platform]:
         try:
             val = Platform[name.lower()]
             valid_names.append(val)
-        except ValueError:
+        except KeyError:
             raise ValueError(
-                f"Platform {name} not found. Valid platforms are: {list(Platform)}"
+                f"Platform '{name}' not found. Valid platforms are: {list(Platform)}"
             ) from None
     return valid_names
 
@@ -144,15 +149,15 @@ def _to_band_or_index_enums(names_list: List[str]) -> Dict[str, BandCommon | Ind
             val = BandCommon[name.lower()]
             valid_names.append(val)
             continue
-        except ValueError:
+        except KeyError:
             pass
         try:
             val = Index[name.lower()]
             valid_names.append(val)
-        except ValueError:
+        except KeyError:
             raise ValueError(
-                f"Band or index {name} not found. Valid bands and indices are:"
-                f" {list(BandCommon)} and {list(Index)}"
+                f"Band or index '{name}' not found. Valid bands and indices names are:"
+                f" {[str(b) for b in list(BandCommon)]} and {[str(i) for i in list(Index)]}"
             ) from None
     return valid_names
 
