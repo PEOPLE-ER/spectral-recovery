@@ -8,6 +8,8 @@ class BandCommon(Enum):
     nir = "NIR"
     swir1 = "SWIR1"
     swir2 = "SWIR2"
+    coastal_aerosol = "COASTAL_AEROSOL"
+    red_edge = "RED_EDGE"
 
     def __str__(self) -> str:
         return self.value
