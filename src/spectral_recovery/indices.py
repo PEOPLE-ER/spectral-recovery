@@ -371,7 +371,6 @@ def compute_indices(
         the band dimension.
     """
     indices = _to_index_enums(indices)
-    print(indices)
     index = {}
     for index_choice in indices:
         index[index_choice] = _indices_map.get(index_choice, bad_index_choice)(image_stack)

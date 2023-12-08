@@ -24,10 +24,11 @@ dependencies = [
     "rasterio",
     "xarray",
     "numpy",
-    "pandas",
     "click",
     "dask",
-    "distributed"
+    "distributed",
+    "matplotlib",
+    "seaborn",
 ]
 
 [tool.setuptools.packages.find]
