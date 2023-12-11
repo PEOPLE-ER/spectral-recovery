@@ -13,12 +13,13 @@ from pandas.core.tools.datetimes import DateParseError
 from spectral_recovery.enums import BandCommon, Index, Platform
 from spectral_recovery.config import VALID_YEAR, REQ_DIMS
 
-
+# TODO: deprecate path_to_mask parameter/functionality?
 def read_and_stack_tifs(
     path_to_tifs: List[str] | str,
     platform: List[str] | str,
     band_names: Dict[int, str | BandCommon | Index] = None,
     path_to_mask: str = None,
+    array_type: str = "numpy",
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
 
@@ -33,6 +34,11 @@ def read_and_stack_tifs(
         band names will be read from the TIFs band descriptions.
     path_to_mask : str, optional
         Path to a 2D data mask to apply over all TIFs.
+    array_type : {"dask", "numpy"}
+        The type of array to use store data, either numpy or dask.
+        NumPy arrays will be loaded into memory while Dask arrays will be
+        lazily evaluated until being explicitly loaded into memory with a
+        .compute() call. Default is "numpy".
 
     Returns
     -------
@@ -51,10 +57,16 @@ def read_and_stack_tifs(
     if isinstance(path_to_tifs, str):
         # check if path is a directory
         if Path(path_to_tifs).is_dir():
+            # Grab all TIFs in directory
             path_to_tifs = list(Path(path_to_tifs).glob("*.tif"))
     for file in path_to_tifs:
-        with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
-            image_dict[Path(file).stem] = data
+        if array_type == "numpy":
+            with rioxarray.open_rasterio(Path(file)) as data:
+                image_dict[Path(file).stem] = data
+        else:
+            # Using open_rasterio with chunks="auto" will load the data as a dask array
+            with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
+                image_dict[Path(file).stem] = data
 
     time_keys = []
     for filename in image_dict.keys():
@@ -64,8 +76,9 @@ def read_and_stack_tifs(
             raise ValueError(
                 f"TIF filenames must be in format 'YYYY' but recieved: '{filename}'"
             ) from None
-
+    # Stack all images into a single DataArray
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
+    # Clean up coordinates and attributes
     if band_names is None:
         try:
             band_names_new = _to_band_or_index_enums(stacked_data.attrs["long_name"])
