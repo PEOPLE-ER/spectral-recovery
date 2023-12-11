@@ -131,12 +131,10 @@ def read_and_stack_tifs(
     # Clean up attributes
     # TODO: this is hacky, should find a way to avoid these attributes being added
     del stacked_data.attrs["AREA_OR_POINT"]
-    del stacked_data.attrs["STATISTICS_APPROXIMATE"]
     del stacked_data.attrs["STATISTICS_MAXIMUM"]
     del stacked_data.attrs["STATISTICS_MEAN"]
     del stacked_data.attrs["STATISTICS_MINIMUM"]
     del stacked_data.attrs["STATISTICS_STDDEV"]
-    del stacked_data.attrs["STATISTICS_VALID_PERCENT"]
 
     return stacked_data
 
