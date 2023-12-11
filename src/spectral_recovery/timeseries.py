@@ -96,9 +96,12 @@ class _SatelliteTimeSeries:
         # rather than the bbox of all polygons, consider this algo:
         # https://stackoverflow.com/questions/14697442/
         ext = box(*self._obj.rio.bounds())
-        poly_ext = box(*polygons.total_bounds)
+        poly_ext = box(*polygons.total_bounds).buffer(-1e-14)
         if not ext.contains(poly_ext):
-            return False
+                if poly_ext.difference(ext).area < 1e-14:
+                    return True
+                else:
+                    return False
         return True
 
     def contains_temporal(self, years: Union[datetime, Tuple[datetime]]) -> bool:
