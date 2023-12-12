@@ -46,14 +46,12 @@ def requires_bands(bands: List[BandCommon]):
     return requires_bands_decorator
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def ndvi(stack: xr.DataArray):
@@ -63,14 +61,12 @@ def ndvi(stack: xr.DataArray):
     return ndvi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.SWIR2])
 @maintain_rio_attrs
 def nbr(stack):
@@ -80,14 +76,12 @@ def nbr(stack):
     return nbr_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.GREEN])
 @maintain_rio_attrs
 def gndvi(stack):
@@ -97,15 +91,12 @@ def gndvi(stack):
     return gndvi_v
 
 
-@compatible_with(
-    [
-        
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED, BandCommon.BLUE])
 @maintain_rio_attrs
 def evi(stack):
@@ -116,15 +107,12 @@ def evi(stack):
     return evi_v
 
 
-@compatible_with(
-    [
-        
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def avi(stack):
@@ -134,15 +122,12 @@ def avi(stack):
     return avi_v
 
 
-@compatible_with(
-    [
-        
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def savi(stack):
@@ -152,15 +137,12 @@ def savi(stack):
     return savi_v
 
 
-@compatible_with(
-    [
-        
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.GREEN, BandCommon.NIR])
 @maintain_rio_attrs
 def ndwi(stack):
@@ -172,16 +154,14 @@ def ndwi(stack):
 
 # TODO: with tassel-cap indices, make sure the data provided is the correct value range (not DN)
 @compatible_with([Platform.LANDSAT_TM])
-@requires_bands(
-    [
-        BandCommon.BLUE,
-        BandCommon.GREEN,
-        BandCommon.RED,
-        BandCommon.NIR,
-        BandCommon.SWIR1,
-        BandCommon.SWIR2,
-    ]
-)
+@requires_bands([
+    BandCommon.BLUE,
+    BandCommon.GREEN,
+    BandCommon.RED,
+    BandCommon.NIR,
+    BandCommon.SWIR1,
+    BandCommon.SWIR2,
+])
 @maintain_rio_attrs
 def tcg(stack):
     blue = stack.sel(band=BandCommon.BLUE)
@@ -202,16 +182,14 @@ def tcg(stack):
 
 
 @compatible_with([Platform.LANDSAT_TM])
-@requires_bands(
-    [
-        BandCommon.BLUE,
-        BandCommon.GREEN,
-        BandCommon.RED,
-        BandCommon.NIR,
-        BandCommon.SWIR1,
-        BandCommon.SWIR2,
-    ]
-)
+@requires_bands([
+    BandCommon.BLUE,
+    BandCommon.GREEN,
+    BandCommon.RED,
+    BandCommon.NIR,
+    BandCommon.SWIR1,
+    BandCommon.SWIR2,
+])
 @maintain_rio_attrs
 def tcw(stack):
     blue = stack.sel(band=BandCommon.BLUE)
@@ -232,16 +210,14 @@ def tcw(stack):
 
 
 @compatible_with([Platform.LANDSAT_TM])
-@requires_bands(
-    [
-        BandCommon.BLUE,
-        BandCommon.GREEN,
-        BandCommon.RED,
-        BandCommon.NIR,
-        BandCommon.SWIR1,
-        BandCommon.SWIR2,
-    ]
-)
+@requires_bands([
+    BandCommon.BLUE,
+    BandCommon.GREEN,
+    BandCommon.RED,
+    BandCommon.NIR,
+    BandCommon.SWIR1,
+    BandCommon.SWIR2,
+])
 @maintain_rio_attrs
 def tcb(stack):
     blue = stack.sel(band=BandCommon.BLUE)
@@ -261,15 +237,12 @@ def tcb(stack):
     return tcb_v
 
 
-@compatible_with(
-    [
-        
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def sr(stack):
@@ -279,15 +252,12 @@ def sr(stack):
     return sr_v
 
 
-@compatible_with(
-    [
-        
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.SWIR1])
 @maintain_rio_attrs
 def ndmi(stack):
@@ -307,15 +277,12 @@ def gci(stack):
     return gci_v
 
 
-@compatible_with(
-    [
-        
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.SWIR1, BandCommon.NIR])
 @maintain_rio_attrs
 def ndii(stack):
@@ -347,9 +314,7 @@ def bad_index_choice(stack):
     raise ValueError("No index function implemented for current index.") from None
 
 
-def compute_indices(
-    image_stack: xr.DataArray, indices: list[str]
-):
+def compute_indices(image_stack: xr.DataArray, indices: list[str]):
     """Compute spectral indices on a stack of images
 
     Parameters
@@ -370,9 +335,12 @@ def compute_indices(
     indices = _to_index_enums(indices)
     index = {}
     for index_choice in indices:
-        index[index_choice] = _indices_map.get(index_choice, bad_index_choice)(image_stack)
+        index[index_choice] = _indices_map.get(index_choice, bad_index_choice)(
+            image_stack
+        )
     index_stack = xr.concat(index.values(), dim=pdIndex(index.keys(), name="band"))
     return index_stack
+
 
 def _to_index_enums(indices: List[str]) -> List[Index]:
     """Convert a list of index names to Index enums"""
@@ -383,6 +351,7 @@ def _to_index_enums(indices: List[str]) -> List[Index]:
             valid_names.append(val)
         except KeyError:
             raise ValueError(
-                f"Index '{name}' not found. Valid indices are: {[str(i) for i in list(Index)]}"
+                f"Index '{name}' not found. Valid indices are:"
+                f" {[str(i) for i in list(Index)]}"
             ) from None
     return valid_names

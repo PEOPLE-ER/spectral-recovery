@@ -98,10 +98,10 @@ class _SatelliteTimeSeries:
         ext = box(*self._obj.rio.bounds())
         poly_ext = box(*polygons.total_bounds).buffer(-1e-14)
         if not ext.contains(poly_ext):
-                if poly_ext.difference(ext).area < 1e-14:
-                    return True
-                else:
-                    return False
+            if poly_ext.difference(ext).area < 1e-14:
+                return True
+            else:
+                return False
         return True
 
     def contains_temporal(self, years: Union[datetime, Tuple[datetime]]) -> bool:
@@ -125,7 +125,7 @@ class _SatelliteTimeSeries:
             if not (pd.to_datetime(str(year)) in self._obj.coords["time"].values):
                 return False
         return True
-    
+
     def stats(self) -> xr.DataArray:
         """Compute timeseries statistics.
 
@@ -137,8 +137,8 @@ class _SatelliteTimeSeries:
         -------
         stats_xr : xr.DataArray
             A 3D DataArray containing time, band and stats dimensions.
-            The computed statistics accessible as named coordinates in the 
-            "stats" dimension. 
+            The computed statistics accessible as named coordinates in the
+            "stats" dimension.
         """
         dims = ["y", "x"]
         stat_funcs = ["mean", "median", "max", "min", "std"]

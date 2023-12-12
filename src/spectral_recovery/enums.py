@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class BandCommon(Enum):
+    """Common band names for Landsat and Sentinel-2"""
+
     BLUE = "BLUE"
     GREEN = "GREEN"
     RED = "RED"
@@ -16,6 +18,8 @@ class BandCommon(Enum):
 
 
 class Index(Enum):
+    """Supported spectral index names/acroynms"""
+
     NDVI = "NDVI"
     NBR = "NBR"
     GNDVI = "GNDVI"
@@ -36,6 +40,8 @@ class Index(Enum):
 
 
 class Metric(Enum):
+    """Supported recovery metric names/acroynms"""
+
     Y2R = "Y2R"
     RRI = "RRI"
     DNBR = "dNBR"
@@ -47,6 +53,8 @@ class Metric(Enum):
 
 
 class Platform(Enum):
+    """Supported satellite platforms"""
+
     LANDSAT_ETM = 2
     LANDSAT_TM = 3
     LANDSAT_OLI = 4

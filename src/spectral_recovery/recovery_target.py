@@ -7,7 +7,9 @@ from datetime import datetime
 
 
 def median_target(
-    stack: xr.DataArray, reference_date: Union[datetime, Tuple[datetime]], space: bool = True
+    stack: xr.DataArray,
+    reference_date: Union[datetime, Tuple[datetime]],
+    space: bool = True,
 ) -> xr.DataArray:
     """
     Compute the median recovery target.
@@ -15,7 +17,7 @@ def median_target(
     Sequentially computes the median over time and, optionally, the spatial
     dimensions (x and y). If there is a "poly_id" dimension, then the median is
     automatically computed along that dimension after the time and space dimensions.
-    
+
     Parameters
     ----------
     stack : xr.DataArray

@@ -79,11 +79,15 @@ class ReferenceSystem:
         """Get the recovery target for a reference system"""
         if self.hist_ref_sys:
             recovery_target = self.recovery_target_method(
-                stack=self.reference_stack, reference_date=self.reference_range, space=False,
+                stack=self.reference_stack,
+                reference_date=self.reference_range,
+                space=False,
             )
         else:
             recovery_target = self.recovery_target_method(
-                stack=self.reference_stack, reference_date=self.reference_range, space=True,
+                stack=self.reference_stack,
+                reference_date=self.reference_range,
+                space=True,
             )
         return recovery_target
 
@@ -168,8 +172,8 @@ class RestorationArea:
                     self.disturbance_start = pd.to_datetime(disturbance_start)
                 else:
                     raise ValueError(
-                        "Could not parse {disturbance_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'."
+                        "Could not parse {disturbance_start} into a year. Please ensure"
+                        " the year is in the format 'YYYY'."
                     )
             if restoration_start is None:
                 self.restoration_start = pd.to_datetime(
@@ -190,8 +194,8 @@ class RestorationArea:
                     self.restoration_start = pd.to_datetime(restoration_start)
                 else:
                     raise ValueError(
-                        "Could not parse {restoration_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'."
+                        "Could not parse {restoration_start} into a year. Please ensure"
+                        " the year is in the format 'YYYY'."
                     )
             if disturbance_start is None:
                 self.disturbance_start = pd.to_datetime(
@@ -345,7 +349,7 @@ class RestorationArea:
 
     def plot_spectral_trajectory(self, path: str = None) -> None:
         """Create spectral trajectory plot of the RestorationArea
-        
+
         Parameters
         ----------
         path : str, optional
@@ -386,7 +390,7 @@ class RestorationArea:
                 legend_out=True,
             )
             g.map_dataframe(sns.lineplot, "time", "value")
-        
+
         g.set(xticks=stats["time"].unique())
         g.set_xticklabels(rotation=45)
 
@@ -401,7 +405,7 @@ class RestorationArea:
         )
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
-        g.axes[0,0].set_ylabel("Band/Index Value")
+        g.axes[0, 0].set_ylabel("Band/Index Value")
 
         # Plot spectral trajectory windows: reference, disturbance, recovery
         g.map(
@@ -478,27 +482,33 @@ class RestorationArea:
             (disturbance_window_line, disturbance_window_patch),
             (recovery_window_line, recovery_window_patch),
         ]
-        
-        labels=[
-                "median",
-                "mean",
-                "disturbance window",
-                "recovery window",
+
+        labels = [
+            "median",
+            "mean",
+            "disturbance window",
+            "recovery window",
         ]
         if self.reference_system.hist_ref_sys:
-            custom_handles.insert(2, (recovery_target_line, recovery_target_patch),)
+            custom_handles.insert(
+                2,
+                (recovery_target_line, recovery_target_patch),
+            )
             custom_handles.insert(3, (reference_years, reference_years_patch))
             labels.insert(2, "historic recovery target (mean)")
             labels.insert(3, "reference year(s)")
-           
+
         else:
-            custom_handles.insert(2, recovery_target_line,)
+            custom_handles.insert(
+                2,
+                recovery_target_line,
+            )
             labels.insert(2, "reference recovery target")
 
         plt.figlegend(
             labels=labels,
             handles=custom_handles,
-            loc="lower center", 
+            loc="lower center",
             bbox_to_anchor=(0.5, -0.05),
             fancybox=True,
             ncol=6,
@@ -509,4 +519,3 @@ class RestorationArea:
             plt.savefig(path, dpi=300, bbox_inches="tight")
         else:
             plt.show()
-    

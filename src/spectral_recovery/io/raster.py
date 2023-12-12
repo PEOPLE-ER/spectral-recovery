@@ -13,6 +13,7 @@ from pandas.core.tools.datetimes import DateParseError
 from spectral_recovery.enums import BandCommon, Index, Platform
 from spectral_recovery.config import VALID_YEAR, REQ_DIMS
 
+
 # TODO: deprecate path_to_mask parameter/functionality?
 def read_and_stack_tifs(
     path_to_tifs: List[str] | str,
@@ -30,7 +31,7 @@ def read_and_stack_tifs(
     platform : {"}
         Platform(s) from which TIF imagery was derived Must be one of: 'landsat_etm', 'landsat_tm',
     band_names : dict, optional
-        Dictionary mapping band numbers to band names. If not provided, 
+        Dictionary mapping band numbers to band names. If not provided,
         band names will be read from the TIFs band descriptions.
     path_to_mask : str, optional
         Path to a 2D data mask to apply over all TIFs.
@@ -111,7 +112,9 @@ def read_and_stack_tifs(
                     f" provide a mapping for all bands: {band_names_old}"
                 ) from None
             else:
-                band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[0]
+                band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[
+                    0
+                ]
 
         band_names_new = [
             band_names[k] for k in band_names_old
@@ -129,6 +132,7 @@ def read_and_stack_tifs(
     stacked_data.attrs["platform"] = _to_platform_enums(platform)
 
     return stacked_data
+
 
 def _to_platform_enums(platform: List[str]) -> List[Platform]:
     """Convert a list of platform names to Platform enums"""
@@ -160,7 +164,8 @@ def _to_band_or_index_enums(names_list: List[str]) -> Dict[str, BandCommon | Ind
         except KeyError:
             raise ValueError(
                 f"Band or index '{name}' not found. Valid bands and indices names are:"
-                f" {[str(b) for b in list(BandCommon)]} and {[str(i) for i in list(Index)]}"
+                f" {[str(b) for b in list(BandCommon)]} and"
+                f" {[str(i) for i in list(Index)]}"
             ) from None
     return valid_names
 
