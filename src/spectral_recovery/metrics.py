@@ -12,7 +12,7 @@ VALID_PERC_MSP = f"percent must be between 0 and 100."
 
 
 @maintain_rio_attrs
-def dNBR(
+def dnbr(
     image_stack: xr.DataArray,
     rest_start: str,
     timestep: int = 5,
@@ -56,7 +56,7 @@ def dNBR(
 
 
 @maintain_rio_attrs
-def YrYr(
+def yryr(
     image_stack: xr.DataArray,
     rest_start: str,
     timestep: int = 5,
@@ -91,7 +91,7 @@ def YrYr(
 
 
 @maintain_rio_attrs
-def R80P(
+def r80p(
     image_stack: xr.DataArray,
     rest_start: str,
     recovery_target: xr.DataArray,
@@ -145,7 +145,7 @@ def R80P(
 
 
 @maintain_rio_attrs
-def Y2R(
+def y2r(
     image_stack: xr.DataArray,
     rest_start: str,
     recovery_target: xr.DataArray,
@@ -193,7 +193,7 @@ def Y2R(
 
 
 @maintain_rio_attrs
-def RRI(
+def rri(
     image_stack: xr.DataArray,
     rest_start: str,
     dist_start: int,

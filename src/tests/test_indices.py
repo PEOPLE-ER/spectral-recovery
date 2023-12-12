@@ -19,7 +19,7 @@ class TestComputeIndices:
     def test_correct_call_from_index_input_to_function(self):
         mock_nbr = Mock(return_value=xr.DataArray([0], dims=["time"]))
         mock_ndvi = Mock(return_value=xr.DataArray([0], dims=["time"]))
-        with patch.dict(_indices_map, {Index.nbr: mock_nbr, Index.ndvi: mock_ndvi}):
+        with patch.dict(_indices_map, {Index.NBR: mock_nbr, Index.NDVI: mock_ndvi}):
             input_xr = xr.DataArray(
                     [[[[0]]],[[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -47,7 +47,7 @@ class TestComputeIndices:
         mock_nbr = Mock(return_value=xr.DataArray([[0]], dims=["time", "band"], coords={"band": ["band_1"]}))
         mock_ndvi = Mock(return_value=xr.DataArray([[0]], dims=["time", "band"], coords={"band": ["band_2"]}))
         # Patch the map of index names to functions, replace the functions with mocks
-        with patch.dict(_indices_map, {Index.nbr: mock_nbr, Index.ndvi: mock_ndvi}):
+        with patch.dict(_indices_map, {Index.NBR: mock_nbr, Index.NDVI: mock_ndvi}):
             input_xr = xr.DataArray(
                     [[[[0]]],[[[0]]]],
                     dims=["band", "time", "y", "x"]
@@ -56,7 +56,7 @@ class TestComputeIndices:
                 input_xr,
                 ["NBR", "NDVI"],
             )
-            assert (res["band"].values == [Index.nbr, Index.ndvi]).all()
+            assert (res["band"].values == [Index.NBR, Index.NDVI]).all()
             assert res.dims == ("time", "band")
     
     def test_bad_index_choice_raises_value_err(self):
@@ -73,26 +73,26 @@ class TestComputeIndices:
 class TestRequiresBandsDecorator:
 
     def test_valid_bands_runs_without_err(self):
-        @requires_bands([BandCommon.blue, BandCommon.red])
+        @requires_bands([BandCommon.BLUE, BandCommon.RED])
         def to_be_decorated(stack):
             return "hello"
         
         test_stack = xr.DataArray(
             [[[[0]]],[[[0]]]],
             dims=["band", "time", "y", "x"],
-            coords={"band": [BandCommon.blue, BandCommon.red]}
+            coords={"band": [BandCommon.BLUE, BandCommon.RED]}
         )
         assert to_be_decorated(test_stack) == "hello"
     
     def test_bands_not_in_stack_throws_value_err(self):
-        @requires_bands([BandCommon.blue, BandCommon.red])
+        @requires_bands([BandCommon.BLUE, BandCommon.RED])
         def to_be_decorated(stack):
             return "hello"
         
         test_stack = xr.DataArray(
             [[[[0]]],[[[0]]]],
             dims=["band", "time", "y", "x"],
-            coords={"band": [BandCommon.blue, BandCommon.nir]}
+            coords={"band": [BandCommon.BLUE, BandCommon.NIR]}
         )
         with pytest.raises(ValueError):
             to_be_decorated(test_stack)
@@ -100,18 +100,18 @@ class TestRequiresBandsDecorator:
 class TestCompatiableWithDecorator:
 
     def test_supported_platform_in_stack_runs_without_err(self):
-        @compatible_with([Platform.landsat_oli, Platform.sentinel_2])
+        @compatible_with([Platform.LANDSAT_OLI, Platform.SENTINEL_2])
         def to_be_decorated(stack):
             return "hello"
 
-        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": [Platform.landsat_oli]})
+        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": [Platform.LANDSAT_OLI]})
         assert to_be_decorated(test_stack) == "hello"
     
     def test_platform_diff_than_decorator_throws_value_err(self):
-        @compatible_with([Platform.landsat_tm, Platform.landsat_etm])
+        @compatible_with([Platform.LANDSAT_TM, Platform.LANDSAT_ETM])
         def to_be_decorated(stack):
             return "hello"
 
-        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": [Platform.sentinel_2]})
+        test_stack = xr.DataArray([0], dims=["time"], attrs={"platform": [Platform.SENTINEL_2]})
         with pytest.raises(ValueError):
             to_be_decorated(test_stack)

@@ -135,7 +135,7 @@ def _to_platform_enums(platform: List[str]) -> List[Platform]:
     valid_names = []
     for name in platform:
         try:
-            val = Platform[name.lower()]
+            val = Platform[name.upper()]
             valid_names.append(val)
         except KeyError:
             raise ValueError(
@@ -149,13 +149,13 @@ def _to_band_or_index_enums(names_list: List[str]) -> Dict[str, BandCommon | Ind
     valid_names = []
     for name in names_list:
         try:
-            val = BandCommon[name.lower()]
+            val = BandCommon[name.upper()]
             valid_names.append(val)
             continue
         except KeyError:
             pass
         try:
-            val = Index[name.lower()]
+            val = Index[name.upper()]
             valid_names.append(val)
         except KeyError:
             raise ValueError(
