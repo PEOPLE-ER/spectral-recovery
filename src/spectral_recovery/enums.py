@@ -1,3 +1,10 @@
+"""Enums for supported spectral indices, band common names, and platforms.
+
+Primarily intended for internal use, but may be useful for users to access.
+Enums are used to ensure consistent naming and avoid typos for internal 
+computations/processing.
+
+"""
 from enum import Enum
 
 

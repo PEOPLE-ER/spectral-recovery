@@ -12,9 +12,9 @@ from matplotlib.patches import Patch
 import seaborn as sns
 
 from spectral_recovery.recovery_target import median_target
-from spectral_recovery.enums import Metric
 from spectral_recovery.timeseries import _SatelliteTimeSeries
-from spectral_recovery.config import VALID_YEAR
+from spectral_recovery.enums import Metric
+from spectral_recovery._config import VALID_YEAR
 
 from spectral_recovery import metrics as m
 

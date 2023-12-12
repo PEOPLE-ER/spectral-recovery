@@ -2,7 +2,7 @@ import functools
 
 import pandas as pd
 
-from datetime import datetime, timezone
+from datetime import datetime
 from rioxarray.exceptions import MissingCRS
 from typing import List, Union
 

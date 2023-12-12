@@ -1,16 +1,34 @@
-import functools
-import xarray as xr
+"""Methods for computing spectral indices.
 
+Most functions are decorated with `compatible_with` and `requires_bands` decorators, 
+which check that the input stack is compatible with the function and that the stack
+contains the required bands.
+
+Most notably, exports the `compute_indices` function, which computes a stack of
+spectral indices from a stack of images and str of index names.
+
+"""
+import functools
 from typing import List
+
+import xarray as xr
 from pandas import Index as pdIndex
 
-from spectral_recovery.utils import maintain_rio_attrs
+from spectral_recovery._utils import maintain_rio_attrs
 from spectral_recovery.enums import Index, BandCommon, Platform
 
 
 def compatible_with(platform: List[Platform]):
+    """A decorator for assigning platform compatibility to a function.
+    
+    Parameters
+    ----------
+    platform : List[Platform]
+        List of platforms compatible with the function.
+
+    """
     def comptaible_with_decorator(func):
-        """A wrapper for assigning platform compatibility to a function."""
+        """Sub-decorator for assigning platform compatibility to a function."""
 
         @functools.wraps(func)
         def comptaible_with_wrapper(stack, *args, **kwargs):
@@ -28,8 +46,16 @@ def compatible_with(platform: List[Platform]):
 
 
 def requires_bands(bands: List[BandCommon]):
+    """A decorator for assigning band requirements to a function.
+    
+    Parameters
+    ----------
+    bands : List[BandCommon]
+        List of bands required by the function.
+
+    """
     def requires_bands_decorator(func):
-        """A wrapper for requiring bands in a function."""
+        """Sub-decorator for assigning band requirements to a function."""
 
         @functools.wraps(func)
         def requires_bands_wrapper(stack, *args, **kwargs):
@@ -55,6 +81,7 @@ def requires_bands(bands: List[BandCommon]):
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def ndvi(stack: xr.DataArray):
+    """Compute the Normalized Difference Vegetation Index (NDVI)"""
     nir = stack.sel(band=BandCommon.NIR)
     red = stack.sel(band=BandCommon.RED)
     ndvi_v = (nir - red) / (nir + red)
@@ -70,6 +97,7 @@ def ndvi(stack: xr.DataArray):
 @requires_bands([BandCommon.NIR, BandCommon.SWIR2])
 @maintain_rio_attrs
 def nbr(stack):
+    """Compute the Normalized Burn Ratio (NBR)"""
     nir = stack.sel(band=BandCommon.NIR)
     swir2 = stack.sel(band=BandCommon.SWIR2)
     nbr_v = (nir - swir2) / (nir + swir2)
@@ -85,6 +113,7 @@ def nbr(stack):
 @requires_bands([BandCommon.NIR, BandCommon.GREEN])
 @maintain_rio_attrs
 def gndvi(stack):
+    """Compute the Green Normalized Difference Vegetation Index (GNDVI)"""
     nir = stack.sel(band=BandCommon.NIR)
     green = stack.sel(band=BandCommon.GREEN)
     gndvi_v = (nir - green) / (nir + green)
@@ -100,6 +129,7 @@ def gndvi(stack):
 @requires_bands([BandCommon.NIR, BandCommon.RED, BandCommon.BLUE])
 @maintain_rio_attrs
 def evi(stack):
+    """Compute the Enhanced Vegetation Index (EVI)"""
     nir = stack.sel(band=BandCommon.NIR)
     red = stack.sel(band=BandCommon.RED)
     blue = stack.sel(band=BandCommon.BLUE)
@@ -116,6 +146,7 @@ def evi(stack):
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def avi(stack):
+    """Compute the Atmospherically Resistant Vegetation Index (AVI)"""
     nir = stack.sel(band=BandCommon.NIR)
     red = stack.sel(band=BandCommon.RED)
     avi_v = (nir * (1 - red) * (nir - red)) ** (1 / 3)
@@ -131,6 +162,7 @@ def avi(stack):
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def savi(stack):
+    """Compute the Soil Adjusted Vegetation Index (SAVI)"""
     nir = stack.sel(band=BandCommon.NIR)
     red = stack.sel(band=BandCommon.RED)
     savi_v = ((nir - red) / (nir + red + 0.5)) * 0.5
@@ -146,13 +178,13 @@ def savi(stack):
 @requires_bands([BandCommon.GREEN, BandCommon.NIR])
 @maintain_rio_attrs
 def ndwi(stack):
+    """Compute the Normalized Difference Water Index (NDWI)"""
     green = stack.sel(band=BandCommon.GREEN)
     nir = stack.sel(band=BandCommon.NIR)
     ndwi_v = (green - nir) / (green + nir)
     return ndwi_v
 
 
-# TODO: with tassel-cap indices, make sure the data provided is the correct value range (not DN)
 @compatible_with([Platform.LANDSAT_TM])
 @requires_bands([
     BandCommon.BLUE,
@@ -164,6 +196,7 @@ def ndwi(stack):
 ])
 @maintain_rio_attrs
 def tcg(stack):
+    """Compute the Tasseled Cap Greenness Index (TCG)"""
     blue = stack.sel(band=BandCommon.BLUE)
     green = stack.sel(band=BandCommon.GREEN)
     red = stack.sel(band=BandCommon.RED)
@@ -192,6 +225,7 @@ def tcg(stack):
 ])
 @maintain_rio_attrs
 def tcw(stack):
+    """Compute the Tasseled Cap Wetness Index (TCW)"""
     blue = stack.sel(band=BandCommon.BLUE)
     green = stack.sel(band=BandCommon.GREEN)
     red = stack.sel(band=BandCommon.RED)
@@ -220,6 +254,7 @@ def tcw(stack):
 ])
 @maintain_rio_attrs
 def tcb(stack):
+    """Compute the Tasseled Cap Brightness Index (TCB)"""
     blue = stack.sel(band=BandCommon.BLUE)
     green = stack.sel(band=BandCommon.GREEN)
     red = stack.sel(band=BandCommon.RED)
@@ -246,6 +281,7 @@ def tcb(stack):
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def sr(stack):
+    """Compute the Simple Ratio (SR)"""
     nir = stack.sel(band=BandCommon.NIR)
     red = stack.sel(band=BandCommon.RED)
     sr_v = nir / red
@@ -261,6 +297,7 @@ def sr(stack):
 @requires_bands([BandCommon.NIR, BandCommon.SWIR1])
 @maintain_rio_attrs
 def ndmi(stack):
+    """Compute the Normalized Difference Moisture Index (NDMI)"""
     nir = stack.sel(band=BandCommon.NIR)
     swir1 = stack.sel(band=BandCommon.SWIR1)
     ndmi_v = (nir - swir1) / (nir + swir1)
@@ -271,6 +308,7 @@ def ndmi(stack):
 @requires_bands([BandCommon.NIR, BandCommon.GREEN])
 @maintain_rio_attrs
 def gci(stack):
+    """Compute the Green Chlorophyll Index (GCI)"""
     nir = stack.sel(band=BandCommon.NIR)
     green = stack.sel(band=BandCommon.GREEN)
     gci_v = (nir / green) - 1
@@ -286,6 +324,7 @@ def gci(stack):
 @requires_bands([BandCommon.SWIR1, BandCommon.NIR])
 @maintain_rio_attrs
 def ndii(stack):
+    """Compute the Normalized Difference Infrared Index (NDII)"""
     swir1 = stack.sel(band=BandCommon.SWIR1)
     nir = stack.sel(band=BandCommon.NIR)
     ndii_v = (swir1 - nir) / (swir1 + nir)
@@ -310,7 +349,7 @@ _indices_map = {
 }
 
 
-def bad_index_choice(stack):
+def _bad_index_choice(stack):
     raise ValueError("No index function implemented for current index.") from None
 
 
@@ -335,7 +374,7 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str]):
     indices = _to_index_enums(indices)
     index = {}
     for index_choice in indices:
-        index[index_choice] = _indices_map.get(index_choice, bad_index_choice)(
+        index[index_choice] = _indices_map.get(index_choice, _bad_index_choice)(
             image_stack
         )
     index_stack = xr.concat(index.values(), dim=pdIndex(index.keys(), name="band"))

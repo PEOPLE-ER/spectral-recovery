@@ -2,7 +2,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 
-from spectral_recovery.utils import maintain_rio_attrs
+from spectral_recovery._utils import maintain_rio_attrs
 
 # TODO: should methods that take 'percent' params not allow negative percent
 # or greater than 100 values? Right now we just throw a ValueError. This avoids
@@ -137,7 +137,8 @@ def r80p(
         (percent / 100) * recovery_target
     )
     try:
-        # if using the default timestep (the max/most recent), the indexing will not get rid of the "time" dim
+        # if using the default timestep (the max/most recent),
+        # the indexing will not get rid of the "time" dim
         r80p = r80p.squeeze("time")
     except KeyError:
         pass
