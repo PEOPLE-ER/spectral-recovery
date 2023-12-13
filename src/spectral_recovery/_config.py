@@ -1,3 +1,5 @@
+"""Configuration for the spectral recovery package."""""
+
 import re
 
 DATETIME_FREQ = "YS"

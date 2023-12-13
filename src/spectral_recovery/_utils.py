@@ -1,21 +1,15 @@
+"""Utility functions for spectral-recovery.
+
+Currently, only contains decorators for maintaining rio attributes
+when performing operations on xarray objects.
+
+"""
 import functools
 
-import pandas as pd
-
-from datetime import datetime
 from rioxarray.exceptions import MissingCRS
-from typing import List, Union
 
 
-def to_datetime(value: Union[str, List[str], datetime, pd.Timestamp]):
-    """Format year and year ranges to UTC datetime."""
-    # TODO
-    # convert to UTC if not in UTC, if no timezone then assume UTC
-    # Convert a year range from X to Y as start-of-year X to end-of-year Y
-    return value
-
-
-def maintain_rio_attrs(func):
+def maintain_rio_attrs(func: callable) -> callable:
     """A wrapper for maintaining rioxarray crs/encoding info.
 
     Rioxarray information (nodata, CRS, etc.) is lost through
@@ -29,6 +23,7 @@ def maintain_rio_attrs(func):
     -----
     Similar to https://github.com/pydata/xarray/pull/2482, but specifically
     for a subset of rio attributes to be maintained.
+    
     """
 
     @functools.wraps(func)

@@ -1,3 +1,8 @@
+"""Xarray accessor for timeseries operations. Plus helper functions."""
+
+from typing import Union, Tuple
+from datetime import datetime
+
 import rioxarray
 
 import xarray as xr
@@ -5,8 +10,6 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from typing import Union, Tuple
-from datetime import datetime
 from shapely.geometry import box
 from spectral_recovery._config import DATETIME_FREQ, REQ_DIMS
 
@@ -14,8 +17,11 @@ from spectral_recovery._config import DATETIME_FREQ, REQ_DIMS
 def _datetime_to_index(
     value: Union[datetime, Tuple[datetime]], return_list: bool = False
 ) -> pd.DatetimeIndex:
-    """Convert datetime or range of datetimes into pd.DatetimeIndex. Return as list if desired, otherwise returns DatetimeIndex."""
-    if (isinstance(value, tuple) or isinstance(value, list)) and len(value) == 2:
+    """Convert datetime or range of datetimes into pd.DatetimeIndex.
+
+    Returns list if desired, otherwise returns DatetimeIndex.
+    """
+    if isinstance(value, (tuple, list)) and len(value) == 2:
         dt_range = pd.date_range(*value, freq=DATETIME_FREQ)
     else:
         try:
@@ -54,8 +60,8 @@ class _SatelliteTimeSeries:
         self._obj = xarray_obj
         self._valid = None
 
-    # TODO: change this method to "is_continuous" or something and only check for continuity of years
-    #   Move the check for valid dim names to a seperate method.
+    # TODO: change this method to "is_continuous" or something and only check
+    # for continuity of years. Move the check for valid dim names to new method.
     @property
     def is_annual_composite(self) -> bool:
         """Check if DataArray is contains valid annual composites.
@@ -98,10 +104,8 @@ class _SatelliteTimeSeries:
         ext = box(*self._obj.rio.bounds())
         poly_ext = box(*polygons.total_bounds).buffer(-1e-14)
         if not ext.contains(poly_ext):
-            if poly_ext.difference(ext).area < 1e-14:
-                return True
-            else:
-                return False
+            # Permit bboxes that are almost equal (within 1e-14)
+            return poly_ext.difference(ext).area < 1e-14
         return True
 
     def contains_temporal(self, years: Union[datetime, Tuple[datetime]]) -> bool:
@@ -122,7 +126,7 @@ class _SatelliteTimeSeries:
         # could likely be avoided. Until then, this works.
         required_years = _datetime_to_index(years, return_list=True)
         for year in required_years:
-            if not (pd.to_datetime(str(year)) in self._obj.coords["time"].values):
+            if not pd.to_datetime(str(year)) in self._obj.coords["time"].values:
                 return False
         return True
 
