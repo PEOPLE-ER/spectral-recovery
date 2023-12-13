@@ -1,13 +1,15 @@
-import xarray as xr
-
-from typing import Union, Tuple, List
+""" Methods for computing recovery targets """
+from typing import Union, Tuple
 from datetime import datetime
 
-""" Methods for computing recovery targets """
+import xarray as xr
 
 
+# TODO: split this function into per-pixel and per-polygon functions
 def median_target(
-    stack: xr.DataArray, reference_date: Union[datetime, Tuple[datetime]], space: bool = True
+    stack: xr.DataArray,
+    reference_date: Union[datetime, Tuple[datetime]],
+    space: bool = True,
 ) -> xr.DataArray:
     """
     Compute the median recovery target.
@@ -15,7 +17,7 @@ def median_target(
     Sequentially computes the median over time and, optionally, the spatial
     dimensions (x and y). If there is a "poly_id" dimension, then the median is
     automatically computed along that dimension after the time and space dimensions.
-    
+
     Parameters
     ----------
     stack : xr.DataArray
@@ -29,8 +31,10 @@ def median_target(
 
     Returns
     -------
-    historic_average : xr.DataArray
-        A 1D DataArray of historic average.
+    median_t : xr.DataArray
+        DataArray of the median recovery target. If space=True, then median_t
+        has dimensions "band" and optionally, "poly_id". If space=False, has
+        dimensions "band", "y" and "x" and optionally, "poly_id".
 
     """
     if isinstance(reference_date, list):
@@ -38,19 +42,18 @@ def median_target(
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
 
-    median_target = ranged_stack.median(dim="time", skipna=True)
+    median_t = ranged_stack.median(dim="time", skipna=True)
     if space:
-        median_target = median_target.median(dim=["y", "x"], skipna=True)
+        median_t = median_t.median(dim=["y", "x"], skipna=True)
     if "poly_id" in stack.dims:
-        median_target = median_target.median(dim="poly_id", skipna=True)
+        median_t = median_t.median(dim="poly_id", skipna=True)
 
-    median_target = median_target.assign_coords(
+    median_t = median_t.assign_coords(
         band=stack.coords["band"]
     )  # re-assign lost coords.
-    return median_target
+    return median_t
 
 
-def windowed_median_target(
-    stack: xr.DataArray, poly_id: str, window: int = 3
-) -> xr.DataArray:
+def windowed_median_target() -> xr.DataArray:
+    """Compute the windowed median recovery target."""
     return NotImplementedError

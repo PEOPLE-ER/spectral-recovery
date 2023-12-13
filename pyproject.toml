@@ -17,7 +17,7 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-version = "0.2.1b1"
+version = "0.2.0b0"
 dependencies = [
     "geopandas",
     "rioxarray",
@@ -29,6 +29,12 @@ dependencies = [
     "distributed",
     "matplotlib",
     "seaborn",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock",
 ]
 
 [tool.setuptools.packages.find]

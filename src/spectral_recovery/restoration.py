@@ -1,27 +1,38 @@
+"""Restoration Area and Reference System classes.
+
+The RestorationArea class represents a restoration event and contains
+methods for computing spectral recovery metrics. Users create a
+RestorationArea by providing a restoration polygon, reference polygon,
+event dates, and a stack of annual composites. 
+
+A RestorationArea contains a ReferenceSystem, which is a class that
+represents the reference area(s) and contains methods for computing
+the recovery target. 
+
+"""
+from typing import Callable, Optional, Union, List
+from datetime import datetime
+
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
 from pandas import Index
 
-from typing import Callable, Optional, Union, List
-from datetime import datetime
-from pandas import Timestamp
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 import seaborn as sns
 
 from spectral_recovery.recovery_target import median_target
-from spectral_recovery.enums import Metric
 from spectral_recovery.timeseries import _SatelliteTimeSeries
-from spectral_recovery.config import VALID_YEAR
+from spectral_recovery.enums import Metric
+from spectral_recovery._config import VALID_YEAR
 
 from spectral_recovery import metrics as m
 
-
-# TODO: split date into start and end dates.
-# TODO: remove baseline_method as attribute. Add it as a parameter to baseline()
-class ReferenceSystem:
+# We could maybe remove baseline_method as attribute. Just add it
+# as a parameter to baseline()? Wait for more refactoring planning.
+class _ReferenceSystem:
     """A Reference System.
 
     Attributes
@@ -52,40 +63,45 @@ class ReferenceSystem:
         historic_reference_system: bool,
         recovery_target_method: Optional[Callable] = None,
     ) -> None:
-        # TODO: convert date inputs into standard form (pd.dt?)
         self.hist_ref_sys = historic_reference_system
         self.reference_polygons = reference_polygons
         self.reference_range = reference_range
         self.recovery_target_method = recovery_target_method or median_target
+
         try:
             if self._within(reference_stack):
                 self.reference_stack = reference_stack
         except ValueError as e:
             raise e from None
-        else:
-            clipped_stacks = {}
-            # TODO: Maybe handle MultiPolygons here. Otherwise force everything to Polygon in pre-processing.
-            for i, row in reference_polygons.iterrows():
-                polygon_stack = reference_stack.rio.clip(
-                    gpd.GeoSeries(row.geometry).values
-                )
-                clipped_stacks[i] = polygon_stack
-            self.reference_stack = xr.concat(
-                clipped_stacks.values(),
-                dim=Index(clipped_stacks.keys(), name="poly_id"),
+
+        clipped_stacks = {}
+        for i, row in reference_polygons.iterrows():
+            polygon_stack = reference_stack.rio.clip(
+                gpd.GeoSeries(row.geometry).values
             )
+            clipped_stacks[i] = polygon_stack
+        self.reference_stack = xr.concat(
+            clipped_stacks.values(),
+            dim=Index(clipped_stacks.keys(), name="poly_id"),
+        )
 
     def recovery_target(self):
         """Get the recovery target for a reference system"""
         if self.hist_ref_sys:
             recovery_target = self.recovery_target_method(
-                stack=self.reference_stack, reference_date=self.reference_range, space=False,
+                stack=self.reference_stack,
+                reference_date=self.reference_range,
+                space=False,
             )
         else:
             recovery_target = self.recovery_target_method(
-                stack=self.reference_stack, reference_date=self.reference_range, space=True,
+                stack=self.reference_stack,
+                reference_date=self.reference_range,
+                space=True,
             )
         return recovery_target
+
+    # TODO: Add method for plotting spectral trajectory of reference system
 
     def _within(self, stack: xr.DataArray) -> bool:
         """Check if within a DataArray
@@ -149,8 +165,8 @@ class RestorationArea:
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
-                f"restoration_polygons contains more than one Polygon."
-                f"A RestorationArea instance can only contain one Polygon."
+                "restoration_polygons contains more than one Polygon."
+                "A RestorationArea instance can only contain one Polygon."
             ) from None
         self.restoration_polygon = restoration_polygon
 
@@ -162,15 +178,15 @@ class RestorationArea:
         if disturbance_start is not None:
             if not isinstance(disturbance_start, str):
                 raise TypeError("disturbance_start must be a string.") from None
+
+            year = VALID_YEAR.match(disturbance_start)
+            if year:
+                self.disturbance_start = pd.to_datetime(disturbance_start)
             else:
-                year = VALID_YEAR.match(disturbance_start)
-                if year:
-                    self.disturbance_start = pd.to_datetime(disturbance_start)
-                else:
-                    raise ValueError(
-                        "Could not parse {disturbance_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'."
-                    )
+                raise ValueError(
+                    "Could not parse {disturbance_start} into a year. Please ensure"
+                    " the year is in the format 'YYYY'."
+                )
             if restoration_start is None:
                 self.restoration_start = pd.to_datetime(
                     str(self.disturbance_start.year + 1)
@@ -184,15 +200,14 @@ class RestorationArea:
         if restoration_start is not None:
             if not isinstance(restoration_start, str):
                 raise TypeError("restoration_start must be a string.") from None
+            year = VALID_YEAR.match(restoration_start)
+            if year:
+                self.restoration_start = pd.to_datetime(restoration_start)
             else:
-                year = VALID_YEAR.match(restoration_start)
-                if year:
-                    self.restoration_start = pd.to_datetime(restoration_start)
-                else:
-                    raise ValueError(
-                        "Could not parse {restoration_start} into a year. Please ensure "
-                        "the year is in the format 'YYYY'."
-                    )
+                raise ValueError(
+                    "Could not parse {restoration_start} into a year. Please ensure"
+                    " the year is in the format 'YYYY'."
+                )
             if disturbance_start is None:
                 self.disturbance_start = pd.to_datetime(
                     str(self.restoration_start.year - 1)
@@ -241,7 +256,7 @@ class RestorationArea:
 
         if reference_polygon is None:
             # Build the reference polygon from the restoration polygon
-            self.reference_system = ReferenceSystem(
+            self.reference_system = _ReferenceSystem(
                 reference_polygons=self.restoration_polygon,
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
@@ -252,7 +267,7 @@ class RestorationArea:
             # Build the reference polygon from the reference polygon
             # Use the unclipped composite_stack instead of self.stack because
             # self.stack is clipped to restoration_polygons at this point.
-            self.reference_system = ReferenceSystem(
+            self.reference_system = _ReferenceSystem(
                 reference_polygons=reference_polygon,
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
@@ -289,12 +304,13 @@ class RestorationArea:
             ) from None
         return True
 
-    def Y2R(self, percent_of_target: int = 80):
+    def y2r(self, percent_of_target: int = 80):
+        """Compute the Years to Recovery (Y2R) metric."""
         post_restoration = self.stack.sel(
             time=slice(self.restoration_start, self.end_year)
         )
         recovery_target = self.reference_system.recovery_target()
-        y2r = m.Y2R(
+        y2r = m.y2r(
             image_stack=post_restoration,
             recovery_target=recovery_target,
             rest_start=str(self.restoration_start.year),
@@ -303,26 +319,29 @@ class RestorationArea:
         y2r = y2r.expand_dims(dim={"metric": [Metric.Y2R]})
         return y2r
 
-    def YrYr(self, timestep: int = 5):
-        yryr = m.YrYr(
+    def yryr(self, timestep: int = 5):
+        """Compute the Relative Years to Recovery (YRYR) metric."""
+        yryr = m.yryr(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
             timestep=timestep,
         )
-        yryr = yryr.expand_dims(dim={"metric": [Metric.YrYr]})
+        yryr = yryr.expand_dims(dim={"metric": [Metric.YRYR]})
         return yryr
 
-    def dNBR(self, timestep: int = 5):
-        dnbr = m.dNBR(
+    def dnbr(self, timestep: int = 5):
+        """Compute the differenced normalized burn ratio (dNBR) metric."""
+        dnbr = m.dnbr(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
             timestep=timestep,
         )
-        dnbr = dnbr.expand_dims(dim={"metric": [Metric.dNBR]})
+        dnbr = dnbr.expand_dims(dim={"metric": [Metric.DNBR]})
         return dnbr
 
-    def _RRI(self, timestep: int = 5):
-        rri = m.RRI(
+    def _rri(self, timestep: int = 5):
+        """Compute the relative recovery index (RRI) metric."""
+        rri = m.rri(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
             dist_start=str(self.disturbance_start.year),
@@ -331,9 +350,10 @@ class RestorationArea:
         rri = rri.expand_dims(dim={"metric": [Metric.RRI]})
         return rri
 
-    def R80P(self, percent_of_target: int = 80, timestep: int = 5):
+    def r80p(self, percent_of_target: int = 80, timestep: int = 5):
+        """Compute the recovery to 80% of target (R80P) metric."""
         recovery_target = self.reference_system.recovery_target()
-        r80p = m.R80P(
+        r80p = m.r80p(
             image_stack=self.stack,
             rest_start=str(self.restoration_start.year),
             recovery_target=recovery_target,
@@ -345,7 +365,7 @@ class RestorationArea:
 
     def plot_spectral_trajectory(self, path: str = None) -> None:
         """Create spectral trajectory plot of the RestorationArea
-        
+
         Parameters
         ----------
         path : str, optional
@@ -361,7 +381,7 @@ class RestorationArea:
         )
         stats = stats.to_dataframe("value").reset_index()
         stats["time"] = stats["time"].dt.year
-        # TODO: add +- std
+
         reco_targets = self.reference_system.recovery_target()
         reco_targets = reco_targets.to_dataframe("reco_targets").reset_index()[
             ["band", "reco_targets"]
@@ -386,7 +406,7 @@ class RestorationArea:
                 legend_out=True,
             )
             g.map_dataframe(sns.lineplot, "time", "value")
-        
+
         g.set(xticks=stats["time"].unique())
         g.set_xticklabels(rotation=45)
 
@@ -401,7 +421,7 @@ class RestorationArea:
         )
         for ax in g.axes.flat:
             ax.set_xlabel("Year")
-        g.axes[0,0].set_ylabel("Band/Index Value")
+        g.axes[0, 0].set_ylabel("Band/Index Value")
 
         # Plot spectral trajectory windows: reference, disturbance, recovery
         g.map(
@@ -478,27 +498,33 @@ class RestorationArea:
             (disturbance_window_line, disturbance_window_patch),
             (recovery_window_line, recovery_window_patch),
         ]
-        
-        labels=[
-                "median",
-                "mean",
-                "disturbance window",
-                "recovery window",
+
+        labels = [
+            "median",
+            "mean",
+            "disturbance window",
+            "recovery window",
         ]
         if self.reference_system.hist_ref_sys:
-            custom_handles.insert(2, (recovery_target_line, recovery_target_patch),)
+            custom_handles.insert(
+                2,
+                (recovery_target_line, recovery_target_patch),
+            )
             custom_handles.insert(3, (reference_years, reference_years_patch))
             labels.insert(2, "historic recovery target (mean)")
             labels.insert(3, "reference year(s)")
-           
+
         else:
-            custom_handles.insert(2, recovery_target_line,)
+            custom_handles.insert(
+                2,
+                recovery_target_line,
+            )
             labels.insert(2, "reference recovery target")
 
         plt.figlegend(
             labels=labels,
             handles=custom_handles,
-            loc="lower center", 
+            loc="lower center",
             bbox_to_anchor=(0.5, -0.05),
             fancybox=True,
             ncol=6,
@@ -509,4 +535,3 @@ class RestorationArea:
             plt.savefig(path, dpi=300, bbox_inches="tight")
         else:
             plt.show()
-    

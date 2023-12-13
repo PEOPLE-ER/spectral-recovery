@@ -1,17 +1,23 @@
-import re
+"""Functions for reading and writing raster data .
+
+Handles reading timeseries of TIFs into a single DataArray, ensures
+band names and attributes are consistent. Also handles writing.
+"""
+
+from pathlib import Path
+from typing import List, Dict
+
 import rioxarray
 
 import pandas as pd
 import numpy as np
 import xarray as xr
 
-from pathlib import Path
-from typing import List, Dict
 from rasterio._err import CPLE_AppDefinedError
-from pandas.core.tools.datetimes import DateParseError
 
 from spectral_recovery.enums import BandCommon, Index, Platform
-from spectral_recovery.config import VALID_YEAR, REQ_DIMS
+from spectral_recovery._config import VALID_YEAR, REQ_DIMS
+
 
 # TODO: deprecate path_to_mask parameter/functionality?
 def read_and_stack_tifs(
@@ -27,10 +33,10 @@ def read_and_stack_tifs(
     ----------
     path_to_tifs : list of str
         List of paths to TIFs or path to directory containing TIFs.
-    platform : {"}
+    platform : {"landsat_etm", "landsat_tm", "landsat_oli", "sentinel_2"}
         Platform(s) from which TIF imagery was derived Must be one of: 'landsat_etm', 'landsat_tm',
     band_names : dict, optional
-        Dictionary mapping band numbers to band names. If not provided, 
+        Dictionary mapping band numbers to band names. If not provided,
         band names will be read from the TIFs band descriptions.
     path_to_mask : str, optional
         Path to a 2D data mask to apply over all TIFs.
@@ -69,7 +75,7 @@ def read_and_stack_tifs(
                 image_dict[Path(file).stem] = data
 
     time_keys = []
-    for filename in image_dict.keys():
+    for filename in image_dict:
         if _str_is_year(filename):
             time_keys.append(pd.to_datetime(filename))
         else:
@@ -87,7 +93,7 @@ def read_and_stack_tifs(
                 "Band descriptions not found in TIFs. Please provide band "
                 " names for bands {stack_data.band.values} using the `band_names=`"
                 " argument."
-            )
+            ) from None
     else:
         band_names_old = stacked_data.band.values
         for b in band_names.keys():
@@ -97,7 +103,7 @@ def read_and_stack_tifs(
                     f" bands: {band_names_old}"
                 ) from None
 
-        if not all([k in band_names_old for k in band_names.keys()]):
+        if not all(k in band_names_old for k in band_names.keys()):
             raise ValueError(
                 f"Band names {band_names.keys()} not found in TIFs. Please provide a"
                 f" mapping for bands: {band_names_old}"
@@ -110,8 +116,10 @@ def read_and_stack_tifs(
                     f"Band {band_num} not found in `band_names` dictionary. Please"
                     f" provide a mapping for all bands: {band_names_old}"
                 ) from None
-            else:
-                band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[0]
+            
+            band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[
+                0
+            ]
 
         band_names_new = [
             band_names[k] for k in band_names_old
@@ -130,12 +138,13 @@ def read_and_stack_tifs(
 
     return stacked_data
 
+
 def _to_platform_enums(platform: List[str]) -> List[Platform]:
     """Convert a list of platform names to Platform enums"""
     valid_names = []
     for name in platform:
         try:
-            val = Platform[name.lower()]
+            val = Platform[name.upper()]
             valid_names.append(val)
         except KeyError:
             raise ValueError(
@@ -149,18 +158,19 @@ def _to_band_or_index_enums(names_list: List[str]) -> Dict[str, BandCommon | Ind
     valid_names = []
     for name in names_list:
         try:
-            val = BandCommon[name.lower()]
+            val = BandCommon[name.upper()]
             valid_names.append(val)
             continue
         except KeyError:
             pass
         try:
-            val = Index[name.lower()]
+            val = Index[name.upper()]
             valid_names.append(val)
         except KeyError:
             raise ValueError(
                 f"Band or index '{name}' not found. Valid bands and indices names are:"
-                f" {[str(b) for b in list(BandCommon)]} and {[str(i) for i in list(Index)]}"
+                f" {[str(b) for b in list(BandCommon)]} and"
+                f" {[str(i) for i in list(Index)]}"
             ) from None
     return valid_names
 
@@ -169,8 +179,7 @@ def _str_is_year(year_str) -> bool:
     """Check if a string is a valid year (YYYY)"""
     if VALID_YEAR.match(year_str) is None:
         return False
-    else:
-        return True
+    return True
 
 
 def _stack_bands(bands, coords, dim_name) -> xr.DataArray:
@@ -217,11 +226,10 @@ def _metrics_to_tifs(
             try:
                 filename = f"{out_dir}/{str(m)}.tif"
                 xa_dataset.rio.to_raster(raster_path=filename)
-            # TODO: don't except on an error hidden from API users...
-            except CPLE_AppDefinedError as exc:
+            # TODO: Probably shouldn't except on an error hidden from API users...
+            except CPLE_AppDefinedError:
                 raise PermissionError(
                     f"Permission denied to overwrite {filename}. Is the existing TIF"
                     " open in an application (e.g QGIS)? If so, try closing it before"
                     " your next run to avoid this error."
                 ) from None
-    return

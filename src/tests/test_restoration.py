@@ -12,9 +12,9 @@ from geopandas.testing import assert_geodataframe_equal
 from tests.utils import SAME_XR
 
 from spectral_recovery.recovery_target import median_target
-from spectral_recovery.restoration import ReferenceSystem, RestorationArea
+from spectral_recovery.restoration import _ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
-from  spectral_recovery.config import DATETIME_FREQ
+from  spectral_recovery._config import DATETIME_FREQ
 
 # TODO: move test data into their own folders, create temp dirs so individual tests
 # don't conflict while reading the data
@@ -75,7 +75,7 @@ class TestRestorationAreaInit:
                 resto_a.restoration_polygon.geometry.geom_equals(resto_poly.geometry)
             ).all()
             assert resto_a.restoration_start == resto_start_dt
-            assert isinstance(resto_a.reference_system, ReferenceSystem)
+            assert isinstance(resto_a.reference_system, _ReferenceSystem)
             assert resto_a.reference_system.reference_polygons.geom_equals(
                 resto_poly.geometry
             ).all()
@@ -457,13 +457,13 @@ class TestRestorationAreaMetrics:
         return resto_area
 
     @patch(
-        "spectral_recovery.metrics.Y2R",
+        "spectral_recovery.metrics.y2r",
     )
     def test_Y2R_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.Y2R()
+        result = valid_resto_area.y2r()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.Y2R]})
 
         assert result.equals(expected_result)
@@ -483,14 +483,14 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.YrYr",
+        "spectral_recovery.metrics.yryr",
     )
     def test_YrYr_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.YrYr()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.YrYr]})
+        result = valid_resto_area.yryr()
+        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.YRYR]})
 
         assert result.equals(expected_result)
 
@@ -503,14 +503,14 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.dNBR",
+        "spectral_recovery.metrics.dnbr",
     )
     def test_dNBR_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.dNBR()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.dNBR]})
+        result = valid_resto_area.dnbr()
+        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.DNBR]})
 
         assert result.equals(expected_result)
 
@@ -523,13 +523,13 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.RRI",
+        "spectral_recovery.metrics.rri",
     )
     def test_RRI_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area._RRI()
+        result = valid_resto_area._rri()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.RRI]})
 
         assert result.equals(expected_result)
@@ -544,13 +544,13 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.R80P",
+        "spectral_recovery.metrics.r80p",
     )
     def test_R80P_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.R80P()
+        result = valid_resto_area.r80p()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.R80P]})
 
         assert result.equals(expected_result)
@@ -567,7 +567,7 @@ class TestRestorationAreaMetrics:
         )
 
 
-class TestReferenceSystemInit:
+class Test_ReferenceSystemInit:
     # Note: ReferencSystem assumes dates are passed as datetime, not str
     @pytest.fixture()
     def test_stack_1(self):
@@ -604,7 +604,7 @@ class TestReferenceSystemInit:
         )
         reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
+        rs = _ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
@@ -624,7 +624,7 @@ class TestReferenceSystemInit:
         )
         reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
+        rs = _ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
@@ -646,7 +646,7 @@ class TestReferenceSystemInit:
         )
         reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
+        rs = _ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
@@ -689,7 +689,7 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_polys,
                 reference_stack=image_stack,
                 reference_range=reference_date,
@@ -706,7 +706,7 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_poly_overlap,
                 reference_stack=image_stack,
                 reference_range=reference_date,
@@ -725,7 +725,7 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_polys_multi,
                 reference_stack=image_stack,
                 reference_range=reference_date,
@@ -742,7 +742,7 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_polys,
                 reference_stack=image_stack,
                 reference_range=reference_date,
@@ -756,7 +756,7 @@ class TestReferenceSystemInit:
         )
         reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
+        rs = _ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
@@ -766,11 +766,11 @@ class TestReferenceSystemInit:
         assert rs.hist_ref_sys == True
 
 
-class TestReferenceSystemRecoveryTarget:
+class Test_ReferenceSystemRecoveryTarget:
 
     def test_false_hist_ref_sys_calls_recovery_target_with_space_true(self, mocker):
-        mocker.patch.object(ReferenceSystem, "__init__", return_value=None)
-        rs = ReferenceSystem()
+        mocker.patch.object(_ReferenceSystem, "__init__", return_value=None)
+        rs = _ReferenceSystem()
         rs.recovery_target_method = MagicMock(return_value=None)
         rs.reference_stack = 0
         rs.reference_range = 0
@@ -781,8 +781,8 @@ class TestReferenceSystemRecoveryTarget:
         rs.recovery_target_method.assert_called_with(stack=0, reference_date=0, space=True)
     
     def test_hist_ref_sys_calls_recovery_target_with_space_false(self, mocker):
-        mocker.patch.object(ReferenceSystem, "__init__", return_value=None)
-        rs = ReferenceSystem()
+        mocker.patch.object(_ReferenceSystem, "__init__", return_value=None)
+        rs = _ReferenceSystem()
         rs.recovery_target_method = MagicMock(return_value=None)
         rs.reference_stack = 0
         rs.reference_range = 0

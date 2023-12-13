@@ -153,7 +153,7 @@ class TestReadAndStackTifs:
     )
     def test_correct_bands_from_tifs_with_long_name(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.blue, BandCommon.red, BandCommon.nir]
+        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
         rasterio_return =  xr.DataArray(
                     [[[[0]]], [[[0]]], [[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -172,7 +172,7 @@ class TestReadAndStackTifs:
     )
     def test_correct_bands_from_tifs_w_band_dict(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.blue, BandCommon.red, BandCommon.nir]
+        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
         rasterio_return =  xr.DataArray(
                     [[[[0]]], [[[0]]], [[[0]]]],
                     dims=["band", "time", "y", "x"],     
@@ -191,7 +191,7 @@ class TestReadAndStackTifs:
     )
     def test_band_dict_supersedes_band_desc(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.blue, BandCommon.red, BandCommon.nir]
+        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
         rasterio_return =  xr.DataArray(
                     [[[[0]]], [[[0]]], [[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -213,7 +213,7 @@ class TestReadAndStackTifs:
     )
     def test_band_dict_assigns_name_by_key_not_order(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.red, BandCommon.blue, BandCommon.nir]
+        expected_bands = [BandCommon.RED, BandCommon.BLUE, BandCommon.NIR]
         rasterio_return =  xr.DataArray(
                     [[[[0]]], [[[0]]], [[[0]]]],
                     dims=["band", "time", "y", "x"],
@@ -339,4 +339,4 @@ class TestReadAndStackTifs:
             path_to_tifs=[f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
             platform=["landsat_oli", "landsat_tm"],
         )
-        assert stacked_tifs.attrs["platform"] == [Platform.landsat_oli, Platform.landsat_tm]
+        assert stacked_tifs.attrs["platform"] == [Platform.LANDSAT_OLI, Platform.LANDSAT_TM]

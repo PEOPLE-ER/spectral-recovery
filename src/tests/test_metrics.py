@@ -5,11 +5,11 @@ import pandas as pd
 import rioxarray
 
 from spectral_recovery.metrics import (
-    Y2R,
-    dNBR,
-    RRI,
-    YrYr,
-    R80P,
+    y2r,
+    dnbr,
+    rri,
+    yryr,
+    r80p,
 )
 
 
@@ -95,7 +95,7 @@ class TestY2R:
         ],
     )
     def test_single_target_y2r(self, recovery_target, obs, expected):
-        assert Y2R(
+        assert y2r(
             image_stack=obs,
             recovery_target=recovery_target,
             rest_start="2020",
@@ -125,7 +125,7 @@ class TestY2R:
         ]
     )
     def test_per_pixel_target(self, recovery_target, obs, expected):
-        assert Y2R(
+        assert y2r(
             image_stack=obs,
             recovery_target=recovery_target,
             rest_start="2020",
@@ -160,7 +160,7 @@ class TestY2R:
         ],
     )
     def test_percent_y2r(self, recovery_target, obs, percent, expected):
-        assert Y2R(
+        assert y2r(
             image_stack=obs,
             recovery_target=recovery_target,
             percent=percent,
@@ -246,7 +246,7 @@ class TestDNBR:
         ],
     )
     def test_default_dNBR(self, obs, restoration_date, expected):
-        assert dNBR(
+        assert dnbr(
             image_stack=obs,
             rest_start=restoration_date,
         ).equals(expected)
@@ -265,7 +265,7 @@ class TestDNBR:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        assert dNBR(
+        assert dnbr(
             image_stack=obs,
             rest_start=restoration_date,
             timestep=timestep,
@@ -281,7 +281,7 @@ class TestDNBR:
         timestep = -2
 
         with pytest.raises(ValueError, match="timestep cannot be negative."):
-            dNBR(
+            dnbr(
                 image_stack=obs,
                 rest_start=restoration_date,
                 timestep=timestep,
@@ -299,7 +299,7 @@ class TestDNBR:
         with pytest.raises(
             ValueError,
         ):
-            dNBR(
+            dnbr(
                 image_stack=obs,
                 rest_start=restoration_date,
                 timestep=timestep,
@@ -350,14 +350,14 @@ class TestRRI:
     )
     def test_correct_default(self, obs, restoration_start, dist_start, expected):
         print(
-            RRI(
+            rri(
                 image_stack=obs,
                 rest_start=restoration_start,
                 dist_start=dist_start,
             ),
             expected.data,
         )
-        assert RRI(
+        assert rri(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
@@ -401,7 +401,7 @@ class TestRRI:
             [[[1.0, 4.0], [1.0, 0.0]]],
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
-        result = RRI(
+        result = rri(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
@@ -444,7 +444,7 @@ class TestRRI:
         ],
     )
     def test_timestep(self, obs, restoration_start, dist_start, timestep, expected):
-        assert RRI(
+        assert rri(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
@@ -461,7 +461,7 @@ class TestRRI:
         dist_start = "2000"
         timestep = -1
         with pytest.raises(ValueError, match="timestep cannot be negative."):
-            RRI(
+            rri(
                 image_stack=obs,
                 rest_start=restoration_start,
                 dist_start=dist_start,
@@ -480,7 +480,7 @@ class TestRRI:
         with pytest.raises(
             ValueError,
         ):
-            RRI(
+            rri(
                 image_stack=obs,
                 rest_start=restoration_start,
                 dist_start=dist_start,
@@ -499,7 +499,7 @@ class TestRRI:
         with pytest.raises(
             ValueError, match="timestep for RRI must be greater than 0."
         ):
-            RRI(
+            rri(
                 image_stack=obs,
                 rest_start=restoration_start,
                 dist_start=dist_start,
@@ -523,7 +523,7 @@ class TestRRI:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        assert RRI(
+        assert rri(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
@@ -548,7 +548,7 @@ class TestRRI:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        result = RRI(
+        result = rri(
             image_stack=obs,
             rest_start=restoration_start,
             dist_start=dist_start,
@@ -615,7 +615,7 @@ class TestR80P:
     def test_default_exactly_recovered(
         self, image_stack, rest_start, recovery_target, expected
     ):
-        result = R80P(
+        result = r80p(
             image_stack=image_stack,
             recovery_target=recovery_target,
             rest_start=rest_start,
@@ -635,7 +635,7 @@ class TestR80P:
             [[[0.75]]],
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
-        result = R80P(
+        result = r80p(
             image_stack=image_stack,
             recovery_target=recovery_target,
             rest_start=rest_start,
@@ -657,7 +657,7 @@ class TestR80P:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        result = R80P(
+        result = r80p(
             image_stack=image_stack,
             recovery_target=recovery_target,
             rest_start=rest_start,
@@ -676,7 +676,7 @@ class TestR80P:
         neg_timestep = -1
 
         with pytest.raises(ValueError, match="timestep cannot be negative."):
-            R80P(
+            r80p(
                 image_stack=image_stack,
                 recovery_target=recovery_target,
                 rest_start=restoration_date,
@@ -736,7 +736,7 @@ class TestYrYr:
         ],
     )
     def test_default(self, image_stack, rest_start, expected):
-        result = YrYr(
+        result = yryr(
             image_stack=image_stack,
             rest_start=rest_start,
         )
@@ -755,7 +755,7 @@ class TestYrYr:
             [[[5.0]]],
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
-        result = YrYr(
+        result = yryr(
             image_stack=image_stack,
             rest_start=rest_start,
             timestep=timestep,
@@ -771,7 +771,7 @@ class TestYrYr:
         rest_start = "2010"
         timestep = -4
         with pytest.raises(ValueError, match="timestep cannot be negative."):
-            YrYr(
+            yryr(
                 image_stack=image_stack,
                 rest_start=rest_start,
                 timestep=timestep,

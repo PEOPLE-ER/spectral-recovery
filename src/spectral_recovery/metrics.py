@@ -1,18 +1,20 @@
+"""Methods for computing recovery metrics."""
+
 import xarray as xr
 import numpy as np
 import pandas as pd
 
-from spectral_recovery.utils import maintain_rio_attrs
+from spectral_recovery._utils import maintain_rio_attrs
 
 # TODO: should methods that take 'percent' params not allow negative percent
 # or greater than 100 values? Right now we just throw a ValueError. This avoids
 # weird divides, so seems like the safest option, but maybe we should be more flexible?
-NEG_TIMESTEP_MSG = f"timestep cannot be negative."
-VALID_PERC_MSP = f"percent must be between 0 and 100."
+NEG_TIMESTEP_MSG = "timestep cannot be negative."
+VALID_PERC_MSP = "percent must be between 0 and 100."
 
 
 @maintain_rio_attrs
-def dNBR(
+def dnbr(
     image_stack: xr.DataArray,
     rest_start: str,
     timestep: int = 5,
@@ -34,13 +36,18 @@ def dNBR(
         The timestep (years) in the restoration monitoring
         window (post rest_start) from which to evaluate absolute
         change. Default = 5.
+    
+    Returns
+    -------
+    dnbr_v : xr.DataArray
+        DataArray containing the dNBR value for each pixel.
 
     """
     if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
     try:
         rest_post_t = str(int(rest_start) + timestep)
-        dNBR = (
+        dnbr_v = (
             image_stack.sel(time=rest_post_t).drop_vars("time")
             - image_stack.sel(time=rest_start).drop_vars("time")
         ).squeeze("time")
@@ -49,14 +56,13 @@ def dNBR(
             raise ValueError(
                 f"timestep={timestep}, but {rest_start}+{timestep}={rest_post_t} not"
                 f" within time coordinates: {image_stack.coords['time'].values}. "
-            )
-        else:
-            raise e
-    return dNBR
+            ) from None
+        raise e
+    return dnbr_v
 
 
 @maintain_rio_attrs
-def YrYr(
+def yryr(
     image_stack: xr.DataArray,
     rest_start: str,
     timestep: int = 5,
@@ -78,6 +84,12 @@ def YrYr(
         The timestep (years) in the restoration monitoring
         window (post rest_start) from which to evaluate absolute
         change. Default = 5.
+    
+    Returns
+    -------
+    yryr_v : xr.DataArray
+        DataArray containing the YrYr value for each pixel.
+
     """
     if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
@@ -85,13 +97,13 @@ def YrYr(
     rest_post_t = str(int(rest_start) + timestep)
     obs_post_t = image_stack.sel(time=rest_post_t).drop_vars("time")
     obs_start = image_stack.sel(time=rest_start).drop_vars("time")
-    YrYr = ((obs_post_t - obs_start) / timestep).squeeze("time")
+    yryr_v = ((obs_post_t - obs_start) / timestep).squeeze("time")
 
-    return YrYr
+    return yryr_v
 
 
 @maintain_rio_attrs
-def R80P(
+def r80p(
     image_stack: xr.DataArray,
     rest_start: str,
     recovery_target: xr.DataArray,
@@ -123,6 +135,11 @@ def R80P(
         represents the max/most recent timestep.
     percent: int, optional
         Percent of recovery to compute recovery against. Default = 80.
+    
+    Returns
+    -------
+    r80p_v : xr.DataArray
+        DataArray containing the R80P value for each pixel.
 
     """
     if timestep is None:
@@ -133,19 +150,20 @@ def R80P(
         raise ValueError(VALID_PERC_MSP)
     else:
         rest_post_t = str(int(rest_start) + timestep)
-    r80p = (image_stack.sel(time=rest_post_t)).drop_vars("time") / (
+    r80p_v = (image_stack.sel(time=rest_post_t)).drop_vars("time") / (
         (percent / 100) * recovery_target
     )
     try:
-        # if using the default timestep (the max/most recent), the indexing will not get rid of the "time" dim
-        r80p = r80p.squeeze("time")
+        # if using the default timestep (the max/most recent),
+        # the indexing will not get rid of the "time" dim
+        r80p_v = r80p_v.squeeze("time")
     except KeyError:
         pass
-    return r80p
+    return r80p_v
 
 
 @maintain_rio_attrs
-def Y2R(
+def y2r(
     image_stack: xr.DataArray,
     rest_start: str,
     recovery_target: xr.DataArray,
@@ -168,6 +186,13 @@ def Y2R(
     percent: int, optional
         Percent of recovery to compute recovery against. Default = 80.
 
+    Returns
+    -------
+    y2r_v : xr.DataArray
+        DataArray containing the number of years taken for each pixel
+        to reach the recovery target value. NaN represents pixels that
+        have not yet reached the recovery target value.
+
     """
     if percent <= 0 or percent > 100:
         raise ValueError(VALID_PERC_MSP)
@@ -177,23 +202,24 @@ def Y2R(
     rest_window_count = np.arange(len(post_rest_years))
 
     recovered_pixels = post_rest.where(image_stack >= reco_target)
-    # NOTE: the following code was my best attempt to get "find the first year that recovered"
-    # working with xarray. Likely not the best way to do it, but can't figure anything else out right now.
+    # NOTE: the following code was my best attempt to get "find the first year that
+    # recovered" while working with xarray. Likely not the best way to do it, but
+    # can't figure anything else out right now.
     year_of_recovery = recovered_pixels.idxmin(dim="time")
 
-    Y2R = xr.full_like(recovered_pixels[:, 0, :, :], fill_value=np.nan)
+    y2r_v = xr.full_like(recovered_pixels[:, 0, :, :], fill_value=np.nan)
     for i, recovery_time in enumerate(rest_window_count):
-        Y2R_t = year_of_recovery
-        Y2R_t = Y2R_t.where(Y2R_t == post_rest_years[i]).notnull()
-        Y2R_mask = Y2R.where(Y2R_t, False)
-        Y2R = xr.where(Y2R_mask, recovery_time, Y2R)
+        y2r_t = year_of_recovery
+        y2r_t = y2r_t.where(y2r_t == post_rest_years[i]).notnull()
+        y2r_mask = y2r_v.where(y2r_t, False)
+        y2r_v = xr.where(y2r_mask, recovery_time, y2r_v)
 
-    Y2R = Y2R.drop_vars("time")
-    return Y2R
+    y2r_v = y2r_v.drop_vars("time")
+    return y2r_v
 
 
 @maintain_rio_attrs
-def RRI(
+def rri(
     image_stack: xr.DataArray,
     rest_start: str,
     dist_start: int,
@@ -223,6 +249,11 @@ def RRI(
     use_dist_avg : bool, optional
         Whether to use the average of the disturbance period to
         calculate the disturbance magnitude. Default = False.
+    
+    Returns
+    -------
+    rri_v : xr.DataArray
+        DataArray containing the RRI value for each pixel.
 
     """
     if timestep < 0:
@@ -270,11 +301,12 @@ def RRI(
 
         zero_denom_mask = dist_pre - dist_avg == 0
         dist_pre = xr.where(zero_denom_mask, np.nan, dist_pre)
-        rri = (max_rest_t_tm1 - dist_avg) / (dist_pre - dist_avg)
-        # if dist_pre_1_2 or dist_s_e has length greater than one we will need to squeeze the time dim
+        rri_v = (max_rest_t_tm1 - dist_avg) / (dist_pre - dist_avg)
+        # if dist_pre_1_2 or dist_s_e has length greater than one we will need
+        # to squeeze the time dim
         try:
-            rri = rri.squeeze("time")
-        except KeyError as e:
+            rri_v = rri_v.squeeze("time")
+        except KeyError:
             pass
     else:
         rest_0 = image_stack.sel(time=rest_start).drop_vars("time")
@@ -287,24 +319,23 @@ def RRI(
         # mask where 0, set to num, and then use that mask aftwards to set to NaN.
         zero_denom_mask = dist_start - dist_e == 0
         dist_start = xr.where(zero_denom_mask, np.nan, dist_start)
-        rri = (max_rest_t_tm1 - rest_0) / (dist_start - dist_e)
+        rri_v = (max_rest_t_tm1 - rest_0) / (dist_start - dist_e)
         # if dist_pre_1_2 has length greater than one we will need to squeeze the time dim
         try:
-            rri = rri.squeeze("time")
-        except KeyError as e:
+            rri_v = rri_v.squeeze("time")
+        except KeyError:
             pass
-    return rri
+    return rri_v
 
 
-def year_dt(dt, type: str = "int"):
+def year_dt(dt, dt_type: str = "int"):
     """Get int or str representation of year from datetime-like object."""
     # TODO: refuse to move forward if dt isn't datetime-like
     try:
         dt_dt = pd.to_datetime(dt)
         year = dt_dt.year
     except ValueError:
-        raise ValueError(f"Unable to get year {type} from {dt} of type {type(dt)}")
-    if type == "str":
+        raise ValueError(f"Unable to get year {type} from {dt} of type {type(dt)}") from None
+    if dt_type == "str":
         return str(year)
-    else:
-        return year
+    return year
