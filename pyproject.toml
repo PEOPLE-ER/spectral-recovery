@@ -35,6 +35,7 @@ dependencies = [
 test = [
     "pytest",
     "pytest-mock",
+    "pylint",
 ]
 
 [tool.setuptools.packages.find]
