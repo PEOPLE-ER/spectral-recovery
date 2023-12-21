@@ -304,7 +304,12 @@ def ndmi(stack):
     return ndmi_v
 
 
-# TODO: Platform compatibility
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.GREEN])
 @maintain_rio_attrs
 def gci(stack):
