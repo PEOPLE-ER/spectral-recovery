@@ -165,7 +165,7 @@ def savi(stack):
     """Compute the Soil Adjusted Vegetation Index (SAVI)"""
     nir = stack.sel(band=BandCommon.NIR)
     red = stack.sel(band=BandCommon.RED)
-    savi_v = ((nir - red) / (nir + red + 0.5)) * 0.5
+    savi_v = ((nir - red) / (nir + red + 0.5)) * (1.0 + 0.5)
     return savi_v
 
 
