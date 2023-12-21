@@ -17,9 +17,6 @@ from spectral_recovery.indices import (
     avi,
     savi,
     ndwi, 
-    tcg, 
-    tcw, 
-    tcb, 
     sr, 
     ndmi, 
     gci, 
@@ -109,15 +106,6 @@ def test_ndwi():
         coords={"band": [Index.NDWI]}
     )
     assert (ndwi(input_xr) == expected).all()
-
-def test_tcg():
-    raise NotImplementedError
-
-def test_tcw():
-    raise NotImplementedError
-
-def test_tcb():
-    raise NotImplementedError
 
 def test_sr():
     input_xr = xr.DataArray(

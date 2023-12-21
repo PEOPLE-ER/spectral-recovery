@@ -184,94 +184,6 @@ def ndwi(stack):
     ndwi_v = (green - nir) / (green + nir)
     return ndwi_v
 
-
-@compatible_with([Platform.LANDSAT_TM])
-@requires_bands([
-    BandCommon.BLUE,
-    BandCommon.GREEN,
-    BandCommon.RED,
-    BandCommon.NIR,
-    BandCommon.SWIR1,
-    BandCommon.SWIR2,
-])
-@maintain_rio_attrs
-def tcg(stack):
-    """Compute the Tasseled Cap Greenness Index (TCG)"""
-    blue = stack.sel(band=BandCommon.BLUE)
-    green = stack.sel(band=BandCommon.GREEN)
-    red = stack.sel(band=BandCommon.RED)
-    nir = stack.sel(band=BandCommon.NIR)
-    swir1 = stack.sel(band=BandCommon.SWIR1)
-    swir2 = stack.sel(band=BandCommon.SWIR2)
-    tcg_v = (
-        0.2043 * blue
-        + 0.4158 * green
-        + 0.5524 * red
-        + 0.5741 * nir
-        + 0.3124 * swir1
-        + 0.2303 * swir2
-    )
-    return tcg_v
-
-
-@compatible_with([Platform.LANDSAT_TM])
-@requires_bands([
-    BandCommon.BLUE,
-    BandCommon.GREEN,
-    BandCommon.RED,
-    BandCommon.NIR,
-    BandCommon.SWIR1,
-    BandCommon.SWIR2,
-])
-@maintain_rio_attrs
-def tcw(stack):
-    """Compute the Tasseled Cap Wetness Index (TCW)"""
-    blue = stack.sel(band=BandCommon.BLUE)
-    green = stack.sel(band=BandCommon.GREEN)
-    red = stack.sel(band=BandCommon.RED)
-    nir = stack.sel(band=BandCommon.NIR)
-    swir1 = stack.sel(band=BandCommon.SWIR1)
-    swir2 = stack.sel(band=BandCommon.SWIR2)
-    tcw_v = (
-        0.1509 * blue
-        + 0.1973 * green
-        + 0.3279 * red
-        + 0.3406 * nir
-        + 0.7112 * swir1
-        + 0.4572 * swir2
-    )
-    return tcw_v
-
-
-@compatible_with([Platform.LANDSAT_TM])
-@requires_bands([
-    BandCommon.BLUE,
-    BandCommon.GREEN,
-    BandCommon.RED,
-    BandCommon.NIR,
-    BandCommon.SWIR1,
-    BandCommon.SWIR2,
-])
-@maintain_rio_attrs
-def tcb(stack):
-    """Compute the Tasseled Cap Brightness Index (TCB)"""
-    blue = stack.sel(band=BandCommon.BLUE)
-    green = stack.sel(band=BandCommon.GREEN)
-    red = stack.sel(band=BandCommon.RED)
-    nir = stack.sel(band=BandCommon.NIR)
-    swir1 = stack.sel(band=BandCommon.SWIR1)
-    swir2 = stack.sel(band=BandCommon.SWIR2)
-    tcb_v = (
-        0.3037 * blue
-        + 0.2793 * green
-        + 0.4743 * red
-        + 0.5585 * nir
-        + 0.5082 * swir1
-        + 0.1863 * swir2
-    )
-    return tcb_v
-
-
 @compatible_with([
     Platform.LANDSAT_OLI,
     Platform.LANDSAT_TM,
@@ -344,9 +256,6 @@ _indices_map = {
     Index.AVI: avi,
     Index.SAVI: savi,
     Index.NDWI: ndwi,
-    Index.TCG: tcg,
-    Index.TCW: tcw,
-    Index.TCB: tcb,
     Index.SR: sr,
     Index.NDMI: ndmi,
     Index.GCI: gci,
