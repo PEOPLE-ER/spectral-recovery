@@ -11,8 +11,197 @@ from spectral_recovery.indices import (
     _indices_map,
     requires_bands,
     compatible_with,
+    ndvi, 
+    nbr,
+    evi,
+    avi,
+    savi,
+    ndwi, 
+    tcg, 
+    tcw, 
+    tcb, 
+    sr, 
+    ndmi, 
+    gci, 
+    ndii, 
 )
 
+def test_ndvi():
+    input_xr = xr.DataArray(
+        [[[[2, 1]]],[[[1, 2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.RED, BandCommon.NIR]},
+        attrs={"platform": [Platform.LANDSAT_OLI]}
+    )
+    expected = xr.DataArray(
+        [[[[-0.3333333333333333, 0.3333333333333333]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [Index.NDVI]}
+    )
+    assert (ndvi(input_xr) == expected).all()
+
+def test_nbr():
+    input_xr = xr.DataArray(
+        [[[[2, 1]]],[[[1, 2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.SWIR2, BandCommon.NIR]},
+        attrs={"platform": [Platform.LANDSAT_OLI]}
+    )
+    expected = xr.DataArray(
+        [[[[-0.3333333333333333, 0.3333333333333333]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [Index.NBR]}
+    )
+    assert (nbr(input_xr) == expected).all()
+
+def test_evi():
+    input_xr = xr.DataArray(
+        [[[[3]]],[[[1]]],[[[2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]},
+        attrs={"platform": [Platform.LANDSAT_OLI]}
+    )
+    expected = xr.DataArray(
+        [[[[-0.18518518518518517]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [Index.EVI]}
+    )
+    assert (evi(input_xr) == expected).all()
+
+def test_avi():
+    input_xr = xr.DataArray(
+        [[[[3]]],[[[2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.RED, BandCommon.NIR]},
+        attrs={"platform": [Platform.LANDSAT_OLI]}
+    )
+    expected = xr.DataArray(
+        [[[[1.5874010519681994]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [Index.AVI]}
+    )
+    assert (avi(input_xr) == expected).all()
+
+def test_savi():
+    input_xr = xr.DataArray(
+        [[[[1]]],[[[2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.RED, BandCommon.NIR]},
+        attrs={"platform": [Platform.LANDSAT_OLI]}
+    )
+    expected = xr.DataArray(
+        [[[[0.42857142857142855]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [Index.SAVI]}
+    )
+    assert (savi(input_xr) == expected).all()
+
+def test_ndwi():
+    input_xr = xr.DataArray(
+        [[[[2, 1]]],[[[1, 2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.NIR]},
+        attrs={"platform": [Platform.LANDSAT_OLI]}
+    )
+    expected = xr.DataArray(
+        [[[[0.3333333333333333, -0.3333333333333333]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [Index.NDWI]}
+    )
+    assert (ndwi(input_xr) == expected).all()
+
+def test_tcg():
+    input_xr = xr.DataArray(
+        [[[[0, 1, 2, 3, 4, 5]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.BLUE, BandCommon.GREEN, BandCommon.RED,
+                         BandCommon.NIR, BandCommon.SWIR1, BandCommon.SWIR2]}
+    )
+    expected = xr.DataArray(
+        [[[[0, 0, 0]]],[[[0, 0, 0]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    assert (tcg(input_xr) == expected).all()
+
+def test_tcw():
+    input_xr = xr.DataArray(
+        [[[[0, 1, 2]]],[[[0, 1, 2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    expected = xr.DataArray(
+        [[[[0, 0, 0]]],[[[0, 0, 0]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    assert (tcw(input_xr) == expected).all()
+
+def test_tcb():
+    input_xr = xr.DataArray(
+        [[[[0, 1, 2]]],[[[0, 1, 2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    expected = xr.DataArray(
+        [[[[0, 0, 0]]],[[[0, 0, 0]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    assert (tcb(input_xr) == expected).all()
+
+def test_sr():
+    input_xr = xr.DataArray(
+        [[[[0, 1, 2]]],[[[0, 1, 2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    expected = xr.DataArray(
+        [[[[0, 0, 0]]],[[[0, 0, 0]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    assert (sr(input_xr) == expected).all()
+
+def test_ndmi():
+    input_xr = xr.DataArray(
+        [[[[0, 1]]],[[[0, 1]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.NIR, BandCommon.SWIR1]}
+    )
+    expected = xr.DataArray(
+        [[[[0, 0]]],[[[0, 0]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.NIR, BandCommon.SWIR1]}
+    )
+    assert (ndmi(input_xr) == expected).all()
+
+def test_gci():
+    input_xr = xr.DataArray(
+        [[[[0, 1, 2]]],[[[0, 1, 2]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    expected = xr.DataArray(
+        [[[[0, 0, 0]]],[[[0, 0, 0]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.GREEN, BandCommon.RED, BandCommon.NIR]}
+    )
+    assert (gci(input_xr) == expected).all()
+
+def test_ndii():
+    input_xr = xr.DataArray(
+        [[[[1, 2]]],[[[2, 1]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [BandCommon.NIR, BandCommon.SWIR1]},
+        attrs={"platform": [Platform.LANDSAT_OLI]}
+    )
+    expected = xr.DataArray(
+        [[[[-0.3333333333333333, 0.3333333333333333]]]],
+        dims=["band", "time", "y", "x"],
+        coords={"band": [Index.NDII]}
+    )
+    assert (ndii(input_xr) == expected).all()
 
 class TestComputeIndices:
 

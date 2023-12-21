@@ -327,7 +327,7 @@ def ndii(stack):
     """Compute the Normalized Difference Infrared Index (NDII)"""
     swir1 = stack.sel(band=BandCommon.SWIR1)
     nir = stack.sel(band=BandCommon.NIR)
-    ndii_v = (swir1 - nir) / (swir1 + nir)
+    ndii_v = (nir - swir1) / (nir + swir1)
     return ndii_v
 
 
