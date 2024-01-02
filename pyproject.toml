@@ -17,8 +17,9 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-version = "0.2.0b1"
+version = "0.2.1b2"
 dependencies = [
+<<<<<<< HEAD
     "geopandas == 0.14.1",
     "rioxarray == 0.15.0",
     "rasterio == 1.3.9",
@@ -29,11 +30,27 @@ dependencies = [
     "distributed >= 2023.12.0",
     "matplotlib == 3.8.2",
     "seaborn == 0.13.0",
+=======
+    "geopandas >= 0.13.2",
+    "rioxarray >= 0.14.1",
+    "rasterio >= 1.3.7",
+    "xarray >= 2023.5.0",
+    "numpy >= 1.24.3",
+    "click >= 8.1.3",
+    "dask >= 2023.5.1",
+    "distributed >= 2023.5.1",
+    "matplotlib >= 3.7.1",
+    "seaborn >= 0.12.2",
+>>>>>>> 81847ee728aa04fb45c3b2fc5e42399f23d8e1af
 ]
 
 [project.optional-dependencies]
 test = [
+<<<<<<< HEAD
     "pytest == 7.4.3",
+=======
+    "pytest >= 7.3.2",
+>>>>>>> 81847ee728aa04fb45c3b2fc5e42399f23d8e1af
     "pytest-mock == 3.12.0",
 ]
 lint = [
