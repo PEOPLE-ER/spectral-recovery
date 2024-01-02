@@ -9,18 +9,16 @@ from unittest.mock import patch
 from unittest.mock import MagicMock
 from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
+from tests.utils import SAME_XR
 
-from spectral_recovery.recovery_target import historic_average
-from spectral_recovery.restoration import ReferenceSystem, RestorationArea
+from spectral_recovery.recovery_target import median_target
+from spectral_recovery.restoration import _ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
+from  spectral_recovery._config import DATETIME_FREQ
 
 # TODO: move test data into their own folders, create temp dirs so individual tests
 # don't conflict while reading the data
 # https://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
-
-DATETIME_FREQ = (  # TODO: should this be kept somewhere else in the project? Seem wrong that it's defined again here and in timeseries
-    "YS"
-)
 
 
 class TestRestorationAreaInit:
@@ -29,15 +27,15 @@ class TestRestorationAreaInit:
         [
             (
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
-                pd.to_datetime("2014"),
-                pd.to_datetime("2010"),
+                "2014",
+                "2010",
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
             (
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg",
-                pd.to_datetime("2014"),
-                (pd.to_datetime("2010"), pd.to_datetime("2013")),
+                "2014",
+                ["2010", "2013"],
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
@@ -68,25 +66,33 @@ class TestRestorationAreaInit:
                 reference_years=ref_years,
                 composite_stack=stack,
             )
+
+            resto_start_dt = pd.to_datetime(resto_start)
+            ref_years_dt = pd.to_datetime(ref_years)
+
             assert isinstance(resto_a.restoration_start, pd.Timestamp)
             assert (
                 resto_a.restoration_polygon.geometry.geom_equals(resto_poly.geometry)
             ).all()
-            assert resto_a.restoration_start == resto_start
-            assert isinstance(resto_a.reference_system, ReferenceSystem)
+            assert resto_a.restoration_start == resto_start_dt
+            assert isinstance(resto_a.reference_system, _ReferenceSystem)
             assert resto_a.reference_system.reference_polygons.geom_equals(
                 resto_poly.geometry
             ).all()
-            assert resto_a.reference_system.reference_range == ref_years
+            if isinstance(ref_years, list):
+                assert (resto_a.reference_system.reference_range == ref_years_dt).all()
+            else:
+                assert resto_a.reference_system.reference_range == ref_years_dt
 
+    
     def test_only_dist_year_defaults_resto_year_to_next_year(self):
         resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
-        dist_start = pd.to_datetime("2015")
-        ref_years = pd.to_datetime("2010")
+        dist_start = "2015"
+        ref_years = "2010"
         raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
         time_range = [str(x) for x in np.arange(2010, 2027)]
 
-        expected_resto_start = pd.to_datetime("2016")  # + 1 year from dist_start
+        expected_resto_start = pd.to_datetime("2016")  # + 1 year from dist_start, in datetime form
 
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
@@ -107,9 +113,9 @@ class TestRestorationAreaInit:
 
     def test_dist_year_greater_than_rest_year_throws_value_error(self):
         resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
-        resto_start = pd.to_datetime("2015")
-        dist_start = pd.to_datetime("2016")
-        ref_years = pd.to_datetime("2010")
+        resto_start = "2015"
+        dist_start = "2016"
+        ref_years = "2010"
         raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
         time_range = [str(x) for x in np.arange(2010, 2027)]
 
@@ -138,12 +144,12 @@ class TestRestorationAreaInit:
 
     def test_only_rest_start_defaults_dist_year_to_prior_year(self):
         resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
-        resto_start = pd.to_datetime("2015")
-        ref_years = pd.to_datetime("2010")
+        resto_start = "2015"
+        ref_years = "2010"
         raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
         time_range = [str(x) for x in np.arange(2010, 2027)]
 
-        expected_dist_start = pd.to_datetime("2014")
+        expected_dist_start_dt = pd.to_datetime("2014")
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
             stack = stack.rename({"band": "time"})
@@ -158,7 +164,7 @@ class TestRestorationAreaInit:
                 reference_years=ref_years,
                 composite_stack=stack,
             )
-            assert resto_a.disturbance_start == expected_dist_start
+            assert resto_a.disturbance_start == expected_dist_start_dt
 
     def test_out_of_bounds_restoration_start_year_throws_value_error(self):
         with rioxarray.open_rasterio(
@@ -174,9 +180,9 @@ class TestRestorationAreaInit:
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
             )
             # stack's temporal range is 2010-2026, set resto_start to greater than 2026
-            ref_years = pd.to_datetime("2010")
-            dist_start = pd.to_datetime("2011")
-            resto_start = pd.to_datetime("2028")  # bad value!
+            ref_years = "2010"
+            dist_start = "2011"
+            resto_start = "2028"  # bad value!
 
             with pytest.raises(
                 ValueError,
@@ -204,9 +210,9 @@ class TestRestorationAreaInit:
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
             )
             # stack's temporal range is 2010-2026, set dist_start to less than 2010
-            ref_years = pd.to_datetime("2010")
-            dist_start = pd.to_datetime("2005")
-            resto_start = pd.to_datetime("2012")
+            ref_years = "2010"
+            dist_start = "2005"
+            resto_start = "2012"
 
             with pytest.raises(
                 ValueError,
@@ -223,9 +229,9 @@ class TestRestorationAreaInit:
     @pytest.mark.parametrize(
         "ref_years",
         [
-            (pd.to_datetime("2002")),
-            ((pd.to_datetime("2010"), pd.to_datetime("2028"))),
-            (pd.to_datetime("2008"), pd.to_datetime("2012")),
+            ["2002"],
+            ["2025", "2028"],
+            ["2008","2012"],
         ],
     )
     def test_out_of_bounds_reference_years_throw_value_error(self, ref_years):
@@ -243,8 +249,8 @@ class TestRestorationAreaInit:
             )
             # stack's temporal range is 2010-2025
             # reference years taken from pytest.parametrize
-            dist_start = pd.to_datetime("2013")
-            resto_start = pd.to_datetime("2014")
+            dist_start = "2013"
+            resto_start = "2014"
 
             with pytest.raises(
                 ValueError,
@@ -270,17 +276,17 @@ class TestRestorationAreaInit:
         [
             (  # bad spatial location (not contained at all)
                 "src/tests/test_data/polygon_outbound_epsg3005.gpkg",
-                pd.to_datetime("2015"),
+                "2015",
                 None,
-                pd.to_datetime("2012"),
+                "2012",
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
             (  # bad spatial location (not fully contained)
                 "src/tests/test_data/polygon_overlap_epsg3005.gpkg",
-                pd.to_datetime("2015"),
+                "2015",
                 None,
-                pd.to_datetime("2012"),
+                "2012",
                 "src/tests/test_data/time17_xy2_epsg3005.tif",
                 [str(x) for x in np.arange(2010, 2027)],
             ),
@@ -326,8 +332,8 @@ class TestRestorationAreaInit:
                     ]
                 )
             )
-            resto_start = pd.to_datetime("2021")
-            ref_years = pd.to_datetime("2020")
+            resto_start = "2021"
+            ref_years = "2020"
             resto_poly = gpd.read_file(
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
             )
@@ -359,11 +365,11 @@ class TestRestorationAreaInit:
                     ]
                 )
             )
-            resto_start = pd.to_datetime("2021")
+            resto_start = "2021"
             resto_poly = gpd.read_file(
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
             )
-            ref_years = pd.to_datetime("2020")
+            ref_years = "2020"
 
             with pytest.raises(
                 ValueError,
@@ -393,11 +399,11 @@ class TestRestorationAreaInit:
                     ]
                 )
             )
-            resto_start = pd.to_datetime("2021")
+            resto_start = "2021"
             resto_poly = gpd.read_file(
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
             )
-            ref_years = pd.to_datetime("2020")
+            ref_years = "2020"
 
             with pytest.raises(
                 ValueError,
@@ -411,25 +417,9 @@ class TestRestorationAreaInit:
                 )
 
 
-# NOTE: SAME_XR is a hacky solution to get around "ValueErrors" that
-# are thrown if you try to assert a mocked function was called with
-# more than one DataArray. The need for this sol. is likely a symptom of bad design
-# in RestorationArea... but for now it stays to ensure correctness.
-# Solution from: https://stackoverflow.com/questions/44640717
-class SAME_XR:
-    def __init__(self, xr: xr.DataArray):
-        self.xr = xr
-
-    def __eq__(self, other):
-        return isinstance(other, xr.DataArray) and other.equals(self.xr)
-
-    def __repr__(self):
-        return repr(self.xr)
-
-
 class TestRestorationAreaMetrics:
-    restoration_start = pd.to_datetime("2015")
-    reference_year = pd.to_datetime("2012")
+    restoration_start = "2015"
+    reference_year = "2012"
     time_range = [str(x) for x in np.arange(2010, 2027)]
     baseline_array = xr.DataArray([[[1.0]], [[2.0]]])
 
@@ -459,7 +449,7 @@ class TestRestorationAreaMetrics:
                 composite_stack=stack,
             )
 
-            mock_target_return = {"recovery_target": self.baseline_array}
+            mock_target_return = self.baseline_array
             resto_area.reference_system.recovery_target = MagicMock(
                 return_value=mock_target_return
             )
@@ -467,13 +457,13 @@ class TestRestorationAreaMetrics:
         return resto_area
 
     @patch(
-        "spectral_recovery.metrics.Y2R",
+        "spectral_recovery.metrics.y2r",
     )
     def test_Y2R_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.Y2R()
+        result = valid_resto_area.y2r()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.Y2R]})
 
         assert result.equals(expected_result)
@@ -493,14 +483,14 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.YrYr",
+        "spectral_recovery.metrics.yryr",
     )
     def test_YrYr_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.YrYr()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.YrYr]})
+        result = valid_resto_area.yryr()
+        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.YRYR]})
 
         assert result.equals(expected_result)
 
@@ -513,14 +503,14 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.dNBR",
+        "spectral_recovery.metrics.dnbr",
     )
     def test_dNBR_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.dNBR()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.dNBR]})
+        result = valid_resto_area.dnbr()
+        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.DNBR]})
 
         assert result.equals(expected_result)
 
@@ -533,13 +523,13 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.RRI",
+        "spectral_recovery.metrics.rri",
     )
     def test_RRI_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area._RRI()
+        result = valid_resto_area._rri()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.RRI]})
 
         assert result.equals(expected_result)
@@ -554,13 +544,13 @@ class TestRestorationAreaMetrics:
         )
 
     @patch(
-        "spectral_recovery.metrics.R80P",
+        "spectral_recovery.metrics.r80p",
     )
     def test_R80P_call_default(self, method_mock, valid_resto_area):
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.R80P()
+        result = valid_resto_area.r80p()
         expected_result = mocked_return.expand_dims(dim={"metric": [Metric.R80P]})
 
         assert result.equals(expected_result)
@@ -577,7 +567,8 @@ class TestRestorationAreaMetrics:
         )
 
 
-class TestReferenceSystemInit:
+class Test_ReferenceSystemInit:
+    # Note: ReferencSystem assumes dates are passed as datetime, not str
     @pytest.fixture()
     def test_stack_1(self):
         test_stack = xr.DataArray(
@@ -613,17 +604,18 @@ class TestReferenceSystemInit:
         )
         reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
+        rs = _ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
             recovery_target_method=None,
+            historic_reference_system=False,
         )
         assert_geodataframe_equal(
             rs.reference_polygons, reference_polys, check_geom_type=True
         )
         assert rs.reference_range == reference_date
-        assert rs.recovery_target_method == historic_average
+        assert rs.recovery_target_method == median_target
         # the polygon overlaps only with the lower-right pixel of the stack.
 
     def test_init_correctly_clips_with_single_polygon(self, image_stack):
@@ -632,11 +624,12 @@ class TestReferenceSystemInit:
         )
         reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
+        rs = _ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
             recovery_target_method=None,
+            historic_reference_system=False,
         )
         # create 4d data array with dims poly_id, band, time, y, x
         expected_stack = xr.DataArray(
@@ -653,11 +646,12 @@ class TestReferenceSystemInit:
         )
         reference_date = pd.to_datetime("2008")
 
-        rs = ReferenceSystem(
+        rs = _ReferenceSystem(
             reference_polygons=reference_polys,
             reference_stack=image_stack,
             reference_range=reference_date,
             recovery_target_method=None,
+            historic_reference_system=False,
         )
         # The multipolygon contains 2 polygons, which overlap with the lower-left and upper-right pixels.
         # Note: remember that arrays are flipped in the y-axis, so the lower-left pixel is at the top of the array.
@@ -695,11 +689,12 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_polys,
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
     def test_overlapping_polygon_throws_value_err(self, image_stack):
@@ -711,11 +706,12 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_poly_overlap,
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
     def test_multipolygon_with_some_polygons_out_of_bounds_throws_value_err(
@@ -729,11 +725,12 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_polys_multi,
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
 
     def test_out_of_bounds_date_throws_value_err(self, image_stack):
@@ -745,28 +742,54 @@ class TestReferenceSystemInit:
         with pytest.raises(
             ValueError,
         ):
-            rs = ReferenceSystem(
+            rs = _ReferenceSystem(
                 reference_polygons=reference_polys,
                 reference_stack=image_stack,
                 reference_range=reference_date,
                 recovery_target_method=None,
+                historic_reference_system=False,
             )
+    
+    def test_historic_reference_system_bool_is_set_True(self, image_stack):
+        reference_polys = gpd.read_file(
+            "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+        )
+        reference_date = pd.to_datetime("2008")
+
+        rs = _ReferenceSystem(
+            reference_polygons=reference_polys,
+            reference_stack=image_stack,
+            reference_range=reference_date,
+            recovery_target_method=None,
+            historic_reference_system=True,
+        )
+        assert rs.hist_ref_sys == True
 
 
-class TestReferenceSystemrecovery_target:
-    class SimpleReferenceSystem(ReferenceSystem):
-        """Sub-class ReferenceSystem and overwrite __init__ to isolate `recovery_target` method."""
+class Test_ReferenceSystemRecoveryTarget:
 
-        def __init__(self, recovery_target, stack, date):
-            """Set only attributes that are required by `recovery_target`, assume arb. types"""
-            self.recovery_target_method = recovery_target
-            self.reference_stack = stack
-            self.reference_range = date
+    def test_false_hist_ref_sys_calls_recovery_target_with_space_true(self, mocker):
+        mocker.patch.object(_ReferenceSystem, "__init__", return_value=None)
+        rs = _ReferenceSystem()
+        rs.recovery_target_method = MagicMock(return_value=None)
+        rs.reference_stack = 0
+        rs.reference_range = 0
+        rs.hist_ref_sys = False
 
-    def test_recovery_target_is_called_with_args(self):
-        mock_value = 3.0
-        mock_recovery_target = MagicMock(return_value=mock_value)
-        rs = self.SimpleReferenceSystem(mock_recovery_target, 1.0, 2.0)
-        output = rs.recovery_target()
-        expected = {"recovery_target": mock_value}
-        assert output == expected
+        rs.recovery_target()
+        rs.recovery_target_method.assert_called_once()
+        rs.recovery_target_method.assert_called_with(stack=0, reference_date=0, space=True)
+    
+    def test_hist_ref_sys_calls_recovery_target_with_space_false(self, mocker):
+        mocker.patch.object(_ReferenceSystem, "__init__", return_value=None)
+        rs = _ReferenceSystem()
+        rs.recovery_target_method = MagicMock(return_value=None)
+        rs.reference_stack = 0
+        rs.reference_range = 0
+        rs.hist_ref_sys = True
+
+        rs.recovery_target()
+        rs.recovery_target_method.assert_called_once()
+        rs.recovery_target_method.assert_called_with(stack=0, reference_date=0, space=False)
+    
+    # TODO: test the return value is correct
