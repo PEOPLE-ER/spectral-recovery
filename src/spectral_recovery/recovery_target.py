@@ -1,44 +1,59 @@
-import xarray as xr
-
+""" Methods for computing recovery targets """
 from typing import Union, Tuple
 from datetime import datetime
 
-""" Methods for computing recovery targets """
+import xarray as xr
 
 
-def historic_average(
-    stack: xr.DataArray, reference_date: Union[datetime, Tuple[datetime]]
+# TODO: split this function into per-pixel and per-polygon functions
+def median_target(
+    stack: xr.DataArray,
+    reference_date: Union[datetime, Tuple[datetime]],
+    space: bool = True,
 ) -> xr.DataArray:
-    # TODO: should this just return a simple list?
-    # TODO: should this take _just_ pd datetimeIndex?
     """
-    Compute the average within a stack over all dimensions except time.
+    Compute the median recovery target.
+
+    Sequentially computes the median over time and, optionally, the spatial
+    dimensions (x and y). If there is a "poly_id" dimension, then the median is
+    automatically computed along that dimension after the time and space dimensions.
 
     Parameters
     ----------
     stack : xr.DataArray
         DataArray of images to derive historic average from. Must have at least
-        4 labelled dimensions: "time", "band", "y" and "x". Optional 5th dimension
+        4 labelled dimensions: "time", "band", "y" and "x" and optionally,
         "poly_id".
+    reference_date : Union[datetime, Tuple[datetime]]
+        The date or date range to compute the median over.
+    space : bool
+        If True, compute median over the y and x dimensions.
 
     Returns
     -------
-    historic_average : xr.DataArray
-        A 1D DataArray of historic average.
+    median_t : xr.DataArray
+        DataArray of the median recovery target. If space=True, then median_t
+        has dimensions "band" and optionally, "poly_id". If space=False, has
+        dimensions "band", "y" and "x" and optionally, "poly_id".
+
     """
-    # TODO: force there to always be a band dimension.
-    dims_to_average_over = tuple(
-        item for item in stack.dims if (item != "band" and item != "poly_id")
-    )
     if isinstance(reference_date, list):
         ranged_stack = stack.sel(time=slice(*reference_date))
     else:
         ranged_stack = stack.sel(time=slice(reference_date))
-    historic_average = ranged_stack.mean(dim=dims_to_average_over, skipna=True)
-    if "poly_id" in stack.dims:
-        historic_average = historic_average.mean(dim="poly_id", skipna=True)
 
-    historic_average = historic_average.assign_coords(
+    median_t = ranged_stack.median(dim="time", skipna=True)
+    if space:
+        median_t = median_t.median(dim=["y", "x"], skipna=True)
+    if "poly_id" in stack.dims:
+        median_t = median_t.median(dim="poly_id", skipna=True)
+
+    median_t = median_t.assign_coords(
         band=stack.coords["band"]
     )  # re-assign lost coords.
-    return historic_average
+    return median_t
+
+
+def windowed_median_target() -> xr.DataArray:
+    """Compute the windowed median recovery target."""
+    return NotImplementedError

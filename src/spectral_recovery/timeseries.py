@@ -1,3 +1,8 @@
+"""Xarray accessor for timeseries operations. Plus helper functions."""
+
+from typing import Union, Tuple
+from datetime import datetime
+
 import rioxarray
 
 import xarray as xr
@@ -5,26 +10,25 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from typing import Union, Tuple
-from datetime import datetime
 from shapely.geometry import box
-from spectral_recovery.indices import indices_map
-from spectral_recovery.enums import Index, BandCommon
+from spectral_recovery._config import DATETIME_FREQ, REQ_DIMS
 
-DATETIME_FREQ = "YS"
-REQ_DIMS = ["band", "time", "y", "x"]
 
 def _datetime_to_index(
     value: Union[datetime, Tuple[datetime]], return_list: bool = False
 ) -> pd.DatetimeIndex:
-    """Convert datetime or range of datetimes into pd.DatetimeIndex. Return as list if desired, otherwise returns DatetimeIndex."""
-    if (isinstance(value, tuple) or isinstance(value, list)) and len(value) == 2:
+    """Convert datetime or range of datetimes into pd.DatetimeIndex.
+
+    Returns list if desired, otherwise returns DatetimeIndex.
+    """
+    if isinstance(value, (tuple, list)) and len(value) == 2:
         dt_range = pd.date_range(*value, freq=DATETIME_FREQ)
     else:
         try:
             if len(value) > 2:
+                print(type(value))
                 raise ValueError(
-                    "Passed value={value} but `datetime` must be a single Timestamp or"
+                    f"Passed value={value} but `datetime` must be a single Timestamp or"
                     " an iterable with exactly two Timestamps."
                 )
             dt_range = pd.date_range(start=value[0], end=value[0], freq=DATETIME_FREQ)
@@ -49,14 +53,15 @@ class _SatelliteTimeSeries:
         The xarray.DataArray to which this accessor is attached.
     _valid : bool
         Flag for whether the DataArray is a valid annual composite.
-    
+
     """
+
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self._valid = None
 
-    # TODO: change this method to "is_continuous" or something and only check for continuity of years
-    #   Move the check for valid dim names to a seperate method.
+    # TODO: change this method to "is_continuous" or something and only check
+    # for continuity of years. Move the check for valid dim names to new method.
     @property
     def is_annual_composite(self) -> bool:
         """Check if DataArray is contains valid annual composites.
@@ -71,6 +76,7 @@ class _SatelliteTimeSeries:
         """
         if self._valid is None:
             years = self._obj.coords["time"].dt.year.values
+            # TODO: catch value error ("not broadcastable") here, indicates missing years
             if not set(self._obj.dims) == set(REQ_DIMS):
                 self._valid = False
             elif not np.all((years == list(range(min(years), max(years) + 1)))):
@@ -81,7 +87,7 @@ class _SatelliteTimeSeries:
 
     def contains_spatial(self, polygons: gpd.GeoDataFrame) -> bool:
         """Check if DataArray spatially contains polygons.
-        
+
         Parameters
         ----------
         polygons : gpd.GeoDataFrame
@@ -90,25 +96,26 @@ class _SatelliteTimeSeries:
         Returns
         -------
         bool
-            True if the DataArray contains the polygons, False otherwise.
+            True if the DataArray spatially contains the polygons, False otherwise.
         """
         # NOTE: if this changes to looking at individual polygons
         # rather than the bbox of all polygons, consider this algo:
         # https://stackoverflow.com/questions/14697442/
         ext = box(*self._obj.rio.bounds())
-        poly_ext = box(*polygons.total_bounds)
+        poly_ext = box(*polygons.total_bounds).buffer(-1e-14)
         if not ext.contains(poly_ext):
-            return False
+            # Permit bboxes that are almost equal (within 1e-14)
+            return poly_ext.difference(ext).area < 1e-14
         return True
 
     def contains_temporal(self, years: Union[datetime, Tuple[datetime]]) -> bool:
         """Check if stack contains year/year range.
-        
+
         Parameters
         ----------
         years : Union[datetime, Tuple[datetime]]
             The year or year range to check if the DataArray temporally contains.
-        
+
         Returns
         -------
         bool
@@ -119,59 +126,31 @@ class _SatelliteTimeSeries:
         # could likely be avoided. Until then, this works.
         required_years = _datetime_to_index(years, return_list=True)
         for year in required_years:
-            if not (pd.to_datetime(str(year)) in self._obj.coords["time"].values):
+            if not pd.to_datetime(str(year)) in self._obj.coords["time"].values:
                 return False
         return True
 
-    # NOTE: conceptually, does having this method in this class work?
-    def indices(self, indices_list) -> xr.DataArray:
-        """Compute indices
+    def stats(self) -> xr.DataArray:
+        """Compute timeseries statistics.
 
-        Parameters
-        ----------
-        indices_list : list of str
-            The list of indices to compute/produce.
-
-        Returns
-        --------
-        xr.DataArray
-            A 4D (band, time, y, x) DataArray with indices
-            stacked inside the band dimension.
-        """
-        indices_dict = {}
-        for indice_input in indices_list:
-            indice = Index(indice_input)
-            indices_dict[indice] = indices_map[indice](self._obj)
-        indices = xr.concat(
-            indices_dict.values(), dim=pd.Index(indices_dict.keys(), name="band")
-        )
-        return indices
-
-    def stats(self, dims, percentile = 0.8) -> xr.DataArray:
-        """Compute statistics over a set of dimensions
-        
-        Parameters
-        ----------
-        dims : list of str
-            The dimensions over which to compute statistics. Must be a 
-            subset of the DataArray's dimensions.
-        percentile : float
-            The percentile to compute.
+        Reduces the object along the y and x dimensions. Reduction
+        methods (stats methods) are applied sequentially, first along
+        the y and then along the x dimension.
 
         Returns
         -------
         stats_xr : xr.DataArray
-            A new DataArray with statistics stacked along 'stats'
-            dimension.
+            A 3D DataArray containing time, band and stats dimensions.
+            The computed statistics accessible as named coordinates in the
+            "stats" dimension.
         """
+        dims = ["y", "x"]
+        stat_funcs = ["mean", "median", "max", "min", "std"]
         stats = {}
-        stats["mean"] = self._obj.mean(dim=dims, skipna=True)
-        stats["max"] = self._obj.max(dim=dims, skipna=True)
-        stats["min"] = self._obj.min(dim=dims, skipna=True)
-        stats["median"] = self._obj.median(dim=dims, skipna=True)
-        stats["quantile"] = self._obj.quantile(q=percentile, dim=dims, skipna=True)
-        stats["std"] = self._obj.std(dim=dims, skipna=True)
-        stats["sum"] = self._obj.std(dim=dims, skipna=True)
+        for func_n in stat_funcs:
+            func = getattr(self._obj, func_n)
+            res = func(dim=dims, skipna=True)
+            stats[func.__name__] = res
+
         stats_xr = xr.concat(stats.values(), dim=pd.Index(stats.keys(), name="stats"))
         return stats_xr
-
