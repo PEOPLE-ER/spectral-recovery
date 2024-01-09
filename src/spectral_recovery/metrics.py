@@ -193,27 +193,28 @@ def y2r(
         to reach the recovery target value. NaN represents pixels that
         have not yet reached the recovery target value.
 
-    # """
+    """
     if percent <= 0 or percent > 100:
         raise ValueError(VALID_PERC_MSP)
     reco_target = recovery_target * (percent / 100)
-    recovery_window = image_stack.sel(time=slice(rest_start, None))
-    # Grab the NaN border surrounding the polygon.
-    # This wil also take any pixel within the polygon that is NaN across the
-    # entire time dimension, but that is OK because those will be NaN at end of Y2R.
-    nan_border = xr.where(recovery_window.median(dim="time", skipna=True).notnull(), True, False)
+    post_rest = image_stack.sel(time=slice(rest_start, None))
+    post_rest_years = post_rest["time"].values
+    rest_window_count = np.arange(len(post_rest_years))
 
-    # Set recovered pixels to NaN and un-recovered pixels to True (1)
-    recovered_pixels = xr.where(recovery_window < reco_target, True, np.nan)
-    recovered_pixels = recovered_pixels.cumsum(dim="time", skipna=False)
-    recovered_pixels = recovered_pixels.max(dim="time", skipna=True)
-    # Pixels that started in a "recovered" state will have a sum/max of NaN, set these to 0
-    recovered_pixels = recovered_pixels.fillna(0) 
-    # Pixels that never "recovered" will have a sum/max equal to size of recovery window, set these to NaN
-    recovered_pixels = recovered_pixels.where(recovered_pixels < recovery_window.sizes["time"], np.nan)
-    # The sum/max will lose the NaN border for the polygon, so we need to get it back
-    y2r_v = recovered_pixels.where(nan_border, np.nan)
+    recovered_pixels = post_rest.where(image_stack >= reco_target)
+    # NOTE: the following code was my best attempt to get "find the first year that
+    # recovered" while working with xarray. Likely not the best way to do it, but
+    # can't figure anything else out right now.
+    year_of_recovery = recovered_pixels.idxmin(dim="time")
 
+    y2r_v = xr.full_like(recovered_pixels[:, 0, :, :], fill_value=np.nan)
+    for i, recovery_time in enumerate(rest_window_count):
+        y2r_t = year_of_recovery
+        y2r_t = y2r_t.where(y2r_t == post_rest_years[i]).notnull()
+        y2r_mask = y2r_v.where(y2r_t, False)
+        y2r_v = xr.where(y2r_mask, recovery_time, y2r_v)
+
+    y2r_v = y2r_v.drop_vars("time")
     return y2r_v
 
 
