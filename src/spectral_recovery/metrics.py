@@ -197,15 +197,23 @@ def y2r(
     if percent <= 0 or percent > 100:
         raise ValueError(VALID_PERC_MSP)
     reco_target = recovery_target * (percent / 100)
-    post_rest = image_stack.sel(time=slice(rest_start, None))
-    post_rest_years = post_rest["time"].values
-    rest_window_count = np.arange(len(post_rest_years))
+    recovery_window = image_stack.sel(time=slice(rest_start, None))
 
-    recovered_pixels = post_rest.where(image_stack >= reco_target)
-    # NOTE: the following code was my best attempt to get "find the first year that
-    # recovered" while working with xarray. Likely not the best way to do it, but
-    # can't figure anything else out right now.
-    year_of_recovery = recovered_pixels.idxmin(dim="time")
+    years_to_recovery = (recovery_window >= reco_target).argmax(dim='time', skipna=True)
+    # Pixels with value 0 could be pixels that were recovered at the first timestep, or
+    # pixels that never recovered (argmax returns 0 if all values are False).
+    # Only the former are valid 0's, so set pixels that never recovered to NaN.
+    zero_mask = (years_to_recovery == 0)
+    recovered_at_zero = (recovery_window.sel(time=rest_start) >= reco_target)
+    valid_zeros = zero_mask & recovered_at_zero
+    valid_output = (valid_zeros | (~zero_mask))
+
+    y2r_v = years_to_recovery.where(valid_output, np.nan).drop_vars("time")
+    try:
+        y2r_v = y2r_v.squeeze("time")
+    except KeyError:
+        pass
+        
 
     y2r_v = xr.full_like(recovered_pixels[:, 0, :, :], fill_value=np.nan)
     for i, recovery_time in enumerate(rest_window_count):
@@ -216,6 +224,7 @@ def y2r(
 
     y2r_v = y2r_v.drop_vars("time")
     return y2r_v
+
 
 
 @maintain_rio_attrs

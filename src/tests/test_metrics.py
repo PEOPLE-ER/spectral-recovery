@@ -101,6 +101,20 @@ class TestY2R:
             rest_start="2020",
         ).equals(expected)
 
+    def test_y2r_returns_first_recoverd_year_not_second(self):
+        recovery_target = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+        obs = xr.DataArray(
+            [[[[70]], [[80]], [[60]], [[90]]]], 
+            coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021"), pd.to_datetime("2022"), pd.to_datetime("2023")]},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        expected = xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326")
+        assert y2r(
+            image_stack=obs,
+            recovery_target=recovery_target,
+            rest_start="2020",
+        ).equals(expected)
+
     @pytest.mark.parametrize(
         ("recovery_target", "obs", "expected"),
         [
