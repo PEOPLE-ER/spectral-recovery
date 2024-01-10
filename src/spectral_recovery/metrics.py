@@ -200,7 +200,6 @@ def y2r(
     recovery_window = image_stack.sel(time=slice(rest_start, None))
 
     years_to_recovery = (recovery_window >= reco_target).argmax(dim='time', skipna=True)
-    print(years_to_recovery)
     # Pixels with value 0 could be pixels that were recovered at the first timestep, or
     # pixels that never recovered (argmax returns 0 if all values are False).
     # Only the former are valid 0's, so set pixels that never recovered to NaN.
