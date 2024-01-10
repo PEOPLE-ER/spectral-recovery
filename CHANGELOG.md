@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Version 0.1.0a1
+## [0.2.1b2]
 
-Release Date 2023-10-10. Initial Release 2023-10-10.
+### Added
+
+- Support for Sentinel-2 imagery (#21).
+- Add optional param for naming bands (#29).
+- Add method for plotting RecoveryArea spectral trajectories, `plot_spectral_trajectories` (#27)(#30).
+- Support for Red Edge and Coastal Aerosol bands (#32).
+- New Landsat annual composite test dataset with proper scaling and cropped to a smaller area.
+- Support for NumPy computation as well as Dask (#33).
+
+### Changed
+
+- Update `overview_API.ipynb` to reflect new API usage.
+- Update `overview_API.ipynb` to show users how to write results using rioxarray.
+- Allow close-to-zero differences between image stack and restoration polygons (#37).
+- Change recovery target computation from mean to median (#26).
+- Allow string inputs instead of datetime objects (#31).
+- Lint the codebase (#36).
+
+### Removed
+
+- Temporarily remove tassel-cap indices ("TCW", "TCB", "TCG") (#37).
+- Remove old Landsat annual compsite test dataset used in documentation.
+
+### Fixed
+
+- Fix incorrect NDII equation (#37).
+- Fix incorrect multi-dimensional median target (#26)(#28).
+
