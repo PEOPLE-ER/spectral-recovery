@@ -27,7 +27,7 @@ def compatible_with(platform: List[Platform]):
         List of platforms compatible with the function.
 
     """
-    def comptaible_with_decorator(func):
+    def compatible_with_decorator(func):
         """Sub-decorator for assigning platform compatibility to a function."""
 
         @functools.wraps(func)
