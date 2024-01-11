@@ -27,11 +27,11 @@ def compatible_with(platform: List[Platform]):
         List of platforms compatible with the function.
 
     """
-    def comptaible_with_decorator(func):
+    def compatible_with_decorator(func):
         """Sub-decorator for assigning platform compatibility to a function."""
 
         @functools.wraps(func)
-        def comptaible_with_wrapper(stack, *args, **kwargs):
+        def compatible_with_wrapper(stack, *args, **kwargs):
             for input_platform in stack.attrs["platform"]:
                 if input_platform not in platform:
                     raise ValueError(
@@ -40,9 +40,9 @@ def compatible_with(platform: List[Platform]):
                     ) from None
             return func(stack, *args, **kwargs)
 
-        return comptaible_with_wrapper
+        return compatible_with_wrapper
 
-    return comptaible_with_decorator
+    return compatible_with_decorator
 
 
 def requires_bands(bands: List[BandCommon]):
