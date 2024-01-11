@@ -129,15 +129,15 @@ class TestHistoricAverage:
 
     def test_multi_poly_averages_individual_polygon(self):
         test_data = [
-            [ # Polygon 1
-                [ # Time 1
+            [  # Polygon 1
+                [  # Time 1
                     [[1.0, 2.0], [3.0, 4.0]],  # y1, x1  # y2, x1  # band 1
                 ],
-                [ # Time 2
+                [  # Time 2
                     [[5.0, 6.0], [8.0, 9.0]],  # y1, x2   # band 1
                 ],
             ],
-            [ # Polygon 2
+            [  # Polygon 2
                 [
                     [[1.0, 2.0], [3.0, 4.0]],  # y 1, x1  # y 2, x1  # band 1
                 ],
@@ -176,14 +176,14 @@ class TestHistoricAverage:
         out_stack = median_target(test_stack, [0, 1], space=False)
         assert out_stack.dims == ("band", "y", "x")
         assert out_stack.shape == (1, 2, 2)
-    
+
     def test_space_false_returns_per_pixel_median(self):
-        test_data = [ 
-                [ 
-                    [[1.0, 2.0], [3.0, 4.0]],  
-                    [[5.0, 6.0], [8.0, 9.0]],  
-                ],
-            ]
+        test_data = [
+            [
+                [[1.0, 2.0], [3.0, 4.0]],
+                [[5.0, 6.0], [8.0, 9.0]],
+            ],
+        ]
         test_stack = xr.DataArray(
             test_data,
             dims=["band", "time", "y", "x"],
@@ -191,7 +191,7 @@ class TestHistoricAverage:
                 "time": [0, 1],
             },
         )
-        
+
         expected_data = [[[3.0, 4.0], [5.5, 6.5]]]
         expected_stack = xr.DataArray(
             expected_data,

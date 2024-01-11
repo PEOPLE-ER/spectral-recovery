@@ -1,4 +1,4 @@
-"""Configuration for the spectral recovery package."""""
+"""Configuration for the spectral recovery package.""" ""
 
 import re
 

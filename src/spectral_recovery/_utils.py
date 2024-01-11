@@ -23,7 +23,7 @@ def maintain_rio_attrs(func: callable) -> callable:
     -----
     Similar to https://github.com/pydata/xarray/pull/2482, but specifically
     for a subset of rio attributes to be maintained.
-    
+
     """
 
     @functools.wraps(func)

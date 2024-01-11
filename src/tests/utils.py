@@ -1,7 +1,9 @@
 import xarray as xr
+
+
 # NOTE: SAME_XR is a hacky solution to get around "ValueErrors" that
 # are thrown if you try to assert a mocked function was called with
-# xarray's DataArray. Not sure if this indicates some bad design 
+# xarray's DataArray. Not sure if this indicates some bad design
 # with the package ... but for now it stays to ensure correctness.
 # Solution from: https://stackoverflow.com/questions/44640717
 class SAME_XR:

@@ -116,10 +116,8 @@ def read_and_stack_tifs(
                     f"Band {band_num} not found in `band_names` dictionary. Please"
                     f" provide a mapping for all bands: {band_names_old}"
                 ) from None
-            
-            band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[
-                0
-            ]
+
+            band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[0]
 
         band_names_new = [
             band_names[k] for k in band_names_old
