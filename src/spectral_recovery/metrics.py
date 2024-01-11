@@ -36,7 +36,7 @@ def dnbr(
         The timestep (years) in the restoration monitoring
         window (post rest_start) from which to evaluate absolute
         change. Default = 5.
-    
+
     Returns
     -------
     dnbr_v : xr.DataArray
@@ -84,7 +84,7 @@ def yryr(
         The timestep (years) in the restoration monitoring
         window (post rest_start) from which to evaluate absolute
         change. Default = 5.
-    
+
     Returns
     -------
     yryr_v : xr.DataArray
@@ -135,7 +135,7 @@ def r80p(
         represents the max/most recent timestep.
     percent: int, optional
         Percent of recovery to compute recovery against. Default = 80.
-    
+
     Returns
     -------
     r80p_v : xr.DataArray
@@ -199,14 +199,14 @@ def y2r(
     reco_target = recovery_target * (percent / 100)
     recovery_window = image_stack.sel(time=slice(rest_start, None))
 
-    years_to_recovery = (recovery_window >= reco_target).argmax(dim='time', skipna=True)
+    years_to_recovery = (recovery_window >= reco_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be pixels that were recovered at the first timestep, or
     # pixels that never recovered (argmax returns 0 if all values are False).
     # Only the former are valid 0's, so set pixels that never recovered to NaN.
-    zero_mask = (years_to_recovery == 0)
-    recovered_at_zero = (recovery_window.sel(time=rest_start) >= reco_target)
+    zero_mask = years_to_recovery == 0
+    recovered_at_zero = recovery_window.sel(time=rest_start) >= reco_target
     valid_zeros = zero_mask & recovered_at_zero
-    valid_output = (valid_zeros | (~zero_mask))
+    valid_output = valid_zeros | (~zero_mask)
 
     y2r_v = years_to_recovery.where(valid_output, np.nan).drop_vars("time")
     try:
@@ -214,7 +214,6 @@ def y2r(
     except KeyError:
         pass
     return y2r_v
-
 
 
 @maintain_rio_attrs
@@ -248,7 +247,7 @@ def rri(
     use_dist_avg : bool, optional
         Whether to use the average of the disturbance period to
         calculate the disturbance magnitude. Default = False.
-    
+
     Returns
     -------
     rri_v : xr.DataArray
@@ -334,7 +333,9 @@ def year_dt(dt, dt_type: str = "int"):
         dt_dt = pd.to_datetime(dt)
         year = dt_dt.year
     except ValueError:
-        raise ValueError(f"Unable to get year {type} from {dt} of type {type(dt)}") from None
+        raise ValueError(
+            f"Unable to get year {type} from {dt} of type {type(dt)}"
+        ) from None
     if dt_type == "str":
         return str(year)
     return year

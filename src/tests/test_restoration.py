@@ -14,7 +14,7 @@ from tests.utils import SAME_XR
 from spectral_recovery.recovery_target import median_target
 from spectral_recovery.restoration import _ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
-from  spectral_recovery._config import DATETIME_FREQ
+from spectral_recovery._config import DATETIME_FREQ
 
 # TODO: move test data into their own folders, create temp dirs so individual tests
 # don't conflict while reading the data
@@ -84,7 +84,6 @@ class TestRestorationAreaInit:
             else:
                 assert resto_a.reference_system.reference_range == ref_years_dt
 
-    
     def test_only_dist_year_defaults_resto_year_to_next_year(self):
         resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
         dist_start = "2015"
@@ -92,7 +91,9 @@ class TestRestorationAreaInit:
         raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
         time_range = [str(x) for x in np.arange(2010, 2027)]
 
-        expected_resto_start = pd.to_datetime("2016")  # + 1 year from dist_start, in datetime form
+        expected_resto_start = pd.to_datetime(
+            "2016"
+        )  # + 1 year from dist_start, in datetime form
 
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
@@ -231,7 +232,7 @@ class TestRestorationAreaInit:
         [
             ["2002"],
             ["2025", "2028"],
-            ["2008","2012"],
+            ["2008", "2012"],
         ],
     )
     def test_out_of_bounds_reference_years_throw_value_error(self, ref_years):
@@ -749,7 +750,7 @@ class Test_ReferenceSystemInit:
                 recovery_target_method=None,
                 historic_reference_system=False,
             )
-    
+
     def test_historic_reference_system_bool_is_set_True(self, image_stack):
         reference_polys = gpd.read_file(
             "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
@@ -767,7 +768,6 @@ class Test_ReferenceSystemInit:
 
 
 class Test_ReferenceSystemRecoveryTarget:
-
     def test_false_hist_ref_sys_calls_recovery_target_with_space_true(self, mocker):
         mocker.patch.object(_ReferenceSystem, "__init__", return_value=None)
         rs = _ReferenceSystem()
@@ -778,8 +778,10 @@ class Test_ReferenceSystemRecoveryTarget:
 
         rs.recovery_target()
         rs.recovery_target_method.assert_called_once()
-        rs.recovery_target_method.assert_called_with(stack=0, reference_date=0, space=True)
-    
+        rs.recovery_target_method.assert_called_with(
+            stack=0, reference_date=0, space=True
+        )
+
     def test_hist_ref_sys_calls_recovery_target_with_space_false(self, mocker):
         mocker.patch.object(_ReferenceSystem, "__init__", return_value=None)
         rs = _ReferenceSystem()
@@ -790,6 +792,8 @@ class Test_ReferenceSystemRecoveryTarget:
 
         rs.recovery_target()
         rs.recovery_target_method.assert_called_once()
-        rs.recovery_target_method.assert_called_with(stack=0, reference_date=0, space=False)
-    
+        rs.recovery_target_method.assert_called_with(
+            stack=0, reference_date=0, space=False
+        )
+
     # TODO: test the return value is correct

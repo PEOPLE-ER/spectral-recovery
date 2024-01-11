@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- Fix incorrect Y2R values (#42)
+- N/A
+
+## [0.2.2b1] - 2024-02-11
+
+### Added
+
+- Add historic vs. reference target details in overview (#47)
+- Add corner case tests to Y2R (#42)
+- Fix typos in docstrings.
+
+### Fixed
+
+- Fix incorrect Y2R values bug (#42)
+
 
 ## [0.2.1b2] - 2024-02-01
 
@@ -34,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Temporarily remove tassel-cap indices ("TCW", "TCB", "TCG") (#37).
 - Remove old Landsat annual compsite test dataset used in documentation.
 
-## Fixed
+### Fixed
 
 - Fix incorrect NDII equation (#37).
 - Fix incorrect multi-dimensional median target (#26)(#28).

@@ -30,6 +30,7 @@ from spectral_recovery._config import VALID_YEAR
 
 from spectral_recovery import metrics as m
 
+
 # We could maybe remove baseline_method as attribute. Just add it
 # as a parameter to baseline()? Wait for more refactoring planning.
 class _ReferenceSystem:
@@ -76,9 +77,7 @@ class _ReferenceSystem:
 
         clipped_stacks = {}
         for i, row in reference_polygons.iterrows():
-            polygon_stack = reference_stack.rio.clip(
-                gpd.GeoSeries(row.geometry).values
-            )
+            polygon_stack = reference_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
             clipped_stacks[i] = polygon_stack
         self.reference_stack = xr.concat(
             clipped_stacks.values(),
