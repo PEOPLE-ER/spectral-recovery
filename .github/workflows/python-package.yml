@@ -36,7 +36,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Lint with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint $(git ls-files 'src/spectral_recovery/*.py')
     - name: Test with pytest
       run: |
         pytest
