@@ -101,6 +101,28 @@ class TestY2R:
             rest_start="2020",
         ).equals(expected)
 
+    def test_distinguishes_unrecovered_and_nan(self):
+        recovery_target = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+        obs = xr.DataArray(
+            [[[[70, np.nan]], [[75, np.nan]], [[78, np.nan]]]],
+            coords={
+                "time": [
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                    pd.to_datetime("2022"),
+                ]
+            },
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        expected = xr.DataArray([[[-9999, np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+            "4326"
+        )
+        assert y2r(
+            image_stack=obs,
+            recovery_target=recovery_target,
+            rest_start="2020",
+        ).equals(expected)
+
     def test_returns_first_recovered_year_when_successive_recovered_years_smaller(self):
         recovery_target = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
         obs = xr.DataArray(
