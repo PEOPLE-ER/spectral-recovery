@@ -65,7 +65,7 @@ class TestY2R:
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+                xr.DataArray([[[-9999]]], dims=["band", "y", "x"]).rio.write_crs(
                     "4326"
                 ),
             ),
@@ -89,7 +89,7 @@ class TestY2R:
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 xr.DataArray(
-                    [[[1.0, np.nan], [np.nan, 2.0]]], dims=["band", "y", "x"]
+                    [[[1.0, -9999], [-9999, 2.0]]], dims=["band", "y", "x"]
                 ).rio.write_crs("4326"),
             ),
         ],
@@ -165,7 +165,7 @@ class TestY2R:
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[1.0, np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+                xr.DataArray([[[1.0, -9999]]], dims=["band", "y", "x"]).rio.write_crs(
                     "4326"
                 ),
             ),
@@ -218,7 +218,7 @@ class TestY2R:
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 20,  # X percent of recovery target
-                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+                xr.DataArray([[[-9999]]], dims=["band", "y", "x"]).rio.write_crs(
                     "4326"
                 ),
             ),
