@@ -139,17 +139,17 @@ class RestorationArea:
     reference_years : datetime or Tuple of datetimes
         The year or range of years from which to get values for computing
         the recovery target.
-    composite_stack : xr.DataArray
+    restoration_image_stack : xr.DataArray
         A 4D (band, time, y, x) DataArray of images from which indices and
         metrics will be computed. The spatial bounds of the DataArray must
         contain `restoration_polygon` and (optional) `reference_polygons`,
         and the temporal bounds must contain `restoration_start`.
     disturbance_start : str or datetime
         The year the disturbance began. Value must be within
-        the time dimension coordinates of `composite_stack` param.
+        the time dimension coordinates of `restoration_image_stack` param.
     restoration_start : str or datetime
         The year the restoration event began. Value must be within
-        the time dimension coordinates of `composite_stack` param.
+        the time dimension coordinates of `restoration_image_stack` param.
 
     """
 
@@ -157,8 +157,9 @@ class RestorationArea:
         self,
         restoration_polygon: gpd.GeoDataFrame,
         reference_years: str | List[str],
-        composite_stack: xr.DataArray,
+        restoration_image_stack: xr.DataArray,
         reference_polygon: gpd.GeoDataFrame = None,
+        reference_image_stack: xr.DataArray = None,
         disturbance_start: str = None,
         restoration_start: str = None,
     ) -> None:
@@ -238,17 +239,17 @@ class RestorationArea:
                 "The disturbance start year must be less than the restoration start"
                 " year."
             )
-        if composite_stack.satts.is_annual_composite:
+        if restoration_image_stack.satts.is_annual_composite:
             try:
-                if self._within(composite_stack):
-                    self.stack = composite_stack.rio.clip(
+                if self._within(restoration_image_stack):
+                    self.stack = restoration_image_stack.rio.clip(
                         self.restoration_polygon.geometry.values
                     )
             except ValueError as e:
                 raise e from None
         else:
             raise ValueError(
-                "composite_stack is not a valid stack of annual composites. Please"
+                "restoration_image_stack is not a valid stack of annual composites. Please"
                 " ensure there are no missing years and that the DataArray object"
                 " contains 'band', 'time', 'y' and 'x' dimensions."
             ) from None
@@ -258,18 +259,18 @@ class RestorationArea:
             self.reference_system = _ReferenceSystem(
                 reference_polygons=self.restoration_polygon,
                 reference_range=self.reference_years,
-                reference_stack=composite_stack,
+                reference_stack=restoration_image_stack,
                 recovery_target_method=None,
                 historic_reference_system=True,
             )
         else:
             # Build the reference polygon from the reference polygon
-            # Use the unclipped composite_stack instead of self.stack because
+            # Use the unclipped restoration_image_stack instead of self.stack because
             # self.stack is clipped to restoration_polygons at this point.
             self.reference_system = _ReferenceSystem(
                 reference_polygons=reference_polygon,
                 reference_range=self.reference_years,
-                reference_stack=composite_stack,
+                reference_stack=reference_image_stack,
                 recovery_target_method=None,
                 historic_reference_system=False,
             )
