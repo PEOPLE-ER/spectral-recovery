@@ -264,6 +264,10 @@ class RestorationArea:
                 historic_reference_system=True,
             )
         else:
+            if reference_image_stack is None:
+                raise TypeError(
+                    "RestorationArea() requires the reference_image_stack argument if reference_polygon is provided (only reference_polygon provided)."
+                )
             # Build the reference polygon from the reference polygon
             # Use the unclipped restoration_image_stack instead of self.stack because
             # self.stack is clipped to restoration_polygons at this point.
