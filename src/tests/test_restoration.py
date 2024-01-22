@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
 from tests.utils import SAME_XR
+from shapely.geometry import Polygon
 
 from spectral_recovery.recovery_target import median_target
 from spectral_recovery.restoration import _ReferenceSystem, RestorationArea
@@ -63,6 +64,91 @@ class TestRestorationAreaInit:
             assert resto_a.restoration_start == pd.to_datetime(rest_start)
             assert resto_a.disturbance_start == pd.to_datetime(dist_start)
             assert (resto_a.reference_system.reference_range == [pd.to_datetime(ref_years[0]), pd.to_datetime(ref_years[1])])
+
+    @patch("spectral_recovery.restoration.RestorationArea._within")
+    @patch("spectral_recovery.restoration._ReferenceSystem._within")
+    @patch("spectral_recovery.timeseries._SatelliteTimeSeries.is_annual_composite")
+    def test_unique_restoration_and_reference_image_stacks_are_set(self, within_rest_mock, within_ref_mock, annual_mock):
+        within_rest_mock.return_value = True
+        within_ref_mock.return_value = True
+        annual_mock.return_value = True
+
+        # Set up
+        rest_data = np.ones((1,1,2,2))
+        ref_data = np.zeros((1,1,2,2))
+
+        bands = ['band_1']
+        times = ['1990']
+        y_coords = np.linspace(0, 1, 2)
+        x_coords = np.linspace(0, 1, 2)
+
+        rest_da = xr.DataArray(rest_data, dims=('band', 'time', 'y', 'x'),
+                        coords={'band': bands, 'time': [pd.to_datetime(times[0])], 'y': y_coords, 'x': x_coords}
+                        ).rio.write_crs("EPSG:3005")
+        ref_da = xr.DataArray(ref_data, dims=('band', 'time', 'y', 'x'),
+                        coords={'band': bands, 'time': [pd.to_datetime(times[0])], 'y': y_coords, 'x': x_coords}
+                        ).rio.write_crs("EPSG:3005")
+
+        # Define the coordinates of the Shapely Polygon within the x, y range of the DataArray
+        polygon_coords = [(-0.25, -0.25), (-0.25, 1.25), (1.25, 1.25), (1.25, -0.25)]
+        polygon = gpd.GeoDataFrame(geometry=[Polygon(polygon_coords)], crs="EPSG:3005")
+
+        # Run
+        ra = RestorationArea(
+            restoration_polygon=polygon,
+            restoration_start=times[0],
+            restoration_image_stack=rest_da,
+            reference_polygon=polygon,
+            reference_years=times[0],
+            reference_image_stack=ref_da,
+        )
+        
+        # Assert
+        assert np.array_equal(rest_data, ra.stack.data) 
+        print(ref_data, ra.reference_system.reference_stack.data)
+        # ReferenceSystem adds a polyid dimension to reference data, without this
+        # dimension, the data should be the same.
+        assert np.array_equal(ref_data, ra.reference_system.reference_stack.data[0,:,:,:,:])
+    
+    @patch("spectral_recovery.restoration.RestorationArea._within")
+    @patch("spectral_recovery.restoration._ReferenceSystem._within")
+    @patch("spectral_recovery.timeseries._SatelliteTimeSeries.is_annual_composite")
+    def test_only_restoration_image_stack_uses_stack_in_reference_system(self, within_rest_mock, within_ref_mock, annual_mock):
+        within_rest_mock.return_value = True
+        within_ref_mock.return_value = True
+        annual_mock.return_value = True
+
+        # Set up
+        rest_data = np.ones((1,1,2,2))
+
+
+        bands = ['band_1']
+        times = ['1990']
+        y_coords = np.linspace(0, 1, 2)
+        x_coords = np.linspace(0, 1, 2)
+
+        rest_da = xr.DataArray(rest_data, dims=('band', 'time', 'y', 'x'),
+                        coords={'band': bands, 'time': [pd.to_datetime(times[0])], 'y': y_coords, 'x': x_coords}
+                        ).rio.write_crs("EPSG:3005")
+
+        # Define the coordinates of the Shapely Polygon within the x, y range of the DataArray
+        polygon_coords = [(-0.25, -0.25), (-0.25, 1.25), (1.25, 1.25), (1.25, -0.25)]
+        polygon = gpd.GeoDataFrame(geometry=[Polygon(polygon_coords)], crs="EPSG:3005")
+
+        # Run
+        ra = RestorationArea(
+            restoration_polygon=polygon,
+            restoration_start=times[0],
+            restoration_image_stack=rest_da,
+            reference_years=times[0],
+        )
+        
+        # Assert
+        assert np.array_equal(rest_data, ra.stack.data) 
+        # ReferenceSystem adds a polyid dimension to reference data, without this
+        # dimension, the data should be the same.
+        assert np.array_equal(rest_data, ra.reference_system.reference_stack.data[0,:,:,:,:])
+
 
     def test_passing_only_dist_year_defaults_resto_year_to_next_year(self):
         # Set up
