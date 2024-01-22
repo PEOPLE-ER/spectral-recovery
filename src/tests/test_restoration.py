@@ -148,6 +148,42 @@ class TestRestorationAreaInit:
         # ReferenceSystem adds a polyid dimension to reference data, without this
         # dimension, the data should be the same.
         assert np.array_equal(rest_data, ra.reference_system.reference_stack.data[0,:,:,:,:])
+    
+    @patch("spectral_recovery.restoration.RestorationArea._within")
+    @patch("spectral_recovery.restoration._ReferenceSystem._within")
+    @patch("spectral_recovery.timeseries._SatelliteTimeSeries.is_annual_composite")
+    def test_reference_poly_and_no_ref_image_stack_throws_type_error(self, within_rest_mock, within_ref_mock, annual_mock):
+        within_rest_mock.return_value = True
+        within_ref_mock.return_value = True
+        annual_mock.return_value = True
+
+        # Set up
+        rest_data = np.ones((1,1,2,2))
+
+        bands = ['band_1']
+        times = ['1990']
+        y_coords = np.linspace(0, 1, 2)
+        x_coords = np.linspace(0, 1, 2)
+
+        rest_da = xr.DataArray(rest_data, dims=('band', 'time', 'y', 'x'),
+                        coords={'band': bands, 'time': [pd.to_datetime(times[0])], 'y': y_coords, 'x': x_coords}
+                        ).rio.write_crs("EPSG:3005")
+
+        # Define the coordinates of the Shapely Polygon within the x, y range of the DataArray
+        polygon_coords = [(-0.25, -0.25), (-0.25, 1.25), (1.25, 1.25), (1.25, -0.25)]
+        polygon = gpd.GeoDataFrame(geometry=[Polygon(polygon_coords)], crs="EPSG:3005")
+
+        # Run & assert
+        with pytest.raises(
+                TypeError,
+            ):
+                ra = RestorationArea(
+                    restoration_polygon=polygon,
+                    restoration_start=times[0],
+                    restoration_image_stack=rest_da,
+                    reference_polygon=polygon,
+                    reference_years=times[0],
+                )
 
 
     def test_passing_only_dist_year_defaults_resto_year_to_next_year(self):
