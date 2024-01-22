@@ -32,7 +32,7 @@ class TestRestorationAreaInit:
 
             stack = data.rename({"band": "time"}).expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
-                time=(pd.date_range("2010","2027", freq=DATETIME_FREQ))
+                time=(pd.date_range("2010","2026", freq=DATETIME_FREQ))
             )
             rest_poly = gpd.read_file(
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
@@ -47,7 +47,7 @@ class TestRestorationAreaInit:
                 restoration_start=rest_start,
                 disturbance_start=dist_start,
                 restoration_image_stack=stack,
-                reference_polygon=rest_poly,
+                reference_polygon=ref_poly,
                 reference_years=ref_years,
                 reference_image_stack=stack,
             )
@@ -60,9 +60,9 @@ class TestRestorationAreaInit:
                 resto_a.reference_system.reference_polygons.geom_equals(ref_poly.geometry)
             ).all()
             assert isinstance(resto_a.reference_system, _ReferenceSystem)
-            assert resto_a.restoration_start == pd.to_datetime(resto_start_dt)
-            assert resto_a.disturbance_start == pd.to_datetime(dist_start_dt)
-            assert (resto_a.reference_system.reference_range == [pd.to_datetime(ref_years[0]), pd.to_datetime(ref_years[1])]).all()
+            assert resto_a.restoration_start == pd.to_datetime(rest_start)
+            assert resto_a.disturbance_start == pd.to_datetime(dist_start)
+            assert (resto_a.reference_system.reference_range == [pd.to_datetime(ref_years[0]), pd.to_datetime(ref_years[1])])
 
     def test_passing_only_dist_year_defaults_resto_year_to_next_year(self):
         # Set up
@@ -78,7 +78,7 @@ class TestRestorationAreaInit:
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data.rename({"band": "time"}).expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
-                time=(pd.date_range("2010", "2027", freq=DATETIME_FREQ))
+                time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
             )
 
             # Run
@@ -172,7 +172,7 @@ class TestRestorationAreaInit:
                     disturbance_start=dist_start,
                     reference_polygon=resto_poly,
                     reference_years=ref_years,
-                    composite_stack=stack,
+                    restoration_image_stack=stack,
                 )
 
     def test_out_of_bounds_disturbance_start_year_throws_value_error(self):
@@ -202,7 +202,7 @@ class TestRestorationAreaInit:
                     disturbance_start=dist_start,
                     reference_polygon=resto_poly,
                     reference_years=ref_years,
-                    composite_stack=stack,
+                    restoration_image_stack=stack,
                 )
 
     @pytest.mark.parametrize(
@@ -292,7 +292,7 @@ class TestRestorationAreaInit:
                     restoration_image_stack=stack,
                 )
 
-    def test_composite_stack_wrong_dims_throws_value_error(self):
+    def test_image_stack_wrong_dims_throws_value_error(self):
         with rioxarray.open_rasterio(
             "src/tests/test_data/time3_xy2_epsg3005.tif"
         ) as data:
@@ -325,7 +325,7 @@ class TestRestorationAreaInit:
                     restoration_image_stack=bad_stack,
                 )
 
-    def test_composite_stack_missing_dims_throws_value_error(self):
+    def test_image_stack_missing_dims_throws_value_error(self):
         with rioxarray.open_rasterio(
             "src/tests/test_data/time3_xy2_epsg3005.tif"
         ) as data:
@@ -357,7 +357,7 @@ class TestRestorationAreaInit:
                     restoration_image_stack=bad_stack,
                 )
 
-    def test_composite_stack_missing_years_throws_value_error(self):
+    def test_image_stack_missing_years_throws_value_error(self):
         with rioxarray.open_rasterio(
             "src/tests/test_data/time3_xy2_epsg3005.tif"
         ) as data:
@@ -388,7 +388,7 @@ class TestRestorationAreaInit:
                     restoration_start=resto_start,
                     reference_polygon=resto_poly,
                     reference_years=ref_years,
-                    composite_stack=bad_stack,
+                    restoration_image_stack=bad_stack,
                 )
 
 
@@ -419,9 +419,8 @@ class TestRestorationAreaMetrics:
             resto_area = RestorationArea(
                 restoration_polygon=resto_poly,
                 restoration_start=self.restoration_start,
-                reference_polygon=resto_poly,
                 reference_years=self.reference_year,
-                composite_stack=stack,
+                restoration_image_stack=stack,
             )
 
             mock_target_return = self.baseline_array
@@ -542,7 +541,7 @@ class TestRestorationAreaMetrics:
         )
 
 
-class Test_ReferenceSystemInit:
+class TestReferenceSystemInit:
     # Note: ReferencSystem assumes dates are passed as datetime, not str
     @pytest.fixture()
     def test_stack_1(self):
@@ -741,7 +740,7 @@ class Test_ReferenceSystemInit:
         assert rs.hist_ref_sys == True
 
 
-class Test_ReferenceSystemRecoveryTarget:
+class TestReferenceSystemRecoveryTarget:
     def test_false_hist_ref_sys_calls_recovery_target_with_space_true(self, mocker):
         mocker.patch.object(_ReferenceSystem, "__init__", return_value=None)
         rs = _ReferenceSystem()
