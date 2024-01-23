@@ -299,7 +299,7 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str]):
     image_stack : xr.DataArray
         stack of images. The 'band' dimension coordinates must contain
         enums.BandCommon types.
-    indices : list[Index]
+    indices : list[Indgit logex]
         list of spectral indices to compute
     platform : Platform
         platform from which images were collected

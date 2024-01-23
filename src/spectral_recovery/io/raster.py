@@ -4,6 +4,8 @@ Handles reading timeseries of TIFs into a single DataArray, ensures
 band names and attributes are consistent. Also handles writing.
 """
 
+import json
+
 from pathlib import Path
 from typing import List, Dict
 
@@ -19,11 +21,10 @@ from spectral_recovery.enums import BandCommon, Index, Platform
 from spectral_recovery._config import VALID_YEAR, REQ_DIMS
 
 
-# TODO: deprecate path_to_mask parameter/functionality?
 def read_and_stack_tifs(
     path_to_tifs: List[str] | str,
     platform: List[str] | str,
-    band_names: Dict[int, str | BandCommon | Index] = None,
+    band_names: Dict[int, str] = None,
     path_to_mask: str = None,
     array_type: str = "numpy",
 ):
@@ -74,6 +75,8 @@ def read_and_stack_tifs(
             with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
                 image_dict[Path(file).stem] = data
 
+    # Parse the year of the raster/composite from it's filename and use the year
+    # as the DataArray's time dimension coordinate.
     time_keys = []
     for filename in image_dict:
         if _str_is_year(filename):
@@ -82,32 +85,31 @@ def read_and_stack_tifs(
             raise ValueError(
                 f"TIF filenames must be in format 'YYYY' but recieved: '{filename}'"
             ) from None
-    # Stack all images into a single DataArray
+    # Stack images along the time dimension
     stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
-    # Clean up coordinates and attributes
+
+
+
     if band_names is None:
+        # If band descriptions are present in the images, then rioxarray 
+        # will set those descriptions as 'long_name' attributes on the DataArray.
+        # If there is no long_name attr then there are no descriptions.
         try:
             band_names_new = _to_band_or_index_enums(stacked_data.attrs["long_name"])
         except KeyError:
             raise ValueError(
                 "Band descriptions not found in TIFs. Please provide band "
-                " names for bands {stack_data.band.values} using the `band_names=`"
-                " argument."
+                " names using the band_names argument."
             ) from None
     else:
         band_names_old = stacked_data.band.values
+        # Only accept mappings for bands that exist in the images.
         for b in band_names.keys():
             if b not in band_names_old:
                 raise ValueError(
                     f"Band {b} not found in TIFs. Please provide a mapping for only"
                     f" bands: {band_names_old}"
                 ) from None
-
-        if not all(k in band_names_old for k in band_names.keys()):
-            raise ValueError(
-                f"Band names {band_names.keys()} not found in TIFs. Please provide a"
-                f" mapping for bands: {band_names_old}"
-            ) from None
         # This is working on the assumption that bands are always integers when no band
         # description is provided e.g band_names_old == [0,1,2]
         for band_num in band_names_old:
@@ -117,11 +119,13 @@ def read_and_stack_tifs(
                     f" provide a mapping for all bands: {band_names_old}"
                 ) from None
 
-            band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[0]
+            band_names[band_num] = _to_band_names([band_names[band_num]])[0]
 
         band_names_new = [
             band_names[k] for k in band_names_old
         ]  # this silently discards any bands in bands_names that are not in the TIFs
+
+
 
     stacked_data = stacked_data.assign_coords(band=band_names_new)
     # TODO: catch missing dimension error here
@@ -151,8 +155,8 @@ def _to_platform_enums(platform: List[str]) -> List[Platform]:
     return valid_names
 
 
-def _to_band_or_index_enums(names_list: List[str]) -> Dict[str, BandCommon | Index]:
-    """Convert a list of band or index names to BandCommon or Index enums"""
+def _to_band_names(names_list: List[str]) -> Dict[str | int, str]:
+    """Convert a list of band or index names to """
     valid_names = []
     for name in names_list:
         try:

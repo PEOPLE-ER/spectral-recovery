@@ -182,6 +182,14 @@ class TestReadAndStackTifs:
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
+
+    @patch(
+        "rioxarray.open_rasterio",
+    )
+    def test_invalid_band_name_throws_error():
+        
+
+
     @patch(
         "rioxarray.open_rasterio",
     )
