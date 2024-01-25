@@ -14,7 +14,9 @@ from typing import List
 import xarray as xr
 from pandas import Index as pdIndex
 
-from spectral_recovery._utils import maintain_rio_attrs
+import spyndex as spx
+
+from spectral_recovery._utils import maintain_rio_attrs, _get_bands
 from spectral_recovery.enums import Index, BandCommon, Platform
 
 
@@ -290,16 +292,17 @@ _indices_map = {
 def _bad_index_choice(stack):
     raise ValueError("No index function implemented for current index.") from None
 
-
+@maintain_rio_attrs
 def compute_indices(image_stack: xr.DataArray, indices: list[str]):
-    """Compute spectral indices on a stack of images
+    """Compute spectral indices using the spyndex package.
+
 
     Parameters
     ----------
     image_stack : xr.DataArray
         stack of images. The 'band' dimension coordinates must contain
         enums.BandCommon types.
-    indices : list[Indgit logex]
+    indices : list of str
         list of spectral indices to compute
     platform : Platform
         platform from which images were collected
@@ -308,27 +311,50 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str]):
     -------
         xr.DataArray: stack of images with spectral indices stacked along
         the band dimension.
+
     """
-    indices = _to_index_enums(indices)
-    index = {}
-    for index_choice in indices:
-        index[index_choice] = _indices_map.get(index_choice, _bad_index_choice)(
-            image_stack
-        )
-    index_stack = xr.concat(index.values(), dim=pdIndex(index.keys(), name="band"))
+    params_dict = _build_params_dict(image_stack)
+    index_stack = spx.computeIndex(
+        indices,
+        params=params_dict
+    )
+    print(index_stack)
     return index_stack
 
 
-def _to_index_enums(indices: List[str]) -> List[Index]:
-    """Convert a list of index names to Index enums"""
-    valid_names = []
-    for name in indices:
+def _build_params_dict(image_stack: xr.DataArray):
+    """Build dict of standard names and slices required by computeIndex.
+    
+    Slices will be taken along the band dimension of image_stack,
+    selecting for each of the standard band names that computeIndex
+    accepts. Any name that is not in image_stack will not be included
+    in the dictionary.
+
+    Parameters
+    ----------
+    image_stack : xr.DataArray
+        DataArray from which to take slices. Must have a band
+        dimension and band coordinates value should be standard names
+        for the respective band. For more info, see here:
+        https://github.com/awesome-spectral-indices/awesome-spectral-indices
+
+    Returns
+    -------
+    band_dict : dict
+        Dictionary mapping standard names to slice of image_stack.
+
+    """
+    standard_names = list(_get_bands().keys())
+    params_dict = {}
+    for standard in standard_names:
         try:
-            val = Index[name.upper()]
-            valid_names.append(val)
+            band_slice = image_stack.sel(band=standard)
         except KeyError:
-            raise ValueError(
-                f"Index '{name}' not found. Valid indices are:"
-                f" {[str(i) for i in list(Index)]}"
-            ) from None
-    return valid_names
+            continue
+        params_dict[standard] = band_slice
+
+    return params_dict
+
+
+
+
