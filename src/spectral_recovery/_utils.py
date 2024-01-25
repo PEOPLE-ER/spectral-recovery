@@ -57,3 +57,4 @@ def maintain_rio_attrs(func: callable) -> callable:
         return indice
 
     return wrapper_maintain_rio_attrs
+
