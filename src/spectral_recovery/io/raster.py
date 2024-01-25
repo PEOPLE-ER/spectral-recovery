@@ -4,8 +4,6 @@ Handles reading timeseries of TIFs into a single DataArray, ensures
 band names and attributes are consistent. Also handles writing.
 """
 
-import json
-
 from pathlib import Path
 from typing import List, Dict
 
@@ -17,8 +15,9 @@ import xarray as xr
 
 from rasterio._err import CPLE_AppDefinedError
 
-from spectral_recovery.enums import BandCommon, Index, Platform
+from spectral_recovery._utils import _get_bands
 from spectral_recovery._config import VALID_YEAR, REQ_DIMS
+from spectral_recovery.enums import Platform
 
 
 def read_and_stack_tifs(
@@ -157,13 +156,6 @@ def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.Data
         )
     masked_stack = stack.where(mask, fill)
     return masked_stack
-
-
-def _get_bands():
-    """Gets dict of standard band ids from bands.json"""
-    f = open("src/spectral_recovery/data/bands.json")
-    bands_info = json.load(f)
-    return bands_info
 
 
 def _common_long_to_short_names(bands):

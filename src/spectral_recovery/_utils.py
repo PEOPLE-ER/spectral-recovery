@@ -5,6 +5,7 @@ when performing operations on xarray objects.
 
 """
 import functools
+import json
 
 from rioxarray.exceptions import MissingCRS
 
@@ -57,4 +58,11 @@ def maintain_rio_attrs(func: callable) -> callable:
         return indice
 
     return wrapper_maintain_rio_attrs
+
+
+def _get_bands():
+    """Gets dict of standard band ids from bands.json"""
+    f = open("src/spectral_recovery/data/bands.json")
+    bands_info = json.load(f)
+    return bands_info
 
