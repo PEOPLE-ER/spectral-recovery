@@ -16,7 +16,7 @@ from pandas import Index as pdIndex
 
 import spyndex as spx
 
-from spectral_recovery._utils import maintain_rio_attrs, _get_bands
+from spectral_recovery._utils import maintain_rio_attrs
 from spectral_recovery.enums import Index, BandCommon, Platform
 
 
@@ -318,7 +318,6 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str]):
         indices,
         params=params_dict
     )
-    print(index_stack)
     return index_stack
 
 
@@ -344,15 +343,14 @@ def _build_params_dict(image_stack: xr.DataArray):
         Dictionary mapping standard names to slice of image_stack.
 
     """
-    standard_names = list(_get_bands().keys())
+    standard_names = list(spx.bands)
     params_dict = {}
     for standard in standard_names:
         try:
             band_slice = image_stack.sel(band=standard)
+            params_dict[standard] = band_slice
         except KeyError:
             continue
-        params_dict[standard] = band_slice
-
     return params_dict
 
 
