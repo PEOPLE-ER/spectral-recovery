@@ -315,7 +315,7 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str]):
     """
     params_dict = _build_params_dict(image_stack)
     index_stack = spx.computeIndex(
-        indices,
+        index=indices,
         params=params_dict
     )
     return index_stack

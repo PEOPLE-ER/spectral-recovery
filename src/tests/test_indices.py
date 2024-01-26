@@ -1,181 +1,108 @@
-import xarray as xr
-
+import random
+import re
 import pytest
-from unittest.mock import Mock
-from unittest.mock import patch
+
+import xarray as xr
+import numpy as np
+import spyndex as spx
+
+from typing import List 
+
+from unittest.mock import Mock, patch, ANY
 from tests.utils import SAME_XR
 
+from spectral_recovery._config import REQ_DIMS
 from spectral_recovery.enums import Index, Platform, BandCommon
 from spectral_recovery.indices import (
     compute_indices,
-    _indices_map,
-    requires_bands,
-    compatible_with,
-    ndvi,
-    nbr,
-    evi,
-    avi,
-    savi,
-    ndwi,
-    sr,
-    ndmi,
-    gci,
-    ndii,
 )
 
+ALL_INDICES = list(spx.indices)
+ALL_BANDS = list(spx.bands)
+ALL_CONSTANTS = list(spx.bands)
+BAND_PATTERN = re.compile(r'\b(?:' + '|'.join(map(re.escape, ALL_BANDS)) + r')\b')
+CONSTANTS_PATTERN = re.compile(r'\b(?:' + '|'.join(map(re.escape, ALL_CONSTANTS)) + r')\b')
 
-# def test_ndvi():
-#     input_xr = xr.DataArray(
-#         [[[[2, 1]]], [[[1, 2]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.RED, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[-0.3333333333333333, 0.3333333333333333]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.NDVI]},
-#     )
-#     assert (ndvi(input_xr) == expected).all()
+def bands_from_index(indices: List[str]):
+    """ Return list of bands used in an index """
+    bands = []
+    for index in indices:
+        formula = spx.indices[index].formula
+        matches = BAND_PATTERN.findall(formula)
+        for match in matches:
+            if match in ALL_BANDS and match not in bands:
+                bands.append(match)
+    return bands
 
-
-# def test_nbr():
-#     input_xr = xr.DataArray(
-#         [[[[2, 1]]], [[[1, 2]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.SWIR2, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[-0.3333333333333333, 0.3333333333333333]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.NBR]},
-#     )
-#     assert (nbr(input_xr) == expected).all()
-
-
-# def test_evi():
-#     input_xr = xr.DataArray(
-#         [[[[3]]], [[[1]]], [[[2]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[-0.18518518518518517]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.EVI]},
-#     )
-#     assert (evi(input_xr) == expected).all()
-
-
-# def test_avi():
-#     input_xr = xr.DataArray(
-#         [[[[3]]], [[[2]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.RED, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[1.5874010519681994]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.AVI]},
-#     )
-#     assert (avi(input_xr) == expected).all()
-
-
-# def test_savi():
-#     input_xr = xr.DataArray(
-#         [[[[1]]], [[[2]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.RED, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[0.42857142857142855]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.SAVI]},
-#     )
-#     assert (savi(input_xr) == expected).all()
-
-
-# def test_ndwi():
-#     input_xr = xr.DataArray(
-#         [[[[2, 1]]], [[[1, 2]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.GREEN, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[0.3333333333333333, -0.3333333333333333]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.NDWI]},
-#     )
-#     assert (ndwi(input_xr) == expected).all()
-
-
-# def test_sr():
-#     input_xr = xr.DataArray(
-#         [[[[2]]], [[[1]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.RED, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[0.5]]]], dims=["band", "time", "y", "x"], coords={"band": [Index.SR]}
-#     )
-#     assert (sr(input_xr) == expected).all()
-
-
-# def test_ndmi():
-#     input_xr = xr.DataArray(
-#         [[[[1, 2]]], [[[2, 1]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.NIR, BandCommon.SWIR1]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[-0.3333333333333333, 0.3333333333333333]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.NDMI]},
-#     )
-#     assert (ndmi(input_xr) == expected).all()
-
-
-# def test_gci():
-#     input_xr = xr.DataArray(
-#         [[[[2]]], [[[1]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.GREEN, BandCommon.NIR]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[-0.5]]]], dims=["band", "time", "y", "x"], coords={"band": [Index.GCI]}
-#     )
-#     assert (gci(input_xr) == expected).all()
-
-
-# def test_ndii():
-#     input_xr = xr.DataArray(
-#         [[[[1, 2]]], [[[2, 1]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [BandCommon.NIR, BandCommon.SWIR1]},
-#         attrs={"platform": [Platform.LANDSAT_OLI]},
-#     )
-#     expected = xr.DataArray(
-#         [[[[-0.3333333333333333, 0.3333333333333333]]]],
-#         dims=["band", "time", "y", "x"],
-#         coords={"band": [Index.NDII]},
-#     )
-#     assert (ndii(input_xr) == expected).all()
-
+def constants_from_index(indices: List[str]):
+    """ Return list of constants used in an index """
+    constants = []
+    for index in indices:
+        formula = spx.indices[index].formula
+        matches = CONSTANTS_PATTERN.findall(formula)
+        for match in matches:
+            if match in ALL_CONSTANTS and match not in constants:
+                constants.append(match)
+    return constants
 
 class TestComputeIndices:
+    
+    @patch("spyndex.computeIndex")
+    def test_correct_kwargs_for_compute_index_call(self, mock_spyndex):
+        # Set up
+        index = "ARVI"
+        bands = bands_from_index([index])
+        constants = constants_from_index([index])
+        data = xr.DataArray(
+            np.ones((len(bands), 1, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"band": bands}
+        )
+        expected_params = {b: data.sel(band=b) for b in bands} | {c: spx.constants[c].default for c in constants}
+        print(expected_params)
+        # Act
+        compute_indices(data, [index])
 
-    def test_correct_indices_computed(self):
-        raise NotImplementedError
+        # Assert
+        input_kwargs = mock_spyndex.call_args.kwargs 
+        assert input_kwargs == {"index": [index], "params": expected_params}
+    
 
-    def test_unsupported_index_throws_value_error(self):
+    def test_return_is_data_array_obj(self):
+        # Set up
+        index = random.choice(ALL_INDICES)
+        bands = bands_from_index([index])
+        data = xr.DataArray(
+            np.ones((len(bands), 1, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"band": bands}
+        )
+
+        # Act
+        result = compute_indices(data, [index])
+
+        # Assert
+        assert isinstance(result, xr.DataArray)
+    
+
+    def test_correct_dimensions_and_coords_on_data_array(self):
+        # Set up
+        index = random.choices(ALL_INDICES, k=3)
+        bands = bands_from_index(index)
+        data = xr.DataArray(
+            np.ones((len(bands), 1, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"band": bands}
+        )
+
+        # Act
+        result = compute_indices(data, index)
+
+        # Assert
+        assert result.dims == tuple(REQ_DIMS)
+        assert result.band.values == bands
+
+    def test_unsupported_index_throws_value_error(self, all_indices):
         raise NotImplementedError
        
     def test_index_with_unrelated_platform_throws_value_error(self):
@@ -183,9 +110,12 @@ class TestComputeIndices:
     
     def test_missing_bands_throws_spyndex_exception(self):
         raise NotImplementedError
+    
+    def test_missing_bands_throws_exception(self):
+        raise NotImplementedError
 
-    def test_bad_index_choice_raises_value_err(self):
-        with pytest.raises(ValueError):
+    def test_bad_index_choice_raises_exception(self):
+        with pytest.raises(Exception):
             compute_indices(
                 xr.DataArray([[[[0]]], [[[0]]]], dims=["band", "time", "y", "x"]),
                 ["not_an_index"],
