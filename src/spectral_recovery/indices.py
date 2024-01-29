@@ -293,7 +293,7 @@ def _bad_index_choice(stack):
     raise ValueError("No index function implemented for current index.") from None
 
 @maintain_rio_attrs
-def compute_indices(image_stack: xr.DataArray, indices: list[str]):
+def compute_indices(image_stack: xr.DataArray, indices: list[str], **kwargs):
     """Compute spectral indices using the spyndex package.
 
 
@@ -304,8 +304,9 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str]):
         enums.BandCommon types.
     indices : list of str
         list of spectral indices to compute
-    platform : Platform
-        platform from which images were collected
+    kwargs : dict, optional 
+        Additional kwargs for wrapped spyndex.computeIndex function. Provide
+        constant values through this, e.g 'L = 0.5'.
 
     Returns
     -------
@@ -314,6 +315,7 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str]):
 
     """
     params_dict = _build_params_dict(image_stack)
+    params_dict = params_dict | kwargs
     index_stack = spx.computeIndex(
         index=indices,
         params=params_dict
@@ -325,7 +327,7 @@ def _build_params_dict(image_stack: xr.DataArray):
     """Build dict of standard names and slices required by computeIndex.
     
     Slices will be taken along the band dimension of image_stack,
-    selecting for each of the standard band names that computeIndex
+    selecting for each of the standard band/constant names that computeIndex
     accepts. Any name that is not in image_stack will not be included
     in the dictionary.
 
@@ -339,7 +341,7 @@ def _build_params_dict(image_stack: xr.DataArray):
 
     Returns
     -------
-    band_dict : dict
+    band_dict : dict    
         Dictionary mapping standard names to slice of image_stack.
 
     """
@@ -351,6 +353,7 @@ def _build_params_dict(image_stack: xr.DataArray):
             params_dict[standard] = band_slice
         except KeyError:
             continue
+
     return params_dict
 
 
