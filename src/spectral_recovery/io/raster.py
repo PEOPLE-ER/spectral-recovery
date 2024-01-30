@@ -12,12 +12,12 @@ import rioxarray
 import pandas as pd
 import numpy as np
 import xarray as xr
+import spyndex as spx
 
 from rasterio._err import CPLE_AppDefinedError
 
-from spectral_recovery._utils import _get_bands
 from spectral_recovery._config import VALID_YEAR, REQ_DIMS
-from spectral_recovery.enums import Platform
+from spectral_recovery.enums import Platform 
 
 
 def read_and_stack_tifs(
@@ -87,7 +87,7 @@ def read_and_stack_tifs(
     # Stack images along the time dimension
     stacked_data = xr.concat(image_dict.values(), dim=pd.Index(time_keys, name="time"))
 
-    standard = _get_bands()
+    standard = list(spx.bands)
     band_nums = stacked_data.band.values
     if band_names is None:
         # If band descriptions are present in the rasters, then rioxarray 
@@ -122,13 +122,13 @@ def read_and_stack_tifs(
         with rioxarray.open_rasterio(Path(path_to_mask), chunks="auto") as mask:
             stacked_data = _mask_stack(stacked_data, mask)
 
-    stacked_data.attrs["platform"] = _to_platform_enums(platform)
+    stacked_data.attrs["platform"] = _to_standard_platform_names(platform)
     
     return stacked_data
 
 
-def _to_platform_enums(platform: List[str]) -> List[Platform]:
-    """Convert a list of platform names to Platform enums"""
+def _to_standard_platform_names(platform: List[str]) -> List[Platform]:
+    """Convert a list of platform names to platform names """
     valid_names = []
     for name in platform:
         try:
@@ -210,6 +210,13 @@ def _valid_mapping(band_names, band_nums):
         
     return True
 
+def _common_and_short_names(standard):
+    """ Dict of short and common names to standard names """
+    common_and_short = {}
+    for band in standard:
+        common_and_short[spx.bands[band].short_name] = band
+        common_and_short[spx.bands[band].common_name] = band
+    return common_and_short
 
 def _all_names_to_standard(in_names, standard):
     """ Map given names to standard names.
@@ -223,23 +230,22 @@ def _all_names_to_standard(in_names, standard):
     
     Returns
     -------
-    tuple
+    tuple : tuple of lists
+        lists of standard names and attribute (long) names, respectively
         
         
     """
-    short_and_common = _common_long_to_short_names(standard)
-
+    short_and_common = _common_and_short_names(standard)
     standard_names = []
     attr_names = []
     for given_name in in_names:
         converted = False
-
         if given_name in short_and_common.keys():
             converted = True
             standard_names.append(short_and_common[given_name])
             attr_names.append(given_name)
 
-        elif given_name in standard.keys():
+        elif given_name in standard:
             converted = True
             standard_names.append(standard[given_name])
 
