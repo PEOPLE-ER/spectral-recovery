@@ -83,169 +83,6 @@ def requires_bands(bands: List[BandCommon]):
         Platform.SENTINEL_2,
     ]
 )
-@requires_bands([BandCommon.NIR, BandCommon.RED])
-@maintain_rio_attrs
-def ndvi(stack: xr.DataArray):
-    """Compute the Normalized Difference Vegetation Index (NDVI)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    red = stack.sel(band=BandCommon.RED)
-    ndvi_v = (nir - red) / (nir + red)
-    return ndvi_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.NIR, BandCommon.SWIR2])
-@maintain_rio_attrs
-def nbr(stack):
-    """Compute the Normalized Burn Ratio (NBR)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    swir2 = stack.sel(band=BandCommon.SWIR2)
-    nbr_v = (nir - swir2) / (nir + swir2)
-    return nbr_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.NIR, BandCommon.GREEN])
-@maintain_rio_attrs
-def gndvi(stack):
-    """Compute the Green Normalized Difference Vegetation Index (GNDVI)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    green = stack.sel(band=BandCommon.GREEN)
-    gndvi_v = (nir - green) / (nir + green)
-    return gndvi_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.NIR, BandCommon.RED, BandCommon.BLUE])
-@maintain_rio_attrs
-def evi(stack):
-    """Compute the Enhanced Vegetation Index (EVI)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    red = stack.sel(band=BandCommon.RED)
-    blue = stack.sel(band=BandCommon.BLUE)
-    evi_v = 2.5 * ((nir - red) / (nir + 6.0 * red - 7.5 * blue + 1)).drop_vars("band")
-    return evi_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.NIR, BandCommon.RED])
-@maintain_rio_attrs
-def avi(stack):
-    """Compute the Atmospherically Resistant Vegetation Index (AVI)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    red = stack.sel(band=BandCommon.RED)
-    avi_v = (nir * (1 - red) * (nir - red)) ** (1 / 3)
-    return avi_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.NIR, BandCommon.RED])
-@maintain_rio_attrs
-def savi(stack):
-    """Compute the Soil Adjusted Vegetation Index (SAVI)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    red = stack.sel(band=BandCommon.RED)
-    savi_v = ((nir - red) / (nir + red + 0.5)) * (1.0 + 0.5)
-    return savi_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.GREEN, BandCommon.NIR])
-@maintain_rio_attrs
-def ndwi(stack):
-    """Compute the Normalized Difference Water Index (NDWI)"""
-    green = stack.sel(band=BandCommon.GREEN)
-    nir = stack.sel(band=BandCommon.NIR)
-    ndwi_v = (green - nir) / (green + nir)
-    return ndwi_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.NIR, BandCommon.RED])
-@maintain_rio_attrs
-def sr(stack):
-    """Compute the Simple Ratio (SR)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    red = stack.sel(band=BandCommon.RED)
-    sr_v = nir / red
-    return sr_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.NIR, BandCommon.SWIR1])
-@maintain_rio_attrs
-def ndmi(stack):
-    """Compute the Normalized Difference Moisture Index (NDMI)"""
-    nir = stack.sel(band=BandCommon.NIR)
-    swir1 = stack.sel(band=BandCommon.SWIR1)
-    ndmi_v = (nir - swir1) / (nir + swir1)
-    return ndmi_v
-
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
 @requires_bands([BandCommon.NIR, BandCommon.GREEN])
 @maintain_rio_attrs
 def gci(stack):
@@ -255,37 +92,8 @@ def gci(stack):
     gci_v = (nir / green) - 1
     return gci_v
 
-
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
-@requires_bands([BandCommon.SWIR1, BandCommon.NIR])
-@maintain_rio_attrs
-def ndii(stack):
-    """Compute the Normalized Difference Infrared Index (NDII)"""
-    swir1 = stack.sel(band=BandCommon.SWIR1)
-    nir = stack.sel(band=BandCommon.NIR)
-    ndii_v = (nir - swir1) / (nir + swir1)
-    return ndii_v
-
-
 _indices_map = {
-    Index.NDVI: ndvi,
-    Index.NBR: nbr,
-    Index.GNDVI: gndvi,
-    Index.EVI: evi,
-    Index.AVI: avi,
-    Index.SAVI: savi,
-    Index.NDWI: ndwi,
-    Index.SR: sr,
-    Index.NDMI: ndmi,
     Index.GCI: gci,
-    Index.NDII: ndii,
 }
 
 
@@ -305,8 +113,8 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str], **kwargs):
     indices : list of str
         list of spectral indices to compute
     kwargs : dict, optional 
-        Additional kwargs for wrapped spyndex.computeIndex function. Provide
-        constant values through this, e.g 'L = 0.5'.
+        Additional kwargs for wrapped spyndex.computeIndex function, like
+        constant values e.g 'L = 0.5'.
 
     Returns
     -------
@@ -320,6 +128,11 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str], **kwargs):
         index=indices,
         params=params_dict
     )
+    try:
+        index_stack = index_stack.rename({"index": "band"})
+    except ValueError:
+        index_stack = index_stack.expand_dims(dim={"band": indices})
+
     return index_stack
 
 
