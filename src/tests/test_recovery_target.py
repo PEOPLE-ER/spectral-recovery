@@ -3,10 +3,13 @@ import xarray as xr
 
 
 from xarray.testing import assert_equal
-from spectral_recovery.recovery_target import median_target
+from spectral_recovery.recovery_target import MedianTarget
 
 
-class TestHistoricAverage:
+class TestMedianTargetPolygonScale:
+
+    median_polygon_method = MedianTarget(scale="polygon")
+
     def test_no_nan_returns_avg_over_time(self):
         test_data = [
             [
@@ -33,7 +36,9 @@ class TestHistoricAverage:
                 "band": [0, 1],
             },
         )
-        out_stack = median_target(test_stack, [0, 1])
+
+        out_stack = self.median_polygon_method(test_stack, [0, 1])
+
         assert_equal(out_stack, expected_stack)
 
     def test_odd_time_dim_returns_median(self):
@@ -66,7 +71,7 @@ class TestHistoricAverage:
                 "band": [0, 1],
             },
         )
-        out_stack = median_target(test_stack, [0, 2])
+        out_stack = self.median_polygon_method(test_stack, [0, 2])
         assert_equal(out_stack, expected_stack)
 
     def test_nan_timeseries_is_nan(self):
@@ -95,7 +100,7 @@ class TestHistoricAverage:
                 "band": [0, 1],
             },
         )
-        out_stack = median_target(test_stack, [0, 1])
+        out_stack = self.median_polygon_method(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
 
     def test_nan_in_timeseries_ignored(self):
@@ -124,7 +129,7 @@ class TestHistoricAverage:
                 "band": [0, 1],
             },
         )
-        out_stack = median_target(test_stack, [0, 1])
+        out_stack = self.median_polygon_method(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
 
     def test_multi_poly_averages_individual_polygon(self):
@@ -161,10 +166,14 @@ class TestHistoricAverage:
                 "band": [0],
             },
         )
-        out_stack = median_target(test_stack, [0, 1])
+        out_stack = self.median_polygon_method(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
 
-    def test_space_false_returns_correct_dimensions(self):
+class TestMedianTargetPixelScale:
+
+    median_pixel_method = MedianTarget(scale="pixel")
+
+    def test_scale_pixel_returns_correct_dimensions(self):
         test_data = np.arange(8).reshape(1, 2, 2, 2)
         test_stack = xr.DataArray(
             test_data,
@@ -173,11 +182,11 @@ class TestHistoricAverage:
                 "time": [0, 1],
             },
         )
-        out_stack = median_target(test_stack, [0, 1], space=False)
+        out_stack = self.median_pixel_method(test_stack, [0, 1])
         assert out_stack.dims == ("band", "y", "x")
         assert out_stack.shape == (1, 2, 2)
 
-    def test_space_false_returns_per_pixel_median(self):
+    def test_scale_pixel_returns_per_pixel_median(self):
         test_data = [
             [
                 [[1.0, 2.0], [3.0, 4.0]],
@@ -201,5 +210,5 @@ class TestHistoricAverage:
             },
         )
 
-        out_stack = median_target(test_stack, [0, 1], space=False)
+        out_stack = self.median_pixel_method(test_stack, [0, 1])
         assert_equal(out_stack, expected_stack)
