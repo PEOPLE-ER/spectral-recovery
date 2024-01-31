@@ -97,8 +97,7 @@ _indices_map = {
 }
 
 
-def _bad_index_choice(stack):
-    raise ValueError("No index function implemented for current index.") from None
+SUPPORTED_DOMAINS = ["vegetation", "burn"] 
 
 @maintain_rio_attrs
 def compute_indices(image_stack: xr.DataArray, indices: list[str], **kwargs):
@@ -122,18 +121,69 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str], **kwargs):
         the band dimension.
 
     """
-    params_dict = _build_params_dict(image_stack)
-    params_dict = params_dict | kwargs
-    index_stack = spx.computeIndex(
-        index=indices,
-        params=params_dict
-    )
-    try:
-        index_stack = index_stack.rename({"index": "band"})
-    except ValueError:
-        index_stack = index_stack.expand_dims(dim={"band": indices})
-
+    platforms = image_stack.attrs["platform"]
+    if _supported_domain(indices):
+        params_dict = _build_params_dict(image_stack)
+        params_dict = params_dict | kwargs
+        index_stack = spx.computeIndex(
+            index=indices,
+            params=params_dict
+        )
+        try:
+            # rename 'index' dim to 'bands' to match tool's expected dims
+            index_stack = index_stack.rename({"index": "band"})
+        except ValueError:
+            # computeIndex will not return an index dim if only 1 index passed
+            index_stack = index_stack.expand_dims(dim={"band": indices})
     return index_stack
+
+def _supported_domain(indices: list[str]):
+    """ Determine whether indices application domains are supported by tool.
+    
+    Parameters
+    ----------
+    indices : list of str
+        list of indices
+    
+    Raises
+    ------
+    ValueError
+        If any index has an unsupported application domain.
+    """
+    for i in indices:
+        if spx.indices[i].application_domain not in SUPPORTED_DOMAINS:
+            raise ValueError(
+                f"only application domain 'vegetation' and 'burn' are supported (index {i} has application domain '{spx.indices[i].application_domain}')"
+            ) from None
+    return True
+
+def _compatible_platform(indices: list[str], platforms: list[str]):
+    """ Determine whether platform and selected indices are compatible.
+    
+    Parameters
+    ----------
+    indices : list of str
+        list of indices
+    platforms : list of str
+        list of platforms
+    
+    Raises
+    ------
+    ValueError
+        If an index is compatible with any of the platforms.
+    """
+    for i in indices:
+        compatible_platforms = spx.indices[i].platforms
+        compatible = False
+        for p in platforms:
+            if p in compatible_platforms:
+                compatible = True
+        if not compatible:
+            raise ValueError(
+                    f"incompatible platforms for index {i}. {i} requires any of {spx.indices[i].platforms} ({platforms} provided)"
+                ) from None
+    return True
+      
 
 
 def _build_params_dict(image_stack: xr.DataArray):
