@@ -11,7 +11,7 @@ from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
 from tests.utils import SAME_XR
 
-from spectral_recovery.recovery_target import median_target
+from spectral_recovery.recovery_target import MedianTarget
 from spectral_recovery.restoration import _ReferenceSystem, RestorationArea
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import DATETIME_FREQ
@@ -59,6 +59,7 @@ class TestRestorationAreaInit:
             resto_poly = gpd.read_file(
                 "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
             )
+
             resto_a = RestorationArea(
                 restoration_polygon=resto_poly,
                 restoration_start=resto_start,
@@ -416,6 +417,92 @@ class TestRestorationAreaInit:
                     reference_years=ref_years,
                     composite_stack=bad_stack,
                 )
+
+class TestRestorationAreaRecoveryTarget:
+
+    def test_recovery_target_method_set_polygon(self):
+        resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+        resto_start = "2015"
+        ref_years = "2010"
+        raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
+        time_range = [str(x) for x in np.arange(2010, 2027)]
+
+        expected_dist_start_dt = pd.to_datetime("2014")
+        with rioxarray.open_rasterio(raster, chunks="auto") as data:
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
+            stack = stack.assign_coords(
+                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
+            )
+
+            resto_a = RestorationArea(
+                restoration_polygon=resto_poly,
+                restoration_start=resto_start,
+                reference_polygon=resto_poly,
+                reference_years=ref_years,
+                composite_stack=stack,
+                recovery_target_method="polygon"
+            )
+        
+        assert isinstance(resto_a.recovery_target_method, MedianTarget)
+        assert resto_a.recovery_target_method.scale == "polygon"
+    
+    def test_recovery_target_method_set_polygon(self):
+        resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+        resto_start = "2015"
+        ref_years = "2010"
+        raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
+        time_range = [str(x) for x in np.arange(2010, 2027)]
+
+        expected_dist_start_dt = pd.to_datetime("2014")
+        with rioxarray.open_rasterio(raster, chunks="auto") as data:
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
+            stack = stack.assign_coords(
+                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
+            )
+
+            resto_a = RestorationArea(
+                restoration_polygon=resto_poly,
+                restoration_start=resto_start,
+                reference_polygon=resto_poly,
+                reference_years=ref_years,
+                composite_stack=stack,
+                recovery_target_method="pixel"
+            )
+        
+        assert isinstance(resto_a.recovery_target_method, MedianTarget)
+        assert resto_a.recovery_target_method.scale == "pixel"
+
+    def test_recovery_target_called_with_correct_kwargs(self):
+
+        resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+
+        resto_start = "2015"
+        ref_years = "2010"
+        raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
+        time_range = [str(x) for x in np.arange(2010, 2027)]
+
+        expected_dist_start_dt = pd.to_datetime("2014")
+        with rioxarray.open_rasterio(raster, chunks="auto") as data:
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
+            stack = stack.assign_coords(
+                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
+            )
+
+            resto_a = RestorationArea(
+                restoration_polygon=resto_poly,
+                restoration_start=resto_start,
+                reference_polygon=resto_poly,
+                reference_years=ref_years,
+                composite_stack=stack,
+                recovery_target_method="polygon"
+            )
+
 
 
 class TestRestorationAreaMetrics:
