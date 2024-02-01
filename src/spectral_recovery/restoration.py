@@ -10,7 +10,8 @@ represents the reference area(s) and contains methods for computing
 the recovery target. 
 
 """
-from typing import Callable, Optional, Union, List
+from inspect import signature
+from typing import Callable, Optional, Union, List, Tuple
 from datetime import datetime
 
 import xarray as xr
@@ -61,13 +62,12 @@ class _ReferenceSystem:
         reference_stack: xr.DataArray,
         reference_range: Union[datetime, List[datetime]],
         reference_polygons: gpd.GeoDataFrame,
-        historic_reference_system: bool,
-        recovery_target_method: Optional[Callable] = None,
+        recovery_target_method: Callable,
     ) -> None:
-        self.hist_ref_sys = historic_reference_system
+        
+        self.recovery_target_method = recovery_target_method
         self.reference_polygons = reference_polygons
         self.reference_range = reference_range
-        self.recovery_target_method = recovery_target_method or MedianTarget(scale="polygon")
 
         try:
             if self._within(reference_stack):
@@ -86,18 +86,10 @@ class _ReferenceSystem:
 
     def recovery_target(self):
         """Get the recovery target for a reference system"""
-        if self.hist_ref_sys:
-            recovery_target = self.recovery_target_method(
-                stack=self.reference_stack,
-                reference_date=self.reference_range,
-                space=False,
-            )
-        else:
-            recovery_target = self.recovery_target_method(
-                stack=self.reference_stack,
-                reference_date=self.reference_range,
-                space=True,
-            )
+        recovery_target = self.recovery_target_method(
+            stack=self.reference_stack,
+            reference_date=self.reference_range,
+        )
         return recovery_target
 
     # TODO: Add method for plotting spectral trajectory of reference system
@@ -161,7 +153,7 @@ class RestorationArea:
         reference_polygon: gpd.GeoDataFrame = None,
         disturbance_start: str = None,
         restoration_start: str = None,
-        recovery_target_method: str = "polygon"
+        recovery_target_method: Callable[[xr.DataArray, Tuple[datetime]], xr.DataArray] = None,
     ) -> None:
         if restoration_polygon.shape[0] != 1:
             raise ValueError(
@@ -254,14 +246,19 @@ class RestorationArea:
                 " contains 'band', 'time', 'y' and 'x' dimensions."
             ) from None
 
+        if recovery_target_method is not None:
+           if signature(recovery_target_method) != signature(make_median_target(scale="polygon")):
+                raise ValueError(f"The provided recovery target method must accept the following positional arguments: {signature(make_median_target(scale='polygon'))} ({signature(recovery_target_method)} provided)")
+           
+        self.recovery_target_method = recovery_target_method or make_median_target(scale="polygon")
+
         if reference_polygon is None:
             # Build the reference polygon from the restoration polygon
             self.reference_system = _ReferenceSystem(
                 reference_polygons=self.restoration_polygon,
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
-                recovery_target_method=None,
-                historic_reference_system=True,
+                recovery_target_method=self.recovery_target_method
             )
         else:
             # Build the reference polygon from the reference polygon
@@ -271,8 +268,7 @@ class RestorationArea:
                 reference_polygons=reference_polygon,
                 reference_range=self.reference_years,
                 reference_stack=composite_stack,
-                recovery_target_method=None,
-                historic_reference_system=False,
+                recovery_target_method=self.recovery_target_method,
             )
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
