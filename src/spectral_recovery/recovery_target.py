@@ -5,32 +5,42 @@ from datetime import datetime
 import xarray as xr
 
 
-class MedianTarget:
-    """ Callable median target method, parameterized by scale.
-    
-    Attributes
+def make_median_target(scale: str):
+    """ Parameterize a median target method based on desired scale.
+
+    The median target algorithm calculates a recovery target by
+    sequentially computing the median over a specified time window from
+    a stack of image data. The stack is expected to have dimensions for
+    time, bands, and spatial coordinates. Additional median calculations
+    are performed based on the scale ("polygon" or "pixel") and the
+    presence of a "poly_id" dimension. 
+
+    Parameters
     ----------
     scale : {"polygon", "pixel"}
         The scale to compute target for. Either 'polygon' which results
         in one value per-band (median of the polygon(s) across time), or
         'pixel' which results in a value for each pixel per-band (median
         of each pixel across time).
+    
+    Returns
+    -------
+    median_target : callable
+        Median target method parameterized by scale.
         
     """
-    def __init__(self, scale: str):
-        self.scale = scale
 
-    def __call__(
-        self,
+    def median_target(
         stack: xr.DataArray,
         reference_date: Tuple[datetime],
     ) -> xr.DataArray:
         """
-        Compute the median recovery target.
+        Closure for median recovery target.
 
-        Sequentially computes the median over time and, optionally, the spatial
-        dimensions (x and y). If there is a "poly_id" dimension, then the median is
-        automatically computed along that dimension after the time and space dimensions.
+        Sequentially computes the median over time and, optionally, the
+        spatial dimensions (x and y). If there is a "poly_id" dimension,
+        then the median is automatically computed along that dimension
+        after the time and space dimensions.
 
         Parameters
         ----------
@@ -56,7 +66,8 @@ class MedianTarget:
         median_t = reference_window.median(dim="time", skipna=True)
         
         # Additional median calculations based on scale and dimensions
-        if self.scale == "polygon":
+        # NOTE: scale is referenced from the containing scope 
+        if scale == "polygon":
             median_t = median_t.median(dim=["y", "x"], skipna=True)
         if "poly_id" in stack.dims:
             median_t = median_t.median(dim="poly_id", skipna=True)
@@ -64,8 +75,10 @@ class MedianTarget:
         # Re-assign lost band coords.
         median_t = median_t.assign_coords(band=stack.coords["band"])  
         return median_t
+    
+    return median_target
 
 
-def windowed_median_target() -> xr.DataArray:
+def make_windowed_target() -> xr.DataArray:
     """Compute the windowed median recovery target."""
     return NotImplementedError

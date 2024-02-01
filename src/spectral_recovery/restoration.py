@@ -23,7 +23,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 import seaborn as sns
 
-from spectral_recovery.recovery_target import MedianTarget
+from spectral_recovery.recovery_target import make_median_target
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import VALID_YEAR

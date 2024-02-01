@@ -504,7 +504,6 @@ class TestRestorationAreaRecoveryTarget:
             )
 
 
-
 class TestRestorationAreaMetrics:
     restoration_start = "2015"
     reference_year = "2012"
