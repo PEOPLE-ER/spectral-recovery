@@ -174,10 +174,16 @@ def _validate_restoration_polygons(restoration_polygon, image_stack):
             "A RestorationArea instance can only contain one Polygon."
         ) from None
     if not image_stack.satts.contains_spatial(restoration_polygon):
-        raise ValueError() from None
+        raise ValueError("restoration_polygon is not within the bounds of images") from None
 
     return restoration_polygon
 
+def _validate_reference_polygons(reference_polygons, image_stack):
+    if reference_polygons is not None:
+        if not image_stack.satts.contains_spatial(reference_polygons):
+            raise ValueError("not all reference_polygons within the bounds of images") from None
+        
+    return reference_polygons
 
 class RestorationArea:
     """A Restoration Area (RA).
@@ -188,22 +194,23 @@ class RestorationArea:
         The spatial deliniation of the restoration event. There
         must only be one geometry in the GeoDataframe and it must be
         of type shapely.Polygon or shapely.MultiPolygon.
-    reference_polygon : GeoDataFrame
-        The spatial delinitation of the reference area(s).
-    reference_years : datetime or Tuple of datetimes
-        The year or range of years from which to get values for computing
-        the recovery target.
     composite_stack : xr.DataArray
         A 4D (band, time, y, x) DataArray of images.
     disturbance_start : str or datetime
-        The year the disturbance began. Value must be within
-        the time dimension coordinates of composite_stack param.
+        The start year of the disturbance window. If None, defaults
+        to the year prior to restoration_start.
     restoration_start : str or datetime
-        The year the restoration event began. Value must be within
-        the time dimension coordinates of composite_stack param.
+        The start year of the recovery window. If None, defaults
+        to the year following disturbance_start.
+    reference_polygon : GeoDataFrame
+        The spatial delinitation of the reference area(s).
+    reference_years : datetime or Tuple of datetimes
+        The year or range of years of the reference window.
     recovery_target_method : callable
-        The method to use to compute the recovery target. Default
+        The method used for computing the recovery target. Default
         is median target method with polygon scale.
+    recovery_target : xr.DataArray
+        The recovery target values.
 
     """
 
@@ -219,6 +226,7 @@ class RestorationArea:
             [xr.DataArray, Tuple[datetime]], xr.DataArray
         ] = MedianTarget(scale="polygon"),
     ) -> None:
+        
         if composite_stack.satts.is_annual_composite:
             self.restoration_polygon = _validate_restoration_polygons(
                 restoration_polygon=restoration_polygon, image_stack=composite_stack
@@ -250,7 +258,7 @@ class RestorationArea:
             )
         self.recovery_target_method = recovery_target_method
 
-        self.reference_polygons = reference_polygons
+        self.reference_polygons = _validate_reference_polygons(reference_polygons=reference_polygons, image_stack=composite_stack)
         if self.reference_polygons is None:
             reference_image_stack = self.stack
         else:  # computing recovery target using reference polygons
