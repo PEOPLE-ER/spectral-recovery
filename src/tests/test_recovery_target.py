@@ -1,9 +1,16 @@
+import pytest 
+
 import numpy as np
 import xarray as xr
 
 
 from xarray.testing import assert_equal
 from spectral_recovery.recovery_target import make_median_target
+
+
+def test_invalid_scale_throws_value_error():
+    with pytest.raises(ValueError):
+        make_median_target(scale="not_a_scale")
 
 
 class TestMedianTargetPolygonScale:

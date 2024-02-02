@@ -30,7 +30,10 @@ def make_median_target(scale: str):
         Median target method parameterized by scale.
 
     """
-
+    if not ((scale == "polygon") or (scale == "pixel")):
+        raise ValueError(
+            f"scale must be 'polygon' or 'pixel' ('{scale}' provided)"
+        )
     def median_target(
         image_stack: xr.DataArray,
         reference_date: Tuple[datetime] | datetime,
