@@ -31,8 +31,8 @@ def make_median_target(scale: str):
     """
 
     def median_target(
-        stack: xr.DataArray,
-        reference_date: Tuple[datetime],
+        image_stack: xr.DataArray,
+        reference_date: Tuple[datetime] | datetime,
     ) -> xr.DataArray:
         """
         Closure for median recovery target.
@@ -44,7 +44,7 @@ def make_median_target(scale: str):
 
         Parameters
         ----------
-        stack : xr.DataArray
+        image_stack : xr.DataArray
             DataArray of images to derive historic average from. Must have at least
             4 labelled dimensions: "time", "band", "y" and "x" and optionally,
             "poly_id".
@@ -60,20 +60,23 @@ def make_median_target(scale: str):
             dimensions "band", "y" and "x" and optionally, "poly_id".
 
         """
-        reference_window = stack.sel(time=slice(*reference_date))
+        try:
+            reference_window = image_stack.sel(time=slice(*reference_date))
+        except TypeError:
+            reference_window = image_stack.sel(time=slice(reference_date))
 
         # Compute median sequentially
         median_t = reference_window.median(dim="time", skipna=True)
         
         # Additional median calculations based on scale and dimensions
-        # NOTE: scale is referenced from the containing scope 
+        # NOTE: scale is referenced from the containing scope make_median_target
         if scale == "polygon":
             median_t = median_t.median(dim=["y", "x"], skipna=True)
-        if "poly_id" in stack.dims:
+        if "poly_id" in image_stack.dims:
             median_t = median_t.median(dim="poly_id", skipna=True)
 
         # Re-assign lost band coords.
-        median_t = median_t.assign_coords(band=stack.coords["band"])  
+        median_t = median_t.assign_coords(band=image_stack.coords["band"])  
         return median_t
     
     return median_target
