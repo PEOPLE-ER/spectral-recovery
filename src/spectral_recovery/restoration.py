@@ -11,21 +11,21 @@ the recovery target.
 
 """
 
-from inspect import signature
 from typing import Callable, Optional, Union, List, Tuple
 from datetime import datetime
+from inspect import signature
 
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
-from pandas import Index
-
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
 import seaborn as sns
 
-from spectral_recovery.recovery_target import make_median_target
+from pandas import Index
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+
+from spectral_recovery.recovery_target import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import VALID_YEAR
@@ -209,8 +209,8 @@ class RestorationArea:
         The year the restoration event began. Value must be within
         the time dimension coordinates of `composite_stack` param.
     recovery_target_method : callable, optional
-        The method to use to compute the recovery target. Defaults
-        to using the per-polygon median target method.
+        The method to use to compute the recovery target. Default
+        is median target method with polygon scale.
 
     """
 
@@ -224,8 +224,9 @@ class RestorationArea:
         restoration_start: str = None,
         recovery_target_method: Callable[
             [xr.DataArray, Tuple[datetime]], xr.DataArray
-        ] = None,
+        ] = MedianTarget(scale="polygon"),
     ) -> None:
+        
         if composite_stack.satts.is_annual_composite:
             self.restoration_polygon = _validate_restoration_polygons(
                 restoration_polygon, composite_stack
@@ -258,17 +259,13 @@ class RestorationArea:
                 reference_polygons=self.reference_polygons,
                 image_stack=composite_stack,
             )
-        if recovery_target_method is not None:
-            if signature(recovery_target_method) != signature(
-                make_median_target(scale="polygon")
-            ):
-                raise ValueError(
-                    "The provided recovery target method must only accept the"
-                    " following positional arguments:"
-                    f" {signature(make_median_target(scale='polygon'))} ({signature(recovery_target_method)} provided)"
-                )
-        else:
-            recovery_target_method = make_median_target(scale="polygon")
+
+        if signature(recovery_target_method) != expected_signature:
+            raise ValueError(
+                "The provided recovery target method must only accept the"
+                " following positional arguments:"
+                f" {expected_signature} ({signature(recovery_target_method)} provided)"
+            )
 
         self.recovery_target = recovery_target_method(
             reference_image_stack, reference_date=self.reference_years

@@ -1,13 +1,40 @@
 """ Methods for computing recovery targets """
 
+from inspect import signature
 from typing import Union, Tuple
 from datetime import datetime
 
 import xarray as xr
 
+def _template_method(
+    image_stack: xr.DataArray, 
+    reference_date: Tuple[datetime] | datetime
+    ) -> xr.DataArray:
+    """
+    Template recovery target method.
 
-def make_median_target(scale: str):
-    """Parameterize a median target method based on desired scale.
+    All valid target methods must follow this signature.
+
+    Parameters
+    ----------
+    image_stack : xr.DataArray
+        DataArray of images. Must have [time, band, y, x] dimensions
+        and optionally an additional poly_id dimension.
+    reference_date : Union[datetime, Tuple[datetime]]
+        The date or date range to compute the method over.
+
+    Returns
+    -------
+    xr.DataArray
+        The resulting recovery targets.
+
+    """
+    pass
+
+expected_signature = signature(_template_method)
+
+class MedianTarget:
+    """Median target method parameterized on scale.
 
     The median target algorithm calculates a recovery target by
     sequentially computing the median over a specified time window from
@@ -16,7 +43,7 @@ def make_median_target(scale: str):
     are performed based on the scale ("polygon" or "pixel") and the
     presence of a "poly_id" dimension.
 
-    Parameters
+    Attributes
     ----------
     scale : {"polygon", "pixel"}
         The scale to compute target for. Either 'polygon' which results
@@ -24,22 +51,21 @@ def make_median_target(scale: str):
         'pixel' which results in a value for each pixel per-band (median
         of each pixel across time).
 
-    Returns
-    -------
-    median_target : callable
-        Median target method parameterized by scale.
-
     """
-    if not ((scale == "polygon") or (scale == "pixel")):
-        raise ValueError(
-            f"scale must be 'polygon' or 'pixel' ('{scale}' provided)"
-        )
-    def median_target(
+    def __init__(self, scale: str):
+        if not ((scale == "polygon") or (scale == "pixel")):
+            raise ValueError(
+                f"scale must be 'polygon' or 'pixel' ('{scale}' provided)"
+            )
+        self.scale = scale
+
+    def __call__(
+        self,
         image_stack: xr.DataArray,
         reference_date: Tuple[datetime] | datetime,
     ) -> xr.DataArray:
         """
-        Closure for median recovery target.
+        Median recovery target.
 
         Sequentially computes the median over time and, optionally, the
         spatial dimensions (x and y). If there is a "poly_id" dimension,
@@ -74,7 +100,7 @@ def make_median_target(scale: str):
 
         # Additional median calculations based on scale and dimensions
         # NOTE: scale is referenced from the containing scope make_median_target
-        if scale == "polygon":
+        if self.scale == "polygon":
             median_t = median_t.median(dim=["y", "x"], skipna=True)
         if "poly_id" in image_stack.dims:
             median_t = median_t.median(dim="poly_id", skipna=True)
@@ -82,8 +108,6 @@ def make_median_target(scale: str):
         # Re-assign lost band coords.
         median_t = median_t.assign_coords(band=image_stack.coords["band"])
         return median_t
-
-    return median_target
 
 
 def make_windowed_target() -> xr.DataArray:

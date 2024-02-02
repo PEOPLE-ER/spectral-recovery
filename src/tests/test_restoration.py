@@ -5,12 +5,13 @@ import rioxarray
 import geopandas as gpd
 import pandas as pd
 
+from inspect import signature
 from unittest.mock import patch, MagicMock, create_autospec
 from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
 from tests.utils import SAME_XR
 
-from spectral_recovery.recovery_target import make_median_target
+from spectral_recovery.recovery_target import MedianTarget
 from spectral_recovery.restoration import _get_reference_image_stack, RestorationArea
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import DATETIME_FREQ
@@ -19,8 +20,8 @@ from spectral_recovery._config import DATETIME_FREQ
 # don't conflict while reading the data
 # https://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
 
-
 class TestRestorationAreaInit:
+
     @pytest.mark.parametrize(
         ("resto_poly", "resto_start", "ref_years", "raster", "time_range"),
         [
@@ -397,7 +398,12 @@ class TestRestorationAreaInit:
                 )
 
 
+class TestValidateDates:
+    pass
+
+    
 class TestRestorationAreaRecoveryTarget:
+
     @pytest.fixture()
     def valid_ra_build(self):
         # TODO: Simplify this to just use int coords and polygons that intersect. Shouldn't need to read the files.
@@ -418,28 +424,32 @@ class TestRestorationAreaRecoveryTarget:
         return {
             "restoration_polygon": resto_poly,
             "restoration_start": resto_start,
-            "reference_polygons": resto_poly,
             "reference_years": ref_years,
             "composite_stack": stack,
         }
 
-    @patch("spectral_recovery.restoration.make_median_target")
-    def test_default_recovery_target_method_calls_median_w_scale_polygon(
-        self, mocked_median, valid_ra_build
+    def test_default_creates_median_target_instance_w_scale_polygon(
+        self
     ):
-        resto_a = RestorationArea(**valid_ra_build)
+        init_signature = signature(RestorationArea.__init__)
+        parameters = init_signature.parameters
+        param = parameters["recovery_target_method"]
 
-        mocked_median.assert_called_with(scale="polygon")
+        assert isinstance(param.default, MedianTarget)
+        assert param.default.scale == "polygon"
+        
+
 
     def test_recovery_target_method_with_valid_sig_calls_once(
         self,
         valid_ra_build,
     ):
-        valid_method = create_autospec(make_median_target(scale="polygon"))
+        valid_method = create_autospec(MedianTarget(scale="polygon"))
 
         resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
 
         valid_method.assert_called_once()
+
 
     def test_recovery_target_method_with_invalid_sig_throws_value_error(
         self, valid_ra_build
@@ -453,6 +463,14 @@ class TestRestorationAreaRecoveryTarget:
                 **valid_ra_build, recovery_target_method=invalid_method
             )
 
+    def test_pixel_recovery_target_with_reference_polygons_throws_type_error(self, valid_ra_build):
+        
+        valid_ra_build["reference_polygons"] = valid_ra_build["restoration_polygon"]
+        median_pixel = MedianTarget(scale="pixel")
+
+        with pytest.raises(TypeError):
+            ra = RestorationArea(**valid_ra_build, recovery_target_method=median_pixel)
+        
 
 class TestRestorationAreaMetrics:
     restoration_start = "2015"

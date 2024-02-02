@@ -5,12 +5,12 @@ import xarray as xr
 
 
 from xarray.testing import assert_equal
-from spectral_recovery.recovery_target import make_median_target
+from spectral_recovery.recovery_target import MedianTarget
 
 
 def test_invalid_scale_throws_value_error():
     with pytest.raises(ValueError):
-        make_median_target(scale="not_a_scale")
+        MedianTarget(scale="not_a_scale")
 
 
 class TestMedianTargetPolygonScale:
@@ -41,7 +41,7 @@ class TestMedianTargetPolygonScale:
             },
         )
 
-        median_polygon_method = make_median_target(scale="polygon")
+        median_polygon_method = MedianTarget(scale="polygon")
         out_stack = median_polygon_method(test_stack, [0, 1])
 
         assert_equal(out_stack, expected_stack)
@@ -76,7 +76,7 @@ class TestMedianTargetPolygonScale:
                 "band": [0, 1],
             },
         )
-        median_polygon_method = make_median_target(scale="polygon")
+        median_polygon_method = MedianTarget(scale="polygon")
         out_stack = median_polygon_method(test_stack, [0, 2])
 
         assert_equal(out_stack, expected_stack)
@@ -107,7 +107,7 @@ class TestMedianTargetPolygonScale:
                 "band": [0, 1],
             },
         )
-        median_polygon_method = make_median_target(scale="polygon")
+        median_polygon_method = MedianTarget(scale="polygon")
         out_stack = median_polygon_method(test_stack, [0, 1])
 
         assert_equal(out_stack, expected_stack)
@@ -138,7 +138,7 @@ class TestMedianTargetPolygonScale:
                 "band": [0, 1],
             },
         )
-        median_polygon_method = make_median_target(scale="polygon")
+        median_polygon_method = MedianTarget(scale="polygon")
         out_stack = median_polygon_method(test_stack, [0, 1])
 
         assert_equal(out_stack, expected_stack)
@@ -177,7 +177,7 @@ class TestMedianTargetPolygonScale:
                 "band": [0],
             },
         )
-        median_polygon_method = make_median_target(scale="polygon")
+        median_polygon_method = MedianTarget(scale="polygon")
         out_stack = median_polygon_method(test_stack, [0, 1])
 
         assert_equal(out_stack, expected_stack)
@@ -193,7 +193,7 @@ class TestMedianTargetPixelScale:
                 "time": [0, 1],
             },
         )
-        median_pixel_method = make_median_target(scale="pixel")
+        median_pixel_method = MedianTarget(scale="pixel")
         out_stack = median_pixel_method(test_stack, [0, 1])
 
         assert out_stack.dims == ("band", "y", "x")
@@ -222,7 +222,7 @@ class TestMedianTargetPixelScale:
                 "band": [0],
             },
         )
-        median_pixel_method = make_median_target(scale="pixel")
+        median_pixel_method = MedianTarget(scale="pixel")
         out_stack = median_pixel_method(test_stack, [0, 1])
 
         assert_equal(out_stack, expected_stack)
