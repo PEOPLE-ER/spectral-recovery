@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
-## [0.2.2b2] - 2024-02-11
+## [0.2.3b0] - 2024-02-02
+
+### Added
+
+- Add recovey_target_method parameter to RestorationArea (#61).
+
+### Changed
+
+- Refactor RestorationArea init method (#61).
+- Rename recovery_target module to target (#61).
+- Updated docstrings and notebooks.
+- Refactor median target method into parameterized, callable class (#61).
+
+### Removed
+
+- Remove _ReferenceSystem class (#61).
+
+
+## [0.2.2b2] - 2024-01-11
 
 ### Added
 
@@ -22,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix incorrect Y2R values bug (#42)
 
 
-## [0.2.1b2] - 2024-02-01
+## [0.2.1b2] - 2024-01-01
 
 ### Added
 
