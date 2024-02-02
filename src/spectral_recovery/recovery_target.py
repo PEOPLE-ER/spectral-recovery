@@ -1,4 +1,5 @@
 """ Methods for computing recovery targets """
+
 from typing import Union, Tuple
 from datetime import datetime
 
@@ -6,14 +7,14 @@ import xarray as xr
 
 
 def make_median_target(scale: str):
-    """ Parameterize a median target method based on desired scale.
+    """Parameterize a median target method based on desired scale.
 
     The median target algorithm calculates a recovery target by
     sequentially computing the median over a specified time window from
     a stack of image data. The stack is expected to have dimensions for
     time, bands, and spatial coordinates. Additional median calculations
     are performed based on the scale ("polygon" or "pixel") and the
-    presence of a "poly_id" dimension. 
+    presence of a "poly_id" dimension.
 
     Parameters
     ----------
@@ -22,12 +23,12 @@ def make_median_target(scale: str):
         in one value per-band (median of the polygon(s) across time), or
         'pixel' which results in a value for each pixel per-band (median
         of each pixel across time).
-    
+
     Returns
     -------
     median_target : callable
         Median target method parameterized by scale.
-        
+
     """
 
     def median_target(
@@ -50,7 +51,7 @@ def make_median_target(scale: str):
             "poly_id".
         reference_date : Union[datetime, Tuple[datetime]]
             The date or date range to compute the median over.
-            
+
 
         Returns
         -------
@@ -67,7 +68,7 @@ def make_median_target(scale: str):
 
         # Compute median sequentially
         median_t = reference_window.median(dim="time", skipna=True)
-        
+
         # Additional median calculations based on scale and dimensions
         # NOTE: scale is referenced from the containing scope make_median_target
         if scale == "polygon":
@@ -76,9 +77,9 @@ def make_median_target(scale: str):
             median_t = median_t.median(dim="poly_id", skipna=True)
 
         # Re-assign lost band coords.
-        median_t = median_t.assign_coords(band=image_stack.coords["band"])  
+        median_t = median_t.assign_coords(band=image_stack.coords["band"])
         return median_t
-    
+
     return median_target
 
 

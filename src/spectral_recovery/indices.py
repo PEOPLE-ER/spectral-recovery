@@ -8,6 +8,7 @@ Most notably, exports the `compute_indices` function, which computes a stack of
 spectral indices from a stack of images and str of index names.
 
 """
+
 import functools
 from typing import List
 
@@ -27,6 +28,7 @@ def compatible_with(platform: List[Platform]):
         List of platforms compatible with the function.
 
     """
+
     def compatible_with_decorator(func):
         """Sub-decorator for assigning platform compatibility to a function."""
 
@@ -73,14 +75,12 @@ def requires_bands(bands: List[BandCommon]):
     return requires_bands_decorator
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def ndvi(stack: xr.DataArray):
@@ -91,14 +91,12 @@ def ndvi(stack: xr.DataArray):
     return ndvi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.SWIR2])
 @maintain_rio_attrs
 def nbr(stack):
@@ -109,14 +107,12 @@ def nbr(stack):
     return nbr_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.GREEN])
 @maintain_rio_attrs
 def gndvi(stack):
@@ -127,14 +123,12 @@ def gndvi(stack):
     return gndvi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED, BandCommon.BLUE])
 @maintain_rio_attrs
 def evi(stack):
@@ -146,14 +140,12 @@ def evi(stack):
     return evi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def avi(stack):
@@ -164,14 +156,12 @@ def avi(stack):
     return avi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def savi(stack):
@@ -182,14 +172,12 @@ def savi(stack):
     return savi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.GREEN, BandCommon.NIR])
 @maintain_rio_attrs
 def ndwi(stack):
@@ -200,14 +188,12 @@ def ndwi(stack):
     return ndwi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.RED])
 @maintain_rio_attrs
 def sr(stack):
@@ -218,14 +204,12 @@ def sr(stack):
     return sr_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.SWIR1])
 @maintain_rio_attrs
 def ndmi(stack):
@@ -236,14 +220,12 @@ def ndmi(stack):
     return ndmi_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.NIR, BandCommon.GREEN])
 @maintain_rio_attrs
 def gci(stack):
@@ -254,14 +236,12 @@ def gci(stack):
     return gci_v
 
 
-@compatible_with(
-    [
-        Platform.LANDSAT_OLI,
-        Platform.LANDSAT_TM,
-        Platform.LANDSAT_ETM,
-        Platform.SENTINEL_2,
-    ]
-)
+@compatible_with([
+    Platform.LANDSAT_OLI,
+    Platform.LANDSAT_TM,
+    Platform.LANDSAT_ETM,
+    Platform.SENTINEL_2,
+])
 @requires_bands([BandCommon.SWIR1, BandCommon.NIR])
 @maintain_rio_attrs
 def ndii(stack):

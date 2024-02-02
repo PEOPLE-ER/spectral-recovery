@@ -10,6 +10,7 @@ represents the reference area(s) and contains methods for computing
 the recovery target. 
 
 """
+
 from inspect import signature
 from typing import Callable, Optional, Union, List, Tuple
 from datetime import datetime
@@ -41,12 +42,12 @@ def _get_reference_image_stack(reference_polygons, image_stack):
         Reference polygons.
     image_stack : xr.DataArray
         4D stack of images (band, time, y, x).
-    
+
     Returns
     -------
     reference_stack : xr.DataArray
-        5D stack of clipped image data (poly_id, band, time, y, x). 
-        Coordinate values for poly_id are the row number that each 
+        5D stack of clipped image data (poly_id, band, time, y, x).
+        Coordinate values for poly_id are the row number that each
         polygon belonged to in reference_polygons.
 
     """
@@ -54,7 +55,7 @@ def _get_reference_image_stack(reference_polygons, image_stack):
     for i, row in reference_polygons.iterrows():
         polygon_stack = image_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
         clipped_stacks[i] = polygon_stack
-        
+
     reference_stack = xr.concat(
         clipped_stacks.values(),
         dim=Index(clipped_stacks.keys(), name="poly_id"),
@@ -70,12 +71,14 @@ def validate_year_format(year_str, field_name):
             "Please ensure the year is in the format 'YYYY'."
         )
 
+
 def parse_and_validate_date(date_str, field_name):
     if not isinstance(date_str, str):
         raise TypeError(f"{field_name} must be a string.")
-    
+
     validate_year_format(date_str, field_name)
     return date_str
+
 
 def validate_year_order(disturbance_start, restoration_start):
     if restoration_start < disturbance_start:
@@ -86,16 +89,20 @@ def validate_year_order(disturbance_start, restoration_start):
 
 def process_date_fields(disturbance_start, restoration_start):
     if disturbance_start is not None:
-        disturbance_start = parse_and_validate_date(disturbance_start, "disturbance_start")
+        disturbance_start = parse_and_validate_date(
+            disturbance_start, "disturbance_start"
+        )
         if restoration_start is None:
             restoration_start = str(int(disturbance_start) + 1)
             validate_year_order(disturbance_start, restoration_start)
 
     if restoration_start is not None:
-        restoration_start = parse_and_validate_date(restoration_start, "restoration_start")
+        restoration_start = parse_and_validate_date(
+            restoration_start, "restoration_start"
+        )
         if disturbance_start is None:
             disturbance_start = str(int(restoration_start) - 1)
-    
+
     validate_year_order(disturbance_start, restoration_start)
 
     return disturbance_start, restoration_start
@@ -108,21 +115,31 @@ def process_reference_years(reference_years):
         try:
             _ = iter(reference_years)
             if len(reference_years) == 2:
-                reference_years = [parse_and_validate_date(date_str, "reference_years") for date_str in reference_years]
+                reference_years = [
+                    parse_and_validate_date(date_str, "reference_years")
+                    for date_str in reference_years
+                ]
             else:
-                raise ValueError("reference_years must be a string or iterable of 2 strings.")
+                raise ValueError(
+                    "reference_years must be a string or iterable of 2 strings."
+                )
         except TypeError:
-            raise TypeError("reference_years must be a string or iterable of 2 strings.")
+            raise TypeError(
+                "reference_years must be a string or iterable of 2 strings."
+            )
 
     return reference_years
 
 
 def check_years_against_images(year, image_stack):
     if not image_stack.satts.contains_temporal(year):
-        raise ValueError(f"{year} contained in the range of the image stack, {image_stack.time.min().data}-{image_stack.time.max().data}")
+        raise ValueError(
+            f"{year} contained in the range of the image stack,"
+            f" {image_stack.time.min().data}-{image_stack.time.max().data}"
+        )
 
 
-def to_dt(years: str  | List[str]):
+def to_dt(years: str | List[str]):
     if isinstance(years, list):
         years_dt = [0, 0]
         for i, year in enumerate(years):
@@ -130,14 +147,19 @@ def to_dt(years: str  | List[str]):
     else:
         years_dt = pd.to_datetime(years)
     return years_dt
-            
+
 
 def _validate_dates(reference_years, disturbance_start, restoration_start, image_stack):
     if disturbance_start is None and restoration_start is None:
-        raise ValueError("At least one of disturbance_start or restoration_start needs to be set (both are None)")
+        raise ValueError(
+            "At least one of disturbance_start or restoration_start needs to be set"
+            " (both are None)"
+        )
 
     print(reference_years, disturbance_start, restoration_start)
-    disturbance_start, restoration_start = process_date_fields(disturbance_start, restoration_start)
+    disturbance_start, restoration_start = process_date_fields(
+        disturbance_start, restoration_start
+    )
     reference_years = process_reference_years(reference_years)
 
     print(reference_years, disturbance_start, restoration_start)
@@ -186,6 +208,9 @@ class RestorationArea:
     restoration_start : str or datetime
         The year the restoration event began. Value must be within
         the time dimension coordinates of `composite_stack` param.
+    recovery_target_method : callable, optional
+        The method to use to compute the recovery target. Defaults
+        to using the per-polygon median target method.
 
     """
 
@@ -197,13 +222,24 @@ class RestorationArea:
         reference_polygons: gpd.GeoDataFrame = None,
         disturbance_start: str = None,
         restoration_start: str = None,
-        recovery_target_method: Callable[[xr.DataArray, Tuple[datetime]], xr.DataArray] = None,
+        recovery_target_method: Callable[
+            [xr.DataArray, Tuple[datetime]], xr.DataArray
+        ] = None,
     ) -> None:
-        
         if composite_stack.satts.is_annual_composite:
-
-            self.restoration_polygon = _validate_restoration_polygons(restoration_polygon, composite_stack)
-            self.reference_years, self.disturbance_start, self.restoration_start = _validate_dates(reference_years=reference_years, disturbance_start=disturbance_start, restoration_start=restoration_start, image_stack=composite_stack)
+            self.restoration_polygon = _validate_restoration_polygons(
+                restoration_polygon, composite_stack
+            )
+            (
+                self.reference_years,
+                self.disturbance_start,
+                self.restoration_start,
+            ) = _validate_dates(
+                reference_years=reference_years,
+                disturbance_start=disturbance_start,
+                restoration_start=restoration_start,
+                image_stack=composite_stack,
+            )
             self.stack = composite_stack.rio.clip(
                 self.restoration_polygon.geometry.values
             )
@@ -223,12 +259,20 @@ class RestorationArea:
                 image_stack=composite_stack,
             )
         if recovery_target_method is not None:
-           if signature(recovery_target_method) != signature(make_median_target(scale="polygon")):
-                raise ValueError(f"The provided recovery target method must only accept the following positional arguments: {signature(make_median_target(scale='polygon'))} ({signature(recovery_target_method)} provided)")
+            if signature(recovery_target_method) != signature(
+                make_median_target(scale="polygon")
+            ):
+                raise ValueError(
+                    "The provided recovery target method must only accept the"
+                    " following positional arguments:"
+                    f" {signature(make_median_target(scale='polygon'))} ({signature(recovery_target_method)} provided)"
+                )
         else:
             recovery_target_method = make_median_target(scale="polygon")
-        
-        self.recovery_target = recovery_target_method(reference_image_stack, reference_date=self.reference_years)
+
+        self.recovery_target = recovery_target_method(
+            reference_image_stack, reference_date=self.reference_years
+        )
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
 
@@ -299,7 +343,7 @@ class RestorationArea:
             The path to save the plot to.
         """
         hist_ref_sys = self.reference_polygons == None
-        
+
         stats = self.stack.satts.stats()
         stats = stats.sel(
             stats=[
