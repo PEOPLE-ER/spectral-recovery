@@ -155,19 +155,15 @@ def _validate_dates(reference_years, disturbance_start, restoration_start, image
             "At least one of disturbance_start or restoration_start needs to be set"
             " (both are None)"
         )
-
-    print(reference_years, disturbance_start, restoration_start)
+    
     disturbance_start, restoration_start = process_date_fields(
         disturbance_start, restoration_start
     )
     reference_years = process_reference_years(reference_years)
 
-    print(reference_years, disturbance_start, restoration_start)
-
     for years in [disturbance_start, restoration_start, reference_years]:
         check_years_against_images(to_dt(years), image_stack)
 
-    print(reference_years, disturbance_start, restoration_start)
     return reference_years, disturbance_start, restoration_start
 
 
@@ -198,17 +194,14 @@ class RestorationArea:
         The year or range of years from which to get values for computing
         the recovery target.
     composite_stack : xr.DataArray
-        A 4D (band, time, y, x) DataArray of images from which indices and
-        metrics will be computed. The spatial bounds of the DataArray must
-        contain `restoration_polygon` and (optional) `reference_polygons`,
-        and the temporal bounds must contain `restoration_start`.
+        A 4D (band, time, y, x) DataArray of images.
     disturbance_start : str or datetime
         The year the disturbance began. Value must be within
-        the time dimension coordinates of `composite_stack` param.
+        the time dimension coordinates of composite_stack param.
     restoration_start : str or datetime
         The year the restoration event began. Value must be within
-        the time dimension coordinates of `composite_stack` param.
-    recovery_target_method : callable, optional
+        the time dimension coordinates of composite_stack param.
+    recovery_target_method : callable
         The method to use to compute the recovery target. Default
         is median target method with polygon scale.
 
@@ -251,20 +244,24 @@ class RestorationArea:
                 " contains 'band', 'time', 'y' and 'x' dimensions."
             ) from None
 
-        self.reference_polygons = reference_polygons
-        if self.reference_polygons is None:
-            reference_image_stack = self.stack
-        else:
-            reference_image_stack = _get_reference_image_stack(
-                reference_polygons=self.reference_polygons,
-                image_stack=composite_stack,
-            )
 
         if signature(recovery_target_method) != expected_signature:
             raise ValueError(
-                "The provided recovery target method must only accept the"
-                " following positional arguments:"
-                f" {expected_signature} ({signature(recovery_target_method)} provided)"
+                "The provided recovery target method have the expected call signature:"
+                f" {expected_signature} (given {signature(recovery_target_method)})"
+            )
+        self.recovery_target_method = recovery_target_method
+
+        self.reference_polygons = reference_polygons
+        if self.reference_polygons is None:
+            reference_image_stack = self.stack
+        else: # computing recovery target using reference polygons
+            if isinstance(recovery_target_method, MedianTarget):
+                if recovery_target_method.scale == "pixel":
+                    raise TypeError("cannot use MedianTarget with scale='pixel' when using reference polygons.")
+            reference_image_stack = _get_reference_image_stack(
+                reference_polygons=self.reference_polygons,
+                image_stack=composite_stack,
             )
 
         self.recovery_target = recovery_target_method(
@@ -340,6 +337,9 @@ class RestorationArea:
             The path to save the plot to.
         """
         hist_ref_sys = self.reference_polygons == None
+        reference_years = to_dt(self.reference_years)
+        restoration_start = to_dt(self.restoration_start)
+        disturbance_start = to_dt(self.disturbance_start)
 
         stats = self.stack.satts.stats()
         stats = stats.sel(
@@ -395,14 +395,14 @@ class RestorationArea:
         # Plot spectral trajectory windows: reference, disturbance, recovery
         g.map(
             plt.axvline,
-            x=self.restoration_start,
+            x=restoration_start.year,
             color=palette[2],
             linestyle="dashed",
             lw=1,
         )
         g.map(
             plt.axvline,
-            x=self.disturbance_start,
+            x=disturbance_start.year,
             color=palette[3],
             linestyle="dashed",
             lw=1,
@@ -410,36 +410,39 @@ class RestorationArea:
         if hist_ref_sys:
             g.map(
                 plt.axvline,
-                x=self.reference_years[0],
+                x=reference_years[0].year,
                 color=palette[4],
                 linestyle="dashed",
                 lw=1,
             )
-            if self.reference_years[1] != self.disturbance_start:
+            if reference_years[1] != disturbance_start:
                 g.map(
                     plt.axvline,
-                    x=self.reference_years[1],
+                    x=reference_years[1].year,
                     color=palette[4],
                     linestyle="dashed",
                     lw=1,
                 )
+
         for ax in g.axes.flat:
             if hist_ref_sys:
-                ax.axvspan(
-                    self.reference_years[0],
-                    self.reference_years[1],
-                    alpha=0.1,
-                    color=palette[4],
-                )
+                if isinstance(self.recovery_target_method, MedianTarget):
+                    if self.recovery_target_method.scale == "pixel":
+                        ax.axvspan(
+                            reference_years[0].year,
+                            reference_years[1].year,
+                            alpha=0.1,
+                            color=palette[4],
+                        )
             ax.axvspan(
-                self.disturbance_start,
-                self.restoration_start,
+                disturbance_start.year,
+                restoration_start.year,
                 alpha=0.1,
                 color=palette[3],
             )
             ax.axvspan(
-                self.restoration_start,
-                self.end_year,
+                restoration_start.year,
+                self.end_year.year,
                 alpha=0.1,
                 color=palette[2],
             )
@@ -480,9 +483,8 @@ class RestorationArea:
                 (recovery_target_line, recovery_target_patch),
             )
             custom_handles.insert(3, (reference_years, reference_years_patch))
-            labels.insert(2, "historic recovery target (mean)")
+            labels.insert(2, "historic recovery target (median)")
             labels.insert(3, "reference year(s)")
-
         else:
             custom_handles.insert(
                 2,

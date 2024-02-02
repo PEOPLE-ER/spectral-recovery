@@ -428,17 +428,14 @@ class TestRestorationAreaRecoveryTarget:
             "composite_stack": stack,
         }
 
-    def test_default_creates_median_target_instance_w_scale_polygon(
-        self
+    def test_default_is_median_target_instance_w_scale_polygon(
+        self,
+        valid_ra_build,
     ):
-        init_signature = signature(RestorationArea.__init__)
-        parameters = init_signature.parameters
-        param = parameters["recovery_target_method"]
+        resto_a = RestorationArea(**valid_ra_build)
 
-        assert isinstance(param.default, MedianTarget)
-        assert param.default.scale == "polygon"
+        assert resto_a.recovery_target_method.scale == "polygon"
         
-
 
     def test_recovery_target_method_with_valid_sig_calls_once(
         self,
