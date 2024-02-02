@@ -435,14 +435,12 @@ class RestorationArea:
 
         for ax in g.axes.flat:
             if hist_ref_sys:
-                if isinstance(self.recovery_target_method, MedianTarget):
-                    if self.recovery_target_method.scale == "pixel":
-                        ax.axvspan(
-                            reference_years[0].year,
-                            reference_years[1].year,
-                            alpha=0.1,
-                            color=palette[4],
-                        )
+                ax.axvspan(
+                    reference_years[0].year,
+                    reference_years[1].year,
+                    alpha=0.1,
+                    color=palette[4],
+                )
             ax.axvspan(
                 disturbance_start.year,
                 restoration_start.year,
@@ -487,10 +485,17 @@ class RestorationArea:
             "recovery window",
         ]
         if hist_ref_sys:
-            custom_handles.insert(
-                2,
-                (recovery_target_line, recovery_target_patch),
-            )
+            if isinstance(self.recovery_target_method, MedianTarget):
+                if self.recovery_target_method.scale == "pixel":
+                    custom_handles.insert(
+                        2,
+                        (recovery_target_line, recovery_target_patch),
+                    )
+                else:
+                    custom_handles.insert(
+                        2,
+                        recovery_target_line,
+                    )
             custom_handles.insert(3, (reference_years, reference_years_patch))
             labels.insert(2, "historic recovery target (median)")
             labels.insert(3, "reference year(s)")
