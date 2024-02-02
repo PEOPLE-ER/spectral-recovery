@@ -222,7 +222,7 @@ class RestorationArea:
         
         if composite_stack.satts.is_annual_composite:
             self.restoration_polygon = _validate_restoration_polygons(
-                restoration_polygon, composite_stack
+                restoration_polygon=restoration_polygon, image_stack=composite_stack
             )
             (
                 self.reference_years,
