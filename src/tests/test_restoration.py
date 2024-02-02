@@ -12,7 +12,11 @@ from geopandas.testing import assert_geodataframe_equal
 from tests.utils import SAME_XR
 
 from spectral_recovery.recovery_target import MedianTarget
-from spectral_recovery.restoration import _get_reference_image_stack, RestorationArea, _validate_dates
+from spectral_recovery.restoration import (
+    _get_reference_image_stack,
+    RestorationArea,
+    _validate_dates,
+)
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import DATETIME_FREQ
 
@@ -20,8 +24,8 @@ from spectral_recovery._config import DATETIME_FREQ
 # don't conflict while reading the data
 # https://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
 
-class TestRestorationAreaInit:
 
+class TestRestorationAreaInit:
     @pytest.mark.parametrize(
         ("resto_poly", "resto_start", "ref_years", "raster", "time_range"),
         [
@@ -72,7 +76,6 @@ class TestRestorationAreaInit:
             ).all()
             assert resto_a.restoration_start == resto_start
             assert resto_a.reference_years == ref_years
-
 
     @pytest.mark.parametrize(
         (
@@ -222,15 +225,23 @@ class TestRestorationAreaInit:
 
 
 class TestValidateDates:
-
     def test_only_dist_year_defaults_resto_year_to_next_year(self):
         dist_start = "2010"
         rest_start = None
         ref_years = "2009"
-        test_stack = xr.DataArray(np.ones((1, 3, 1, 1)), dims=["band", "time", "y", "x"], coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)})
+        test_stack = xr.DataArray(
+            np.ones((1, 3, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)},
+        )
         expected_rest = str(int(dist_start) + 1)
-        
-        ref, dist, rest = _validate_dates(disturbance_start=dist_start, restoration_start=rest_start, reference_years=ref_years, image_stack=test_stack)
+
+        ref, dist, rest = _validate_dates(
+            disturbance_start=dist_start,
+            restoration_start=rest_start,
+            reference_years=ref_years,
+            image_stack=test_stack,
+        )
 
         assert rest == expected_rest
 
@@ -238,48 +249,77 @@ class TestValidateDates:
         dist_start = "2011"
         rest_start = "2010"
         ref_years = "2009"
-        test_stack = xr.DataArray(np.ones((1, 3, 1, 1)), dims=["band", "time", "y", "x"], coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)})
+        test_stack = xr.DataArray(
+            np.ones((1, 3, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)},
+        )
         expected_rest = str(int(dist_start) + 1)
-        
-        with pytest.raises(
-            ValueError
-        ):
-            ref, dist, rest = _validate_dates(disturbance_start=dist_start, restoration_start=rest_start, reference_years=ref_years, image_stack=test_stack)
-            
+
+        with pytest.raises(ValueError):
+            ref, dist, rest = _validate_dates(
+                disturbance_start=dist_start,
+                restoration_start=rest_start,
+                reference_years=ref_years,
+                image_stack=test_stack,
+            )
 
     def test_only_rest_start_defaults_dist_year_to_prior_year(self):
         dist_start = None
         rest_start = "2011"
         ref_years = "2009"
-        test_stack = xr.DataArray(np.ones((1, 3, 1, 1)), dims=["band", "time", "y", "x"], coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)})
+        test_stack = xr.DataArray(
+            np.ones((1, 3, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)},
+        )
         expected_dist = str(int(rest_start) - 1)
-        
-        ref, dist, rest = _validate_dates(disturbance_start=dist_start, restoration_start=rest_start, reference_years=ref_years, image_stack=test_stack)
+
+        ref, dist, rest = _validate_dates(
+            disturbance_start=dist_start,
+            restoration_start=rest_start,
+            reference_years=ref_years,
+            image_stack=test_stack,
+        )
         assert dist == expected_dist
 
     def test_out_of_bounds_restoration_start_year_throws_value_error(self):
         dist_start = "2011"
         rest_start = "2015"
         ref_years = "2009"
-        test_stack = xr.DataArray(np.ones((1, 3, 1, 1)), dims=["band", "time", "y", "x"], coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)})
+        test_stack = xr.DataArray(
+            np.ones((1, 3, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)},
+        )
         expected_rest = str(int(dist_start) + 1)
-        
-        with pytest.raises(
-            ValueError
-        ):
-            ref, dist, rest = _validate_dates(disturbance_start=dist_start, restoration_start=rest_start, reference_years=ref_years, image_stack=test_stack)
+
+        with pytest.raises(ValueError):
+            ref, dist, rest = _validate_dates(
+                disturbance_start=dist_start,
+                restoration_start=rest_start,
+                reference_years=ref_years,
+                image_stack=test_stack,
+            )
 
     def test_out_of_bounds_disturbance_start_year_throws_value_error(self):
         dist_start = "2008"
         rest_start = "2015"
         ref_years = "2009"
-        test_stack = xr.DataArray(np.ones((1, 3, 1, 1)), dims=["band", "time", "y", "x"], coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)})
+        test_stack = xr.DataArray(
+            np.ones((1, 3, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)},
+        )
         expected_rest = str(int(dist_start) + 1)
-        
-        with pytest.raises(
-            ValueError
-        ):
-            ref, dist, rest = _validate_dates(disturbance_start=dist_start, restoration_start=rest_start, reference_years=ref_years, image_stack=test_stack)
+
+        with pytest.raises(ValueError):
+            ref, dist, rest = _validate_dates(
+                disturbance_start=dist_start,
+                restoration_start=rest_start,
+                reference_years=ref_years,
+                image_stack=test_stack,
+            )
 
     @pytest.mark.parametrize(
         "ref_years",
@@ -292,17 +332,23 @@ class TestValidateDates:
     def test_out_of_bounds_reference_years_throw_value_error(self, ref_years):
         dist_start = "2008"
         rest_start = "2015"
-        test_stack = xr.DataArray(np.ones((1, 3, 1, 1)), dims=["band", "time", "y", "x"], coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)})
+        test_stack = xr.DataArray(
+            np.ones((1, 3, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={"time": pd.date_range("2009", "2011", freq=DATETIME_FREQ)},
+        )
         expected_rest = str(int(dist_start) + 1)
-        
-        with pytest.raises(
-            ValueError
-        ):
-            ref, dist, rest = _validate_dates(disturbance_start=dist_start, restoration_start=rest_start, reference_years=ref_years, image_stack=test_stack)
 
-    
+        with pytest.raises(ValueError):
+            ref, dist, rest = _validate_dates(
+                disturbance_start=dist_start,
+                restoration_start=rest_start,
+                reference_years=ref_years,
+                image_stack=test_stack,
+            )
+
+
 class TestRestorationAreaRecoveryTarget:
-
     @pytest.fixture()
     def valid_ra_build(self):
         # TODO: Simplify this to just use int coords and polygons that intersect. Shouldn't need to read the files.
@@ -334,7 +380,6 @@ class TestRestorationAreaRecoveryTarget:
         resto_a = RestorationArea(**valid_ra_build)
 
         assert resto_a.recovery_target_method.scale == "polygon"
-        
 
     def test_recovery_target_method_with_valid_sig_calls_once(
         self,
@@ -345,7 +390,6 @@ class TestRestorationAreaRecoveryTarget:
         resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
 
         valid_method.assert_called_once()
-
 
     def test_recovery_target_method_with_invalid_sig_throws_value_error(
         self, valid_ra_build
@@ -359,14 +403,15 @@ class TestRestorationAreaRecoveryTarget:
                 **valid_ra_build, recovery_target_method=invalid_method
             )
 
-    def test_pixel_recovery_target_with_reference_polygons_throws_type_error(self, valid_ra_build):
-        
+    def test_pixel_recovery_target_with_reference_polygons_throws_type_error(
+        self, valid_ra_build
+    ):
         valid_ra_build["reference_polygons"] = valid_ra_build["restoration_polygon"]
         median_pixel = MedianTarget(scale="pixel")
 
         with pytest.raises(TypeError):
             ra = RestorationArea(**valid_ra_build, recovery_target_method=median_pixel)
-        
+
 
 class TestRestorationAreaMetrics:
     restoration_start = "2015"

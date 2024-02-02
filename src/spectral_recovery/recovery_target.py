@@ -6,10 +6,10 @@ from datetime import datetime
 
 import xarray as xr
 
+
 def _template_method(
-    image_stack: xr.DataArray, 
-    reference_date: Tuple[datetime] | datetime
-    ) -> xr.DataArray:
+    image_stack: xr.DataArray, reference_date: Tuple[datetime] | datetime
+) -> xr.DataArray:
     """
     Template recovery target method.
 
@@ -31,7 +31,9 @@ def _template_method(
     """
     pass
 
+
 expected_signature = signature(_template_method)
+
 
 class MedianTarget:
     """Median target method parameterized on scale.
@@ -52,11 +54,10 @@ class MedianTarget:
         of each pixel across time).
 
     """
+
     def __init__(self, scale: str):
         if not ((scale == "polygon") or (scale == "pixel")):
-            raise ValueError(
-                f"scale must be 'polygon' or 'pixel' ('{scale}' provided)"
-            )
+            raise ValueError(f"scale must be 'polygon' or 'pixel' ('{scale}' provided)")
         self.scale = scale
 
     def __call__(

@@ -155,7 +155,7 @@ def _validate_dates(reference_years, disturbance_start, restoration_start, image
             "At least one of disturbance_start or restoration_start needs to be set"
             " (both are None)"
         )
-    
+
     disturbance_start, restoration_start = process_date_fields(
         disturbance_start, restoration_start
     )
@@ -219,7 +219,6 @@ class RestorationArea:
             [xr.DataArray, Tuple[datetime]], xr.DataArray
         ] = MedianTarget(scale="polygon"),
     ) -> None:
-        
         if composite_stack.satts.is_annual_composite:
             self.restoration_polygon = _validate_restoration_polygons(
                 restoration_polygon=restoration_polygon, image_stack=composite_stack
@@ -244,7 +243,6 @@ class RestorationArea:
                 " contains 'band', 'time', 'y' and 'x' dimensions."
             ) from None
 
-
         if signature(recovery_target_method) != expected_signature:
             raise ValueError(
                 "The provided recovery target method have the expected call signature:"
@@ -255,10 +253,13 @@ class RestorationArea:
         self.reference_polygons = reference_polygons
         if self.reference_polygons is None:
             reference_image_stack = self.stack
-        else: # computing recovery target using reference polygons
+        else:  # computing recovery target using reference polygons
             if isinstance(recovery_target_method, MedianTarget):
                 if recovery_target_method.scale == "pixel":
-                    raise TypeError("cannot use MedianTarget with scale='pixel' when using reference polygons.")
+                    raise TypeError(
+                        "cannot use MedianTarget with scale='pixel' when using"
+                        " reference polygons."
+                    )
             reference_image_stack = _get_reference_image_stack(
                 reference_polygons=self.reference_polygons,
                 image_stack=composite_stack,
