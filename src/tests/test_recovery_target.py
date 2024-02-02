@@ -5,7 +5,7 @@ import xarray as xr
 
 
 from xarray.testing import assert_equal
-from spectral_recovery.recovery_target import MedianTarget
+from spectral_recovery.targetss import MedianTarget
 
 
 def test_invalid_scale_throws_value_error():

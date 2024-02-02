@@ -11,7 +11,7 @@ from numpy import testing as npt
 from geopandas.testing import assert_geodataframe_equal
 from tests.utils import SAME_XR
 
-from spectral_recovery.recovery_target import MedianTarget
+from spectral_recovery.targetss import MedianTarget
 from spectral_recovery.restoration import (
     _get_reference_image_stack,
     _validate_dates,

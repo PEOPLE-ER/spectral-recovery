@@ -25,7 +25,7 @@ from pandas import Index
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from spectral_recovery.recovery_target import MedianTarget, expected_signature
+from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import VALID_YEAR
