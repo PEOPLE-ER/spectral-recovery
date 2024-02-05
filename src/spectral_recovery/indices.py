@@ -8,6 +8,7 @@ Most notably, exports the `compute_indices` function, which computes a stack of
 spectral indices from a stack of images and str of index names.
 
 """
+
 import functools
 from typing import List
 
@@ -29,6 +30,7 @@ def compatible_with(platform: List[Platform]):
         List of platforms compatible with the function.
 
     """
+
     def compatible_with_decorator(func):
         """Sub-decorator for assigning platform compatibility to a function."""
 

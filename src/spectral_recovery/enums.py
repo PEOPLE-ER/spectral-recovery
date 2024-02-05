@@ -5,6 +5,7 @@ Enums are used to ensure consistent naming and avoid typos for internal
 computations/processing.
 
 """
+
 from enum import Enum
 
 
