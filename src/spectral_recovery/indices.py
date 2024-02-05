@@ -18,6 +18,7 @@ from pandas import Index as pdIndex
 import spyndex as spx
 
 from spectral_recovery._utils import maintain_rio_attrs
+from spectral_recovery._config import SUPPORTED_DOMAINS
 from spectral_recovery.enums import Index, BandCommon, Platform
 
 
@@ -97,9 +98,6 @@ def gci(stack):
 _indices_map = {
     Index.GCI: gci,
 }
-
-
-SUPPORTED_DOMAINS = ["vegetation", "burn"] 
 
 @maintain_rio_attrs
 def compute_indices(image_stack: xr.DataArray, indices: list[str], constants: dict = {}, **kwargs):

@@ -19,7 +19,6 @@ from spectral_recovery.indices import (
 INDICES = list(spx.indices)
 BANDS = list(spx.bands)
 CONSTANTS = list(spx.constants)
-PLATFORMS = list
 
 def bands_from_index(indices: List[str]):
     """ Return list of bands used in an index """
@@ -46,7 +45,6 @@ def platforms_from_index(indices: List[str]):
         for p in spx.indices[index].platforms:
             if p not in platforms:
                 platforms.append(p)
-    print(platforms)
     return platforms
 
 class TestComputeIndices:

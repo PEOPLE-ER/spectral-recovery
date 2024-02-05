@@ -6,6 +6,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 from unittest.mock import patch
 from spectral_recovery.enums import BandCommon, Index, Platform
+from tests.utils import SAME_XR
 from spectral_recovery.io.raster import (
     read_and_stack_tifs,
     _metrics_to_tifs,
@@ -86,7 +87,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=tif_paths,
-            platform=["landsat_oli"],
+            platform=["Landsat-OLI"],
         )
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
@@ -147,7 +148,7 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            read_and_stack_tifs(path_to_tifs=filenames, platform=["landsat_oli"])
+            read_and_stack_tifs(path_to_tifs=filenames, platform=[])
 
     @patch(
         "rioxarray.open_rasterio",
@@ -164,7 +165,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
 
         stacked_tifs = read_and_stack_tifs(
-            path_to_tifs=filenames, platform=["landsat_oli"]
+            path_to_tifs=filenames, platform=["Landsat-OLI"]
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -184,7 +185,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
-            platform=["landsat_oli"],
+            platform=["Landsat-OLI"],
         )
 
         assert np.all(stacked_tifs["band"].data == expected_bands)
@@ -208,7 +209,7 @@ class TestReadAndStackTifs:
             stacked_tifs = read_and_stack_tifs(
                 path_to_tifs=filenames,
                 band_names={0: "not_a_band"},
-                platform=["landsat_oli"],
+                platform=["Landsat-OLI"],
             )
 
 
@@ -229,7 +230,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
-            platform=["landsat_oli"],
+            platform=["Landsat-OLI"],
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -249,7 +250,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
             band_names={2: "blue", 1: "red", 3: "nir"},
-            platform=["landsat_oli"],
+            platform=["Landsat-OLI"],
         )
         # assert
         print(stacked_tifs["band"].data, expected_bands)
@@ -273,7 +274,7 @@ class TestReadAndStackTifs:
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"},
-                platform=["landsat_oli"],
+                platform=["Landsat-OLI"],
             )
 
     @patch(
@@ -294,7 +295,7 @@ class TestReadAndStackTifs:
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
-                platform=["landsat_oli"],
+                platform=["Landsat-OLI"],
             )
 
     @patch(
@@ -314,7 +315,7 @@ class TestReadAndStackTifs:
         ):
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
-                platform=["landsat_oli"],
+                platform=["Landsat-OLI"],
             )
 
     @pytest.mark.parametrize(
@@ -349,7 +350,7 @@ class TestReadAndStackTifs:
     ):
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_and_stack_tifs(
-            path_to_tifs=filenames, platform=["landsat_oli"]
+            path_to_tifs=filenames, platform=["Landsat-OLI"]
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
 
@@ -365,9 +366,6 @@ class TestReadAndStackTifs:
         )
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=[f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
-            platform=["landsat_oli", "landsat_tm"],
+            platform=["Landsat-OLI", "Landsat-TM"],
         )
-        assert stacked_tifs.attrs["platform"] == [
-            Platform.LANDSAT_OLI,
-            Platform.LANDSAT_TM,
-        ]
+        assert stacked_tifs.attrs["platform"] == ["Landsat-OLI", "Landsat-TM"]

@@ -16,7 +16,7 @@ import spyndex as spx
 
 from rasterio._err import CPLE_AppDefinedError
 
-from spectral_recovery._config import VALID_YEAR, REQ_DIMS
+from spectral_recovery._config import VALID_YEAR, REQ_DIMS, SUPPORTED_PLATFORMS
 from spectral_recovery.enums import Platform 
 
 
@@ -110,7 +110,7 @@ def read_and_stack_tifs(
         standard_names, attr_names = _all_names_to_standard(band_names.values(), standard)
     else:
         raise ValueError(
-            f"Invalid band to name mapping. Rasters have bands {list(stacked_data.band.values)} ({list(band_names.keys())} provided)."
+            f"Invalid band to name mapping. Rasters have bands {list(stacked_data.band.values)} but {list(band_names.keys())} provided."
         )
     
     stacked_data = stacked_data.assign_coords(band=standard_names)
@@ -127,16 +127,15 @@ def read_and_stack_tifs(
     return stacked_data
 
 
-def _to_standard_platform_names(platform: List[str]) -> List[Platform]:
+def _to_standard_platform_names(platform: List[str]) -> List[str]:
     """Convert a list of platform names to platform names """
     valid_names = []
     for name in platform:
-        try:
-            val = Platform[name.upper()]
-            valid_names.append(val)
-        except KeyError:
+        if name in SUPPORTED_PLATFORMS:
+            valid_names.append(name)
+        else:
             raise ValueError(
-                f"Platform '{name}' not found. Valid platforms are: {list(Platform)}"
+                f"Platform '{name}' not found. Valid platform names are: {list(SUPPORTED_PLATFORMS)}"
             ) from None
     return valid_names
 
