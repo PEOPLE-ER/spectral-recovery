@@ -5,7 +5,6 @@ import numpy as np
 
 from numpy.testing import assert_array_equal
 from unittest.mock import patch
-from spectral_recovery.enums import BandCommon, Index, Platform
 from tests.utils import SAME_XR
 from spectral_recovery.io.raster import (
     read_and_stack_tifs,

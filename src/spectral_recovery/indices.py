@@ -19,7 +19,6 @@ import spyndex as spx
 
 from spectral_recovery._utils import maintain_rio_attrs
 from spectral_recovery._config import SUPPORTED_DOMAINS
-from spectral_recovery.enums import Index, BandCommon, Platform
 
 @maintain_rio_attrs
 def compute_indices(image_stack: xr.DataArray, indices: list[str], constants: dict = {}, **kwargs):
@@ -29,8 +28,7 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str], constants: di
     Parameters
     ----------
     image_stack : xr.DataArray
-        stack of images. The 'band' dimension coordinates must contain
-        enums.BandCommon types.
+        stack of images.
     indices : list of str
         list of spectral indices to compute
     constants : dict of flt

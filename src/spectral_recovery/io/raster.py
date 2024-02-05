@@ -17,7 +17,6 @@ import spyndex as spx
 from rasterio._err import CPLE_AppDefinedError
 
 from spectral_recovery._config import VALID_YEAR, REQ_DIMS, SUPPORTED_PLATFORMS
-from spectral_recovery.enums import Platform 
 
 
 def read_and_stack_tifs(

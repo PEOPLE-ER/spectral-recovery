@@ -12,7 +12,6 @@ from unittest.mock import Mock, patch, ANY
 from tests.utils import SAME_XR
 
 from spectral_recovery._config import REQ_DIMS
-from spectral_recovery.enums import Index, Platform, BandCommon
 from spectral_recovery.indices import (
     compute_indices,
 )
@@ -225,53 +224,3 @@ class TestComputeIndices:
         # Act and Assert
         with pytest.raises(ValueError):
             result = compute_indices(data, [index])
-
-
-# class TestRequiresBandsDecorator:
-#     def test_valid_bands_runs_without_err(self):
-#         @requires_bands([BandCommon.BLUE, BandCommon.RED])
-#         def to_be_decorated(stack):
-#             return "hello"
-
-#         test_stack = xr.DataArray(
-#             [[[[0]]], [[[0]]]],
-#             dims=["band", "time", "y", "x"],
-#             coords={"band": [BandCommon.BLUE, BandCommon.RED]},
-#         )
-#         assert to_be_decorated(test_stack) == "hello"
-
-#     def test_bands_not_in_stack_throws_value_err(self):
-#         @requires_bands([BandCommon.BLUE, BandCommon.RED])
-#         def to_be_decorated(stack):
-#             return "hello"
-
-#         test_stack = xr.DataArray(
-#             [[[[0]]], [[[0]]]],
-#             dims=["band", "time", "y", "x"],
-#             coords={"band": [BandCommon.BLUE, BandCommon.NIR]},
-#         )
-#         with pytest.raises(ValueError):
-#             to_be_decorated(test_stack)
-
-
-# class TestCompatiableWithDecorator:
-#     def test_supported_platform_in_stack_runs_without_err(self):
-#         @compatible_with([Platform.LANDSAT_OLI, Platform.SENTINEL_2])
-#         def to_be_decorated(stack):
-#             return "hello"
-
-#         test_stack = xr.DataArray(
-#             [0], dims=["time"], attrs={"platform": [Platform.LANDSAT_OLI]}
-#         )
-#         assert to_be_decorated(test_stack) == "hello"
-
-#     def test_platform_diff_than_decorator_throws_value_err(self):
-#         @compatible_with([Platform.LANDSAT_TM, Platform.LANDSAT_ETM])
-#         def to_be_decorated(stack):
-#             return "hello"
-
-#         test_stack = xr.DataArray(
-#             [0], dims=["time"], attrs={"platform": [Platform.SENTINEL_2]}
-#         )
-#         with pytest.raises(ValueError):
-#             to_be_decorated(test_stack)
