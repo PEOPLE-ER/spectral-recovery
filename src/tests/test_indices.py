@@ -198,19 +198,19 @@ class TestComputeIndices:
         ("index"),
         [
             (
-              random.choice([i for i in spx.indices if spx.indices[i].application_domain == "snow"])
+              "NDSI"
             ),
             (
-              random.choice([i for i in spx.indices if spx.indices[i].application_domain == "water"])
+              "NDTI"
             ),
             (
-              random.choice([i for i in spx.indices if spx.indices[i].application_domain == "soil"])
+              "BI"
             ),
             (
-              random.choice([i for i in spx.indices if spx.indices[i].application_domain == "urban"])
+              "DBI"
             ),
             (
-              random.choice([i for i in spx.indices if spx.indices[i].application_domain == "radar"])
+              "DPDD"
             ),
         ],
     )
