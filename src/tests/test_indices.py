@@ -147,9 +147,9 @@ class TestComputeIndices:
     )
     def test_index_with_unrelated_platform_throws_value_error(self, platforms):
         index = "CIRE" # only available for Sentinel 2 data
-        bands = bands_from_index(index)
+        bands = bands_from_index([index])
         data = xr.DataArray(
-            np.ones((1, 1, 1, 1)),
+            np.ones((len(bands), 1, 1, 1)),
             dims=["band", "time", "y", "x"],
             coords={
                 "band": bands,
@@ -158,10 +158,9 @@ class TestComputeIndices:
         )
          
         with pytest.raises(ValueError):
-            result = compute_indices(data, index)
+            result = compute_indices(data, [index])
 
-    
-    
+       
     def test_missing_bands_throws_exception(self):
         index = "NDVI"
         bands = bands_from_index([index])
