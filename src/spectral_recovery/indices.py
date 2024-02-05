@@ -102,7 +102,7 @@ _indices_map = {
 SUPPORTED_DOMAINS = ["vegetation", "burn"] 
 
 @maintain_rio_attrs
-def compute_indices(image_stack: xr.DataArray, indices: list[str], **kwargs):
+def compute_indices(image_stack: xr.DataArray, indices: list[str], constants: dict = {}, **kwargs):
     """Compute spectral indices using the spyndex package.
 
 
@@ -113,30 +113,32 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str], **kwargs):
         enums.BandCommon types.
     indices : list of str
         list of spectral indices to compute
+    constants : dict of flt
+        constant and value pairs e.g {"L": 0.5}
     kwargs : dict, optional 
-        Additional kwargs for wrapped spyndex.computeIndex function, like
-        constant values e.g 'L = 0.5'.
+        Additional kwargs for wrapped spyndex.computeIndex function.
 
     Returns
-    -------
+    -------jmk,
         xr.DataArray: stack of images with spectral indices stacked along
         the band dimension.
 
     """
     platforms = image_stack.attrs["platform"]
-    if _supported_domain(indices):
-        params_dict = _build_params_dict(image_stack)
-        params_dict = params_dict | kwargs
-        index_stack = spx.computeIndex(
-            index=indices,
-            params=params_dict
-        )
-        try:
-            # rename 'index' dim to 'bands' to match tool's expected dims
-            index_stack = index_stack.rename({"index": "band"})
-        except ValueError:
-            # computeIndex will not return an index dim if only 1 index passed
-            index_stack = index_stack.expand_dims(dim={"band": indices})
+    if _compatible_platform(indices, platforms):
+        if _supported_domain(indices):
+            params_dict = _build_params_dict(image_stack)
+            params_dict = params_dict | constants | kwargs
+            index_stack = spx.computeIndex(
+                index=indices,
+                params=params_dict
+            )
+            try:
+                # rename 'index' dim to 'bands' to match tool's expected dims
+                index_stack = index_stack.rename({"index": "band"})
+            except ValueError:
+                # computeIndex will not return an index dim if only 1 index passed
+                index_stack = index_stack.expand_dims(dim={"band": indices})
     return index_stack
 
 def _supported_domain(indices: list[str]):
@@ -220,7 +222,3 @@ def _build_params_dict(image_stack: xr.DataArray):
             continue
 
     return params_dict
-
-
-
-

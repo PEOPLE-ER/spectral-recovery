@@ -40,16 +40,14 @@ def constants_from_index(indices: List[str]):
     return constants
 
 def platforms_from_index(indices: List[str]):
-    """ Return list of constants used in an index """
+    """ Return list of platforms compatible with an index """
     platforms = []
     for index in indices:
-        for b in spx.indices[index].bands:
-            if b in CONSTANTS and b not in platforms:
-                platforms.append(b)
+        for p in spx.indices[index].platforms:
+            if p not in platforms:
+                platforms.append(p)
+    print(platforms)
     return platforms
-
-def any_index():
-    return 
 
 class TestComputeIndices:
     
@@ -57,11 +55,12 @@ class TestComputeIndices:
     def test_correct_kwargs_for_compute_index_call_no_index_constants(self, mock_spyndex):
         index = "NDVI"
         bands = bands_from_index([index])
+        platforms = platforms_from_index([index])
         data = xr.DataArray(
             np.ones((len(bands), 1, 1, 1)),
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
-            attrs={"platform": ["landsat_oli"]}
+            attrs={"platform": [platforms[0]]}
         )
         expected_params = {b: data.sel(band=b) for b in bands}
 
@@ -75,17 +74,18 @@ class TestComputeIndices:
         index = "EVI"
         bands = bands_from_index([index])
         constants = constants_from_index([index])
+        platforms = platforms_from_index([index])
         data = xr.DataArray(
             np.ones((len(bands), 1, 1, 1)),
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
-            attrs={"platform": ["landsat_oli"]}
+            attrs={"platform": [platforms[0]]}
         )
         bands = {b: data.sel(band=b) for b in bands} 
         constants = {c: spx.constants[c].default for c in constants}
         expected_params = bands | constants
 
-        compute_indices(data, [index], **constants)
+        compute_indices(data, [index], constants=constants)
         
         input_kwargs = mock_spyndex.call_args.kwargs 
         assert input_kwargs == {"index": [index], "params": expected_params}
@@ -94,15 +94,16 @@ class TestComputeIndices:
         index = "SAVI"
         bands = bands_from_index([index])
         constants = constants_from_index([index])
+        platforms = platforms_from_index([index])
         constants_dict = {c: spx.constants[c].default for c in constants}
         data = xr.DataArray(
             np.ones((len(bands), 1, 1, 1)),
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
-            attrs={"platform": ["sentinel 1"]}
+            attrs={"platform": [platforms[0]]}
         )
 
-        result = compute_indices(data, [index], **constants_dict)
+        result = compute_indices(data, [index], constants=constants_dict)
 
         assert isinstance(result, xr.DataArray)
     
@@ -111,6 +112,7 @@ class TestComputeIndices:
         index = ["CIRE", "NDVI", "EVI"]
         bands = bands_from_index(index)
         constants = constants_from_index(index)
+        platforms = platforms_from_index(index)
         constants_dict = {c: spx.constants[c].default for c in constants}
 
         data = xr.DataArray(
@@ -122,10 +124,10 @@ class TestComputeIndices:
                 "y": [2, 3],
                 "x": [4, 5],
             },
-            attrs={"platform": ["sentinel_2"]}
+            attrs={"platform": [platforms[0]]}
         )
 
-        result = compute_indices(data, index, **constants_dict)
+        result = compute_indices(data, index,  constants=constants_dict)
 
         assert result.dims == tuple(REQ_DIMS)
         assert list(result.time.values) == list(data.time.values)
@@ -138,10 +140,10 @@ class TestComputeIndices:
         ("platforms"),
         [
             (
-               ["landsat_etm"]
+               ["Landsat-OLI"]
             ),
             (
-               ["landsat_oli", "sentinel_2"]
+               ["Landsat-OLI", "Landsat-ETM+", "Planet-Fusion"]
             ),
         ]
     )
@@ -159,6 +161,24 @@ class TestComputeIndices:
          
         with pytest.raises(ValueError):
             result = compute_indices(data, [index])
+    
+
+    def test_index_with_unrelated_and_related_platform_passes(self):
+        index = "CIRE" # only available for Sentinel 2 data
+        bands = bands_from_index([index])
+        data = xr.DataArray(
+            np.ones((len(bands), 1, 1, 1)),
+            dims=["band", "time", "y", "x"],
+            coords={
+                "band": bands,
+            },
+            attrs={"platform": ["Landsat-OLI", "Sentinel-2"]}
+        )
+         
+        try:
+            result = compute_indices(data, [index])
+        except ValueError as e:
+            pytest.fail(f"Unexpected ValueError: {e}")
 
        
     def test_missing_bands_throws_exception(self):
