@@ -27,7 +27,7 @@ from matplotlib.patches import Patch
 
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
-from spectral_recovery.enums import Metric
+from spectral_recovery.enums import Metric, Index
 from spectral_recovery._config import VALID_YEAR
 
 from spectral_recovery import metrics as m
@@ -337,6 +337,7 @@ class RestorationArea:
         return r80p
 
     # NOTE: Slow, probably because of the pandas stuff
+    # @profile
     def plot_spectral_trajectory(self, path: str = None) -> None:
         """Create spectral trajectory plot of the RestorationArea
 
@@ -349,6 +350,7 @@ class RestorationArea:
         reference_years = to_dt(self.reference_years)
         restoration_start = to_dt(self.restoration_start)
         disturbance_start = to_dt(self.disturbance_start)
+        bands = self.stack.band.values
 
         stats = self.stack.satts.stats()
         stats = stats.sel(
@@ -357,104 +359,89 @@ class RestorationArea:
                 "mean",
             ]
         )
-        stats = stats.to_dataframe("value").reset_index()
-        stats["time"] = stats["time"].dt.year
+        stats = stats.to_dataframe("value")
+        print(stats)
+        # stats["time"] = stats["time"].dt.year
 
         reco_targets = self.recovery_target
-        reco_targets = reco_targets.to_dataframe("reco_targets").reset_index()[
+        print(reco_targets.sel(band=Index.NBR).min(), reco_targets.sel(band=Index.NBR).max())
+        rt = pd.DataFrame(index=stats.index)
+        rt
+        reco_targets = reco_targets.to_dataframe("reco_targets")
+        reco_targets = reco_targets.reset_index()[
             ["band", "reco_targets"]
         ]
+        
         stats = stats.merge(reco_targets, how="left", on="band")
         stats = stats.rename(columns={"stats": "Statistic"})
+        # print(stats["value"])
+
+        # combined_xarr = xr.combine_by_coords([stats, self.recovery_target])
+        # stats = combined_xarr.to_dataframe().reset_index()
 
         # Set theme and colour palette for plots
         sns.set_theme()
         palette = sns.color_palette("deep")
 
         # Plot per-band statistic lineplots
-        with sns.color_palette(palette):
-            g = sns.FacetGrid(
-                stats,
-                col="band",
-                hue="Statistic",
-                sharey=False,
-                sharex=False,
-                height=5,
-                aspect=1.5,
-                legend_out=True,
-            )
-            g.map_dataframe(sns.lineplot, "time", "value")
+        fig, axs = plt.subplots(len(bands))
+        for i, band in enumerate(bands):
+            band_data = stats[stats["band"] == band]
+            try: 
+                axi = axs[i]
+            except TypeError:
+                axi = axs
+            sns.lineplot(data=band_data, x="time", y="value", ax=axi)
+            sns.lineplot(data=band_data, x="time", y="reco_targets", ax=axi, color="black", linestyle="dotted", lw=1,)
 
-        g.set(xticks=stats["time"].unique())
-        g.set_xticklabels(rotation=45)
-
-        # Add recovery target line
-        g.map_dataframe(
-            sns.lineplot,
-            "time",
-            "reco_targets",
-            color="black",
-            linestyle="dotted",
-            lw=1,
-        )
-        for ax in g.axes.flat:
-            ax.set_xlabel("Year")
-        g.axes[0, 0].set_ylabel("Band/Index Value")
-
-        # Plot spectral trajectory windows: reference, disturbance, recovery
-        g.map(
-            plt.axvline,
-            x=restoration_start.year,
-            color=palette[2],
-            linestyle="dashed",
-            lw=1,
-        )
-        g.map(
-            plt.axvline,
-            x=disturbance_start.year,
-            color=palette[3],
-            linestyle="dashed",
-            lw=1,
-        )
-        if hist_ref_sys:
-            g.map(
-                plt.axvline,
-                x=reference_years[0].year,
-                color=palette[4],
+            axi.axvline(
+                x=restoration_start.year,
+                color=palette[2],
                 linestyle="dashed",
                 lw=1,
             )
-            if reference_years[1] != disturbance_start:
-                g.map(
-                    plt.axvline,
-                    x=reference_years[1].year,
-                    color=palette[4],
-                    linestyle="dashed",
-                    lw=1,
-                )
-
-        for ax in g.axes.flat:
-            if hist_ref_sys:
-                ax.axvspan(
-                    reference_years[0].year,
-                    reference_years[1].year,
-                    alpha=0.1,
-                    color=palette[4],
-                )
-            ax.axvspan(
-                disturbance_start.year,
-                restoration_start.year,
-                alpha=0.1,
-                color=palette[3],
-            )
-            ax.axvspan(
+            axi.axvspan(
                 restoration_start.year,
                 self.end_year.year,
                 alpha=0.1,
                 color=palette[2],
             )
 
-        # Create custom legend for Facet grid.
+            axi.axvline(
+                x=disturbance_start.year,
+            color=palette[3],
+            linestyle="dashed",
+            lw=1,
+            )
+            axi.axvspan(
+                disturbance_start.year,
+                restoration_start.year,
+                alpha=0.1,
+                color=palette[3],
+            )
+
+            if hist_ref_sys:
+                axi.axvline(
+                x=reference_years[0].year,
+                color=palette[4],
+                linestyle="dashed",
+                lw=1,
+
+                )
+                axi.axvspan(
+                    reference_years[0].year,
+                    reference_years[1].year,
+                    alpha=0.1,
+                    color=palette[4],
+                )
+                if reference_years[1] != disturbance_start:
+                    axi.axvline(
+                    x=reference_years[1].year,
+                    color=palette[4],
+                    linestyle="dashed",
+                    lw=1,
+                    )  
+            
         median_line = Line2D([0], [0], color=palette[0], lw=2)
         mean_line = Line2D([0], [0], color=palette[1], lw=2)
         recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
