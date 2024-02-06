@@ -336,8 +336,7 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-    # NOTE: Slow, probably because of the pandas stuff
-    # @profile
+
     def plot_spectral_trajectory(self, path: str = None) -> None:
         """Create spectral trajectory plot of the RestorationArea
 
@@ -347,9 +346,6 @@ class RestorationArea:
             The path to save the plot to.
         """
         hist_ref_sys = self.reference_polygons == None
-        reference_years = to_dt(self.reference_years)
-        restoration_start = to_dt(self.restoration_start)
-        disturbance_start = to_dt(self.disturbance_start)
         bands = self.stack.band.values
 
         stats = self.stack.satts.stats()
@@ -360,21 +356,15 @@ class RestorationArea:
             ]
         )
         stats = stats.to_dataframe("value")
-        print(stats)
+        # print(stats)
         # stats["time"] = stats["time"].dt.year
 
-        reco_targets = self.recovery_target
-        print(reco_targets.sel(band=Index.NBR).min(), reco_targets.sel(band=Index.NBR).max())
-        rt = pd.DataFrame(index=stats.index)
-        rt
-        reco_targets = reco_targets.to_dataframe("reco_targets")
-        reco_targets = reco_targets.reset_index()[
-            ["band", "reco_targets"]
-        ]
+        reco_targets = self.recovery_target.to_dataframe("reco_targets").dropna(how="any")
+        # print(reco_targets)
         
-        stats = stats.merge(reco_targets, how="left", on="band")
-        stats = stats.rename(columns={"stats": "Statistic"})
-        # print(stats["value"])
+        stats = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets"]]
+        stats = stats.reset_index()
+        stats["time"] = stats["time"].apply(lambda x: str(x.year))
 
         # combined_xarr = xr.combine_by_coords([stats, self.recovery_target])
         # stats = combined_xarr.to_dataframe().reset_index()
@@ -384,59 +374,59 @@ class RestorationArea:
         palette = sns.color_palette("deep")
 
         # Plot per-band statistic lineplots
-        fig, axs = plt.subplots(len(bands))
+        fig, axs = plt.subplots(len(bands), sharex=True)
         for i, band in enumerate(bands):
             band_data = stats[stats["band"] == band]
             try: 
                 axi = axs[i]
             except TypeError:
                 axi = axs
-            sns.lineplot(data=band_data, x="time", y="value", ax=axi)
+            sns.lineplot(data=band_data, x="time", hue="stats", y="value", ax=axi, legend=False)
             sns.lineplot(data=band_data, x="time", y="reco_targets", ax=axi, color="black", linestyle="dotted", lw=1,)
 
             axi.axvline(
-                x=restoration_start.year,
+                x=self.restoration_start,
                 color=palette[2],
                 linestyle="dashed",
                 lw=1,
             )
             axi.axvspan(
-                restoration_start.year,
-                self.end_year.year,
+                self.restoration_start,
+                str(self.end_year.year),
                 alpha=0.1,
                 color=palette[2],
             )
 
             axi.axvline(
-                x=disturbance_start.year,
+                x=self.disturbance_start,
             color=palette[3],
             linestyle="dashed",
             lw=1,
             )
             axi.axvspan(
-                disturbance_start.year,
-                restoration_start.year,
+                self.disturbance_start,
+                self.restoration_start,
                 alpha=0.1,
                 color=palette[3],
             )
 
             if hist_ref_sys:
                 axi.axvline(
-                x=reference_years[0].year,
+                x=self.reference_years[0],
                 color=palette[4],
                 linestyle="dashed",
                 lw=1,
 
                 )
                 axi.axvspan(
-                    reference_years[0].year,
-                    reference_years[1].year,
+                    self.reference_years[0],
+                    self.reference_years[1],
                     alpha=0.1,
                     color=palette[4],
                 )
-                if reference_years[1] != disturbance_start:
+                if self.reference_years[1] != self.disturbance_start:
                     axi.axvline(
-                    x=reference_years[1].year,
+                    x=self.reference_years[1],
                     color=palette[4],
                     linestyle="dashed",
                     lw=1,
@@ -500,7 +490,9 @@ class RestorationArea:
             bbox_to_anchor=(0.5, -0.05),
             fancybox=True,
             ncol=6,
+            fontsize="x-small"
         )
+        plt.xticks(rotation=45)
         plt.suptitle("Spectral Trajectory of RestorationArea Site")
         plt.tight_layout()
         if path:
