@@ -23,7 +23,7 @@ import seaborn as sns
 
 from pandas import Index
 from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
+from matplotlib.patches import Patch, Rectangle
 
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
@@ -346,7 +346,6 @@ class RestorationArea:
             The path to save the plot to.
         """
         hist_ref_sys = self.reference_polygons == None
-        bands = self.stack.band.values
 
         stats = self.stack.satts.stats()
         stats = stats.sel(
@@ -355,34 +354,64 @@ class RestorationArea:
                 "mean",
             ]
         )
+
+        stats = stats.assign_coords(band=([str(b) for b in stats.band.values]))
         stats = stats.to_dataframe("value")
-        # print(stats)
-        # stats["time"] = stats["time"].dt.year
-
-        reco_targets = self.recovery_target.to_dataframe("reco_targets").dropna(how="any")
-        # print(reco_targets)
         
-        stats = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets"]]
-        stats = stats.reset_index()
-        stats["time"] = stats["time"].apply(lambda x: str(x.year))
+        recovery_target = self.recovery_target.assign_coords(band=([str(b) for b in self.recovery_target.band.values]))
+        reco_targets = recovery_target.to_dataframe("reco_targets").dropna(how="any")
 
-        # combined_xarr = xr.combine_by_coords([stats, self.recovery_target])
-        # stats = combined_xarr.to_dataframe().reset_index()
+        try:
+            if self.recovery_target.sizes["y"] > 1 or self.recovery_target.sizes["x"] > 1:
+                multi_pixel_target = True
+                std = reco_targets["reco_targets"].std()
+
+                reco_targets = reco_targets.groupby(level=0).mean()
+                reco_targets["p_std"] = reco_targets["reco_targets"] + std
+                reco_targets["m_std"] = reco_targets["reco_targets"] - std
+            else:
+                multi_pixel_target = False
+        except KeyError:
+            multi_pixel_target = False
+
+        
+        if multi_pixel_target:
+            data = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets", "p_std", "m_std"]]
+        else:
+            data = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets"]]
+        data = data.reset_index()
+        data["time"] = data["time"].apply(lambda x: str(x.year))
 
         # Set theme and colour palette for plots
         sns.set_theme()
         palette = sns.color_palette("deep")
 
+        bands = data["band"].unique()
+        fig, axs = plt.subplots(1, len(bands), sharey=False, sharex=False, figsize=[15, 5])
         # Plot per-band statistic lineplots
-        fig, axs = plt.subplots(len(bands), sharex=True)
         for i, band in enumerate(bands):
-            band_data = stats[stats["band"] == band]
+            band_data = data[data["band"] == band]
             try: 
                 axi = axs[i]
             except TypeError:
                 axi = axs
-            sns.lineplot(data=band_data, x="time", hue="stats", y="value", ax=axi, legend=False)
+            axi.tick_params(axis='x', labelrotation=45)
+            axi.set_title(band)
+            if i == 0:
+                axi.set_ylabel("Band/Index Value")
+            else:
+                axi.set_ylabel("")
+            axi.set_xlabel("Year")
+
+            sns.lineplot(data=band_data, x="time", hue="stats", y="value", ax=axi, legend=False, lw=1)
             sns.lineplot(data=band_data, x="time", y="reco_targets", ax=axi, color="black", linestyle="dotted", lw=1,)
+            if multi_pixel_target:
+                p_std = band_data["p_std"].iloc[0]
+                m_std = band_data["m_std"].iloc[0]
+                patch = Rectangle(xy=(0, m_std), width=len(self.stack.time.values)-1, height=(p_std - m_std), facecolor="black", edgecolor="black", hatch="///", alpha=0.075)
+                axi.add_patch(
+                    patch,
+                )
 
             axi.axvline(
                 x=self.restoration_start,
@@ -435,7 +464,7 @@ class RestorationArea:
         median_line = Line2D([0], [0], color=palette[0], lw=2)
         mean_line = Line2D([0], [0], color=palette[1], lw=2)
         recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
-        recovery_target_patch = Patch(facecolor="black", alpha=0.4)
+        recovery_target_patch = Patch(facecolor="black", edgecolor="black", alpha=0.09, hatch="////")
 
         recovery_window_line = Line2D(
             [0], [0], color=palette[2], linestyle="dashed", lw=1
@@ -474,25 +503,23 @@ class RestorationArea:
                         recovery_target_line,
                     )
             custom_handles.insert(3, (reference_years, reference_years_patch))
-            labels.insert(2, "historic recovery target (median)")
+            labels.insert(2, "recovery target (mean $ \pm $ std)")
             labels.insert(3, "reference year(s)")
         else:
             custom_handles.insert(
                 2,
                 recovery_target_line,
             )
-            labels.insert(2, "reference recovery target")
+            labels.insert(2, "recovery target")
 
         plt.figlegend(
             labels=labels,
             handles=custom_handles,
-            loc="lower center",
-            bbox_to_anchor=(0.5, -0.05),
+            loc="center right",
             fancybox=True,
-            ncol=6,
-            fontsize="x-small"
+            ncol=1,
+            fontsize="small"
         )
-        plt.xticks(rotation=45)
         plt.suptitle("Spectral Trajectory of RestorationArea Site")
         plt.tight_layout()
         if path:
