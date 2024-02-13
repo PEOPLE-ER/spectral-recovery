@@ -156,30 +156,6 @@ def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.Data
     return masked_stack
 
 
-def _common_long_to_short_names(bands):
-    """Creates dict with common/long name keys and short name items
-    
-    Parameters
-    ----------
-    bands : dict
-        Band name and info as read from bands.json.
-    
-    Returns
-    -------
-    common_long : dict
-        Common and long name keys with short name items.
-
-    """
-    common_long = {}
-    for short_name, data in bands.items():
-        common_name = data['common_name']
-        long_name = data['long_name']
-        common_long[common_name] = short_name
-        common_long[long_name] = short_name
-
-    return common_long
-
-
 def _valid_mapping(band_names, band_nums):
     """Check if band_names dict maps each band to a name and vice versa.
     
@@ -208,6 +184,7 @@ def _valid_mapping(band_names, band_nums):
         
     return True
 
+
 def _common_and_short_names(standard):
     """ Dict of short and common names to standard names """
     common_and_short = {}
@@ -215,6 +192,7 @@ def _common_and_short_names(standard):
         common_and_short[spx.bands[band].short_name] = band
         common_and_short[spx.bands[band].common_name] = band
     return common_and_short
+
 
 def _all_names_to_standard(in_names, standard):
     """ Map given names to standard names.
@@ -251,6 +229,7 @@ def _all_names_to_standard(in_names, standard):
             raise ValueError(f"Could not find standard band name for {given_name}.")
         
     return (standard_names, attr_names)
+
 
 def _metrics_to_tifs(
     metric: xr.DataArray,

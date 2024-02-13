@@ -59,6 +59,7 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str], constants: di
                 index_stack = index_stack.expand_dims(dim={"band": indices})
     return index_stack
 
+
 def _supported_domain(indices: list[str]):
     """ Determine whether indices application domains are supported by tool.
     
@@ -78,6 +79,7 @@ def _supported_domain(indices: list[str]):
                 f"only application domain 'vegetation' and 'burn' are supported (index {i} has application domain '{spx.indices[i].application_domain}')"
             ) from None
     return True
+
 
 def _compatible_platform(indices: list[str], platforms: list[str]):
     """ Determine whether platform and selected indices are compatible.
