@@ -24,6 +24,7 @@ import seaborn as sns
 from pandas import Index
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
+from matplotlib.legend_handler import HandlerPatch
 
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
@@ -361,24 +362,7 @@ class RestorationArea:
         recovery_target = self.recovery_target.assign_coords(band=([str(b) for b in self.recovery_target.band.values]))
         reco_targets = recovery_target.to_dataframe("reco_targets").dropna(how="any")
 
-        try:
-            if self.recovery_target.sizes["y"] > 1 or self.recovery_target.sizes["x"] > 1:
-                multi_pixel_target = True
-                std = reco_targets["reco_targets"].std()
-
-                reco_targets = reco_targets.groupby(level=0).mean()
-                reco_targets["p_std"] = reco_targets["reco_targets"] + std
-                reco_targets["m_std"] = reco_targets["reco_targets"] - std
-            else:
-                multi_pixel_target = False
-        except KeyError:
-            multi_pixel_target = False
-
-        
-        if multi_pixel_target:
-            data = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets", "p_std", "m_std"]]
-        else:
-            data = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets"]]
+        data = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets"]]
         data = data.reset_index()
         data["time"] = data["time"].apply(lambda x: str(x.year))
 
@@ -387,7 +371,8 @@ class RestorationArea:
         palette = sns.color_palette("deep")
 
         bands = data["band"].unique()
-        fig, axs = plt.subplots(1, len(bands), sharey=False, sharex=False, figsize=[15, 5])
+        fig, axs = plt.subplots(len(bands), 1, sharey=False, sharex=True, figsize=[10, 7.5])
+        # fig.supylabel("Band/Index Value")
         # Plot per-band statistic lineplots
         for i, band in enumerate(bands):
             band_data = data[data["band"] == band]
@@ -395,23 +380,14 @@ class RestorationArea:
                 axi = axs[i]
             except TypeError:
                 axi = axs
-            axi.tick_params(axis='x', labelrotation=45)
-            axi.set_title(band)
-            if i == 0:
-                axi.set_ylabel("Band/Index Value")
-            else:
-                axi.set_ylabel("")
-            axi.set_xlabel("Year")
 
             sns.lineplot(data=band_data, x="time", hue="stats", y="value", ax=axi, legend=False, lw=1)
-            sns.lineplot(data=band_data, x="time", y="reco_targets", ax=axi, color="black", linestyle="dotted", lw=1,)
-            if multi_pixel_target:
-                p_std = band_data["p_std"].iloc[0]
-                m_std = band_data["m_std"].iloc[0]
-                patch = Rectangle(xy=(0, m_std), width=len(self.stack.time.values)-1, height=(p_std - m_std), facecolor="black", edgecolor="black", hatch="///", alpha=0.075)
-                axi.add_patch(
-                    patch,
-                )
+            sns.lineplot(data=band_data[band_data["stats"]=="mean"], x="time", y="reco_targets", ax=axi, color="black", linestyle=(0, (3, 5, 1, 5)), lw=1)
+
+            axi.set_title(band)
+            axi.set_xticks(axi.get_xticks(), data["time"].unique().tolist(), rotation=45, ha='right')
+            axi.set_xlabel("Year")
+            axi.set_ylabel("Band/Index Value")
 
             axi.axvline(
                 x=self.restoration_start,
@@ -422,20 +398,20 @@ class RestorationArea:
             axi.axvspan(
                 self.restoration_start,
                 str(self.end_year.year),
-                alpha=0.1,
+                alpha=0.2,
                 color=palette[2],
             )
 
             axi.axvline(
                 x=self.disturbance_start,
-            color=palette[3],
-            linestyle="dashed",
-            lw=1,
+                color=palette[3],
+                linestyle="dashed",
+                lw=1,
             )
             axi.axvspan(
                 self.disturbance_start,
                 self.restoration_start,
-                alpha=0.1,
+                alpha=0.2,
                 color=palette[3],
             )
 
@@ -450,7 +426,7 @@ class RestorationArea:
                 axi.axvspan(
                     self.reference_years[0],
                     self.reference_years[1],
-                    alpha=0.1,
+                    alpha=0.2,
                     color=palette[4],
                 )
                 if self.reference_years[1] != self.disturbance_start:
@@ -459,70 +435,108 @@ class RestorationArea:
                     color=palette[4],
                     linestyle="dashed",
                     lw=1,
-                    )  
-            
-        median_line = Line2D([0], [0], color=palette[0], lw=2)
-        mean_line = Line2D([0], [0], color=palette[1], lw=2)
-        recovery_target_line = Line2D([0], [0], color="black", linestyle="dotted", lw=1)
-        recovery_target_patch = Patch(facecolor="black", edgecolor="black", alpha=0.09, hatch="////")
+                    ) 
 
-        recovery_window_line = Line2D(
-            [0], [0], color=palette[2], linestyle="dashed", lw=1
-        )
-        recovery_window_patch = Patch(facecolor=palette[2], alpha=0.1)
-        disturbance_window_line = Line2D(
-            [0], [0], color=palette[3], linestyle="dashed", lw=1
-        )
-        disturbance_window_patch = Patch(facecolor=palette[3], alpha=0.1)
-        reference_years = Line2D([0], [0], color=palette[4], linestyle="dashed", lw=1)
-        reference_years_patch = Patch(facecolor=palette[4], alpha=0.1)
+        labels, custom_handles, = _create_custom_legend(self, palette, hist_ref_sys)
 
-        custom_handles = [
-            median_line,
-            mean_line,
-            (disturbance_window_line, disturbance_window_patch),
-            (recovery_window_line, recovery_window_patch),
-        ]
-
-        labels = [
-            "median",
-            "mean",
-            "disturbance window",
-            "recovery window",
-        ]
-        if hist_ref_sys:
-            if isinstance(self.recovery_target_method, MedianTarget):
-                if self.recovery_target_method.scale == "pixel":
-                    custom_handles.insert(
-                        2,
-                        (recovery_target_line, recovery_target_patch),
-                    )
-                else:
-                    custom_handles.insert(
-                        2,
-                        recovery_target_line,
-                    )
-            custom_handles.insert(3, (reference_years, reference_years_patch))
-            labels.insert(2, "recovery target (mean $ \pm $ std)")
-            labels.insert(3, "reference year(s)")
-        else:
-            custom_handles.insert(
-                2,
-                recovery_target_line,
+        if path is None:
+            plt.figlegend(
+                labels=labels,
+                handles=custom_handles,
+                loc="lower center",
+                fancybox=True,
+                ncol=3,
+                handler_map={Patch: HandlerFilledBetween()}
             )
-            labels.insert(2, "recovery target")
+            plt.tight_layout()
+            plt.subplots_adjust(bottom=plt.rcParams["figure.subplot.bottom"]+0.07)
+        else:
+            plt.figlegend(
+                labels=labels,
+                handles=custom_handles,
+                bbox_to_anchor=(0.5, -0.075),
+                loc="lower center",
+                fancybox=True,
+                ncol=3,
+                handler_map={Patch: HandlerFilledBetween()}
+            )
+            plt.tight_layout()
 
-        plt.figlegend(
-            labels=labels,
-            handles=custom_handles,
-            loc="center right",
-            fancybox=True,
-            ncol=1,
-            fontsize="small"
-        )
-        plt.suptitle("Spectral Trajectory of RestorationArea Site")
-        plt.tight_layout()
         if path:
             plt.savefig(path, dpi=300, bbox_inches="tight")
         else:
             plt.show()
+
+# def _
+
+def _create_custom_legend(self, palette, hist_ref_sys) -> Tuple[List, List]:
+    """ Create a custom legend to match trajectory plots 
+    
+    Returns
+    -------
+    tuple of lists 
+        custom labels and handles to pass to ``figlegend``
+    
+    """
+    median_line = Line2D([0], [0], color=palette[0], lw=2)
+    mean_line = Line2D([0], [0], color=palette[1], lw=2)
+    recovery_target_line = Line2D([0], [0], color="black", linestyle=(0, (3, 5, 1, 5)), lw=1)
+    recovery_window_patch = Patch(facecolor=palette[2], alpha=0.2)
+    disturbance_window_patch = Patch(facecolor=palette[3], alpha=0.2)
+    reference_years_patch = Patch(facecolor=palette[4], alpha=0.2)
+
+    custom_handles = [
+        median_line,
+        mean_line,
+        disturbance_window_patch,
+        recovery_window_patch,
+    ]
+
+    labels = [
+        "median",
+        "mean",
+        "disturbance window",
+        "recovery window",
+    ]
+    if hist_ref_sys:
+        if isinstance(self.recovery_target_method, MedianTarget):
+            if self.recovery_target_method.scale == "pixel":
+                custom_handles.insert(
+                    2,
+                    (recovery_target_line),
+                )
+                labels.insert(2, "recovery target (estimated mean)")
+            else:
+                custom_handles.insert(
+                    2, 
+                    recovery_target_line,
+                )
+                labels.insert(2, "recovery target")
+
+        custom_handles.insert(3, reference_years_patch)
+        labels.insert(3, "reference year(s)")
+    else:
+        custom_handles.insert(
+            2,
+            recovery_target_line,
+        )
+        labels.insert(2, "recovery target")
+
+    return labels, custom_handles
+
+class HandlerFilledBetween(HandlerPatch):
+    """ Custom Patch Handler for trajectory windows.
+
+    Draws Patch objects with left and right edges coloured/dashed
+    to match the style of trajectory window Patches in the plots.
+    
+    """
+    def create_artists(self, legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans):
+        p = super().create_artists(legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans)[0]
+        color = p.get_facecolor()
+        x0, y0 = 0, 0
+        x1 = x0 + width
+        y1 = y0 + height
+        line_left = Line2D([x0, x0], [y0, y1], color=color, linestyle="dashed", lw=0.85, alpha=1)
+        line_right = Line2D([x1, x1], [y0, y1], color=color, linestyle="dashed", lw=0.85, alpha=1)
+        return [p, line_left, line_right]
