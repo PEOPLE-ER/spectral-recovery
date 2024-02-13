@@ -21,14 +21,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from pandas import Index
+from pandas import Index as pdIndex
 from matplotlib.lines import Line2D
-from matplotlib.patches import Patch, Rectangle
+from matplotlib.patches import Patch
 from matplotlib.legend_handler import HandlerPatch
 
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
-from spectral_recovery.enums import Metric, Index
+from spectral_recovery.enums import Metric
 from spectral_recovery._config import VALID_YEAR
 
 from spectral_recovery import metrics as m
@@ -59,7 +59,7 @@ def _get_reference_image_stack(reference_polygons, image_stack):
 
     reference_stack = xr.concat(
         clipped_stacks.values(),
-        dim=Index(clipped_stacks.keys(), name="poly_id"),
+        dim=pdIndex(clipped_stacks.keys(), name="poly_id"),
     )
     return reference_stack
 
