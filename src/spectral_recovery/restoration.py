@@ -412,12 +412,12 @@ class RestorationArea:
                 linestyle=(0, (3, 5, 1, 5)),
                 lw=1,
             )
-            _draw_trajectory_windows(self, axi, palette, hist_ref_sys)
-            _set_axis_labels(axi, band, data["time"].unique().tolist())
+            self._draw_trajectory_windows(axi, palette, hist_ref_sys)
+            self._set_axis_labels(axi, band, data["time"].unique().tolist())
         (
             labels,
             custom_handles,
-        ) = _custom_legend_labels_handles(self, palette, hist_ref_sys)
+        ) = self._custom_legend_labels_handles(palette, hist_ref_sys)
 
         if path is None:
             plt.figlegend(
@@ -448,139 +448,139 @@ class RestorationArea:
             plt.show()
 
 
-def _set_axis_labels(axi, title, xlabels):
-    """Set the axis labels to desired values"""
-    axi.set_title(title)
-    axi.set_xticks(
-        axi.get_xticks(),
-        xlabels,
-        rotation=45,
-        ha="right",
-    )
-    axi.set_xlabel("Year")
-    axi.set_ylabel("Band/Index Value")
+    def _set_axis_labels(self, axi, title, xlabels):
+        """Set the axis labels to desired values"""
+        axi.set_title(title)
+        axi.set_xticks(
+            axi.get_xticks(),
+            xlabels,
+            rotation=45,
+            ha="right",
+        )
+        axi.set_xlabel("Year")
+        axi.set_ylabel("Band/Index Value")
 
 
-def _draw_trajectory_windows(self, axi, palette, hist_ref_sys):
-    """Draw the trajectory windows onto subplots.
+    def _draw_trajectory_windows(self, axi, palette, hist_ref_sys):
+        """Draw the trajectory windows onto subplots.
 
-    Uses two verticle dashed lines to delimit the start and
-    end years of a window. If the start and end years are
-    not the same year, then the space between the two dashed lines
-    is filled in (vertical span). Each window (i.e line/span group)
-    is coloured a distinct colour.
+        Uses two verticle dashed lines to delimit the start and
+        end years of a window. If the start and end years are
+        not the same year, then the space between the two dashed lines
+        is filled in (vertical span). Each window (i.e line/span group)
+        is coloured a distinct colour.
 
-    Draws the reference, disturbance, and recovery windows.
+        Draws the reference, disturbance, and recovery windows.
 
-    """
-    # Draw recovery window
-    axi.axvline(
-        x=self.restoration_start,
-        color=palette[2],
-        linestyle="dashed",
-        lw=1,
-    )
-    axi.axvspan(
-        self.restoration_start,
-        str(self.end_year.year),
-        alpha=0.2,
-        color=palette[2],
-    )
-
-    # Draw disturbance window
-    axi.axvline(
-        x=self.disturbance_start,
-        color=palette[3],
-        linestyle="dashed",
-        lw=1,
-    )
-    axi.axvspan(
-        self.disturbance_start,
-        self.restoration_start,
-        alpha=0.2,
-        color=palette[3],
-    )
-
-    if hist_ref_sys:
-        # if deriving target from recovery polygon, draw reference window
+        """
+        # Draw recovery window
         axi.axvline(
-            x=self.reference_years[0],
-            color=palette[4],
+            x=self.restoration_start,
+            color=palette[2],
             linestyle="dashed",
             lw=1,
         )
         axi.axvspan(
-            self.reference_years[0],
-            self.reference_years[1],
+            self.restoration_start,
+            str(self.end_year.year),
             alpha=0.2,
-            color=palette[4],
+            color=palette[2],
         )
-        # only draw line if reference ye
-        if self.reference_years[1] != self.disturbance_start:
+
+        # Draw disturbance window
+        axi.axvline(
+            x=self.disturbance_start,
+            color=palette[3],
+            linestyle="dashed",
+            lw=1,
+        )
+        axi.axvspan(
+            self.disturbance_start,
+            self.restoration_start,
+            alpha=0.2,
+            color=palette[3],
+        )
+
+        if hist_ref_sys:
+            # if deriving target from recovery polygon, draw reference window
             axi.axvline(
-                x=self.reference_years[1],
+                x=self.reference_years[0],
                 color=palette[4],
                 linestyle="dashed",
                 lw=1,
             )
-
-
-def _custom_legend_labels_handles(self, palette, hist_ref_sys) -> Tuple[List, List]:
-    """Create a custom legend to match trajectory plots
-
-    Returns
-    -------
-    tuple of lists
-        custom labels and handles to pass to ``figlegend``
-
-    """
-    median_line = Line2D([0], [0], color=palette[0], lw=2)
-    mean_line = Line2D([0], [0], color=palette[1], lw=2)
-    recovery_target_line = Line2D(
-        [0], [0], color="black", linestyle=(0, (3, 5, 1, 5)), lw=1
-    )
-    recovery_window_patch = Patch(facecolor=palette[2], alpha=0.2)
-    disturbance_window_patch = Patch(facecolor=palette[3], alpha=0.2)
-    reference_years_patch = Patch(facecolor=palette[4], alpha=0.2)
-
-    custom_handles = [
-        median_line,
-        mean_line,
-        disturbance_window_patch,
-        recovery_window_patch,
-    ]
-
-    labels = [
-        "median",
-        "mean",
-        "disturbance window",
-        "recovery window",
-    ]
-    if hist_ref_sys:
-        if isinstance(self.recovery_target_method, MedianTarget):
-            if self.recovery_target_method.scale == "pixel":
-                custom_handles.insert(
-                    2,
-                    (recovery_target_line),
+            axi.axvspan(
+                self.reference_years[0],
+                self.reference_years[1],
+                alpha=0.2,
+                color=palette[4],
+            )
+            # only draw line if reference ye
+            if self.reference_years[1] != self.disturbance_start:
+                axi.axvline(
+                    x=self.reference_years[1],
+                    color=palette[4],
+                    linestyle="dashed",
+                    lw=1,
                 )
-                labels.insert(2, "recovery target (estimated mean)")
-            else:
-                custom_handles.insert(
-                    2,
-                    recovery_target_line,
-                )
-                labels.insert(2, "recovery target")
 
-        custom_handles.insert(3, reference_years_patch)
-        labels.insert(3, "reference year(s)")
-    else:
-        custom_handles.insert(
-            2,
-            recovery_target_line,
+
+    def _custom_legend_labels_handles(self, palette, hist_ref_sys) -> Tuple[List, List]:
+        """Create a custom legend to match trajectory plots
+
+        Returns
+        -------
+        tuple of lists
+            custom labels and handles to pass to ``figlegend``
+
+        """
+        median_line = Line2D([0], [0], color=palette[0], lw=2)
+        mean_line = Line2D([0], [0], color=palette[1], lw=2)
+        recovery_target_line = Line2D(
+            [0], [0], color="black", linestyle=(0, (3, 5, 1, 5)), lw=1
         )
-        labels.insert(2, "recovery target")
+        recovery_window_patch = Patch(facecolor=palette[2], alpha=0.2)
+        disturbance_window_patch = Patch(facecolor=palette[3], alpha=0.2)
+        reference_years_patch = Patch(facecolor=palette[4], alpha=0.2)
 
-    return labels, custom_handles
+        custom_handles = [
+            median_line,
+            mean_line,
+            disturbance_window_patch,
+            recovery_window_patch,
+        ]
+
+        labels = [
+            "median",
+            "mean",
+            "disturbance window",
+            "recovery window",
+        ]
+        if hist_ref_sys:
+            if isinstance(self.recovery_target_method, MedianTarget):
+                if self.recovery_target_method.scale == "pixel":
+                    custom_handles.insert(
+                        2,
+                        (recovery_target_line),
+                    )
+                    labels.insert(2, "recovery target (estimated mean)")
+                else:
+                    custom_handles.insert(
+                        2,
+                        recovery_target_line,
+                    )
+                    labels.insert(2, "recovery target")
+
+            custom_handles.insert(3, reference_years_patch)
+            labels.insert(3, "reference year(s)")
+        else:
+            custom_handles.insert(
+                2,
+                recovery_target_line,
+            )
+            labels.insert(2, "recovery target")
+
+        return labels, custom_handles
 
 
 class HandlerFilledBetween(HandlerPatch):
