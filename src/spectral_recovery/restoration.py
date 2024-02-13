@@ -449,7 +449,7 @@ class RestorationArea:
 
 
 def _set_axis_labels(axi, title, xlabels):
-    """ Set the axis labels to desired values """
+    """Set the axis labels to desired values"""
     axi.set_title(title)
     axi.set_xticks(
         axi.get_xticks(),
@@ -462,13 +462,13 @@ def _set_axis_labels(axi, title, xlabels):
 
 
 def _draw_trajectory_windows(self, axi, palette, hist_ref_sys):
-    """ Draw the trajectory windows onto subplots.
-    
+    """Draw the trajectory windows onto subplots.
+
     Uses two verticle dashed lines to delimit the start and
     end years of a window. If the start and end years are
     not the same year, then the space between the two dashed lines
     is filled in (vertical span). Each window (i.e line/span group)
-    is coloured a distinct colour. 
+    is coloured a distinct colour.
 
     Draws the reference, disturbance, and recovery windows.
 
