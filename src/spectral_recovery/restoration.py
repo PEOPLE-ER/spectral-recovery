@@ -344,7 +344,7 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-    def plot_spectral_trajectory(self, path: str = None) -> None:
+    def plot_spectral_trajectory(self, path: str = None, legend: bool = True) -> None:
         """Create spectral trajectory plot of the RestorationArea
 
         Parameters
@@ -384,7 +384,7 @@ class RestorationArea:
 
         bands = data["band"].unique()
         fig, axs = plt.subplots(
-            len(bands), 1, sharey=False, sharex=True, figsize=[10, 7.5]
+            len(bands), 1, sharey=False, sharex=True, figsize=[8, 7.5]
         )
         # Plot per-band statistic lineplots
         for i, band in enumerate(bands):
@@ -419,7 +419,7 @@ class RestorationArea:
             custom_handles,
         ) = self._custom_legend_labels_handles(palette, hist_ref_sys)
 
-        if path is None:
+        if legend:
             plt.figlegend(
                 labels=labels,
                 handles=custom_handles,
@@ -428,20 +428,7 @@ class RestorationArea:
                 ncol=3,
                 handler_map={Patch: HandlerFilledBetween()},
             )
-            plt.tight_layout()
-            plt.subplots_adjust(bottom=plt.rcParams["figure.subplot.bottom"] + 0.07)
-        else:
-            plt.figlegend(
-                labels=labels,
-                handles=custom_handles,
-                bbox_to_anchor=(0.5, -0.075),
-                loc="lower center",
-                fancybox=True,
-                ncol=3,
-                handler_map={Patch: HandlerFilledBetween()},
-            )
-            plt.tight_layout()
-
+            plt.subplots_adjust(bottom=plt.rcParams["figure.subplot.bottom"] + (plt.rcParams["figure.subplot.bottom"] / 1.5))
         if path:
             plt.savefig(path)
         else:
