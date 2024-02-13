@@ -175,16 +175,22 @@ def _validate_restoration_polygons(restoration_polygon, image_stack):
             "A RestorationArea instance can only contain one Polygon."
         ) from None
     if not image_stack.satts.contains_spatial(restoration_polygon):
-        raise ValueError("restoration_polygon is not within the bounds of images") from None
+        raise ValueError(
+            "restoration_polygon is not within the bounds of images"
+        ) from None
 
     return restoration_polygon
+
 
 def _validate_reference_polygons(reference_polygons, image_stack):
     if reference_polygons is not None:
         if not image_stack.satts.contains_spatial(reference_polygons):
-            raise ValueError("not all reference_polygons within the bounds of images") from None
-        
+            raise ValueError(
+                "not all reference_polygons within the bounds of images"
+            ) from None
+
     return reference_polygons
+
 
 class RestorationArea:
     """A Restoration Area (RA).
@@ -227,7 +233,6 @@ class RestorationArea:
             [xr.DataArray, Tuple[datetime]], xr.DataArray
         ] = MedianTarget(scale="polygon"),
     ) -> None:
-        
         if composite_stack.satts.is_annual_composite:
             self.restoration_polygon = _validate_restoration_polygons(
                 restoration_polygon=restoration_polygon, image_stack=composite_stack
@@ -259,7 +264,9 @@ class RestorationArea:
             )
         self.recovery_target_method = recovery_target_method
 
-        self.reference_polygons = _validate_reference_polygons(reference_polygons=reference_polygons, image_stack=composite_stack)
+        self.reference_polygons = _validate_reference_polygons(
+            reference_polygons=reference_polygons, image_stack=composite_stack
+        )
         if self.reference_polygons is None:
             reference_image_stack = self.stack
         else:  # computing recovery target using reference polygons
@@ -337,7 +344,6 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-
     def plot_spectral_trajectory(self, path: str = None) -> None:
         """Create spectral trajectory plot of the RestorationArea
 
@@ -356,13 +362,19 @@ class RestorationArea:
             ]
         )
 
+        # convert stats xarray and recovery target xarray into merged df for plotting
         stats = stats.assign_coords(band=([str(b) for b in stats.band.values]))
         stats = stats.to_dataframe("value")
-        
-        recovery_target = self.recovery_target.assign_coords(band=([str(b) for b in self.recovery_target.band.values]))
+
+        recovery_target = self.recovery_target.assign_coords(
+            band=([str(b) for b in self.recovery_target.band.values])
+        )
         reco_targets = recovery_target.to_dataframe("reco_targets").dropna(how="any")
 
-        data = stats.merge(reco_targets, left_index=True, right_index=True)[["value", "reco_targets"]]
+        # merge on multi-index: (statistic, band, year) then reset index
+        data = stats.merge(reco_targets, left_index=True, right_index=True)[
+            ["value", "reco_targets"]
+        ]
         data = data.reset_index()
         data["time"] = data["time"].apply(lambda x: str(x.year))
 
@@ -371,73 +383,41 @@ class RestorationArea:
         palette = sns.color_palette("deep")
 
         bands = data["band"].unique()
-        fig, axs = plt.subplots(len(bands), 1, sharey=False, sharex=True, figsize=[10, 7.5])
-        # fig.supylabel("Band/Index Value")
+        fig, axs = plt.subplots(
+            len(bands), 1, sharey=False, sharex=True, figsize=[10, 7.5]
+        )
         # Plot per-band statistic lineplots
         for i, band in enumerate(bands):
             band_data = data[data["band"] == band]
-            try: 
+            try:
                 axi = axs[i]
             except TypeError:
                 axi = axs
 
-            sns.lineplot(data=band_data, x="time", hue="stats", y="value", ax=axi, legend=False, lw=1)
-            sns.lineplot(data=band_data[band_data["stats"]=="mean"], x="time", y="reco_targets", ax=axi, color="black", linestyle=(0, (3, 5, 1, 5)), lw=1)
-
-            axi.set_title(band)
-            axi.set_xticks(axi.get_xticks(), data["time"].unique().tolist(), rotation=45, ha='right')
-            axi.set_xlabel("Year")
-            axi.set_ylabel("Band/Index Value")
-
-            axi.axvline(
-                x=self.restoration_start,
-                color=palette[2],
-                linestyle="dashed",
+            sns.lineplot(
+                data=band_data,
+                x="time",
+                hue="stats",
+                y="value",
+                ax=axi,
+                legend=False,
                 lw=1,
             )
-            axi.axvspan(
-                self.restoration_start,
-                str(self.end_year.year),
-                alpha=0.2,
-                color=palette[2],
-            )
-
-            axi.axvline(
-                x=self.disturbance_start,
-                color=palette[3],
-                linestyle="dashed",
+            sns.lineplot(
+                data=band_data[band_data["stats"] == "mean"],
+                x="time",
+                y="reco_targets",
+                ax=axi,
+                color="black",
+                linestyle=(0, (3, 5, 1, 5)),
                 lw=1,
             )
-            axi.axvspan(
-                self.disturbance_start,
-                self.restoration_start,
-                alpha=0.2,
-                color=palette[3],
-            )
-
-            if hist_ref_sys:
-                axi.axvline(
-                x=self.reference_years[0],
-                color=palette[4],
-                linestyle="dashed",
-                lw=1,
-
-                )
-                axi.axvspan(
-                    self.reference_years[0],
-                    self.reference_years[1],
-                    alpha=0.2,
-                    color=palette[4],
-                )
-                if self.reference_years[1] != self.disturbance_start:
-                    axi.axvline(
-                    x=self.reference_years[1],
-                    color=palette[4],
-                    linestyle="dashed",
-                    lw=1,
-                    ) 
-
-        labels, custom_handles, = _create_custom_legend(self, palette, hist_ref_sys)
+            _draw_trajectory_windows(self, axi, palette, hist_ref_sys)
+            _set_axis_labels(axi, band, data["time"].unique().tolist())
+        (
+            labels,
+            custom_handles,
+        ) = _custom_legend_labels_handles(self, palette, hist_ref_sys)
 
         if path is None:
             plt.figlegend(
@@ -446,10 +426,10 @@ class RestorationArea:
                 loc="lower center",
                 fancybox=True,
                 ncol=3,
-                handler_map={Patch: HandlerFilledBetween()}
+                handler_map={Patch: HandlerFilledBetween()},
             )
             plt.tight_layout()
-            plt.subplots_adjust(bottom=plt.rcParams["figure.subplot.bottom"]+0.07)
+            plt.subplots_adjust(bottom=plt.rcParams["figure.subplot.bottom"] + 0.07)
         else:
             plt.figlegend(
                 labels=labels,
@@ -458,29 +438,107 @@ class RestorationArea:
                 loc="lower center",
                 fancybox=True,
                 ncol=3,
-                handler_map={Patch: HandlerFilledBetween()}
+                handler_map={Patch: HandlerFilledBetween()},
             )
             plt.tight_layout()
 
         if path:
-            plt.savefig(path, dpi=300, bbox_inches="tight")
+            plt.savefig(path)
         else:
             plt.show()
 
-# def _
 
-def _create_custom_legend(self, palette, hist_ref_sys) -> Tuple[List, List]:
-    """ Create a custom legend to match trajectory plots 
+def _set_axis_labels(axi, title, xlabels):
+    """ Set the axis labels to desired values """
+    axi.set_title(title)
+    axi.set_xticks(
+        axi.get_xticks(),
+        xlabels,
+        rotation=45,
+        ha="right",
+    )
+    axi.set_xlabel("Year")
+    axi.set_ylabel("Band/Index Value")
+
+
+def _draw_trajectory_windows(self, axi, palette, hist_ref_sys):
+    """ Draw the trajectory windows onto subplots.
     
+    Uses two verticle dashed lines to delimit the start and
+    end years of a window. If the start and end years are
+    not the same year, then the space between the two dashed lines
+    is filled in (vertical span). Each window (i.e line/span group)
+    is coloured a distinct colour. 
+
+    Draws the reference, disturbance, and recovery windows.
+
+    """
+    # Draw recovery window
+    axi.axvline(
+        x=self.restoration_start,
+        color=palette[2],
+        linestyle="dashed",
+        lw=1,
+    )
+    axi.axvspan(
+        self.restoration_start,
+        str(self.end_year.year),
+        alpha=0.2,
+        color=palette[2],
+    )
+
+    # Draw disturbance window
+    axi.axvline(
+        x=self.disturbance_start,
+        color=palette[3],
+        linestyle="dashed",
+        lw=1,
+    )
+    axi.axvspan(
+        self.disturbance_start,
+        self.restoration_start,
+        alpha=0.2,
+        color=palette[3],
+    )
+
+    if hist_ref_sys:
+        # if deriving target from recovery polygon, draw reference window
+        axi.axvline(
+            x=self.reference_years[0],
+            color=palette[4],
+            linestyle="dashed",
+            lw=1,
+        )
+        axi.axvspan(
+            self.reference_years[0],
+            self.reference_years[1],
+            alpha=0.2,
+            color=palette[4],
+        )
+        # only draw line if reference ye
+        if self.reference_years[1] != self.disturbance_start:
+            axi.axvline(
+                x=self.reference_years[1],
+                color=palette[4],
+                linestyle="dashed",
+                lw=1,
+            )
+
+
+def _custom_legend_labels_handles(self, palette, hist_ref_sys) -> Tuple[List, List]:
+    """Create a custom legend to match trajectory plots
+
     Returns
     -------
-    tuple of lists 
+    tuple of lists
         custom labels and handles to pass to ``figlegend``
-    
+
     """
     median_line = Line2D([0], [0], color=palette[0], lw=2)
     mean_line = Line2D([0], [0], color=palette[1], lw=2)
-    recovery_target_line = Line2D([0], [0], color="black", linestyle=(0, (3, 5, 1, 5)), lw=1)
+    recovery_target_line = Line2D(
+        [0], [0], color="black", linestyle=(0, (3, 5, 1, 5)), lw=1
+    )
     recovery_window_patch = Patch(facecolor=palette[2], alpha=0.2)
     disturbance_window_patch = Patch(facecolor=palette[3], alpha=0.2)
     reference_years_patch = Patch(facecolor=palette[4], alpha=0.2)
@@ -508,7 +566,7 @@ def _create_custom_legend(self, palette, hist_ref_sys) -> Tuple[List, List]:
                 labels.insert(2, "recovery target (estimated mean)")
             else:
                 custom_handles.insert(
-                    2, 
+                    2,
                     recovery_target_line,
                 )
                 labels.insert(2, "recovery target")
@@ -524,19 +582,29 @@ def _create_custom_legend(self, palette, hist_ref_sys) -> Tuple[List, List]:
 
     return labels, custom_handles
 
+
 class HandlerFilledBetween(HandlerPatch):
-    """ Custom Patch Handler for trajectory windows.
+    """Custom Patch Handler for trajectory windows.
 
     Draws Patch objects with left and right edges coloured/dashed
     to match the style of trajectory window Patches in the plots.
-    
+
     """
-    def create_artists(self, legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans):
-        p = super().create_artists(legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans)[0]
+
+    def create_artists(
+        self, legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans
+    ):
+        p = super().create_artists(
+            legend, orig_handle, xdescent, ydescent, width, height, fontsize, trans
+        )[0]
         color = p.get_facecolor()
         x0, y0 = 0, 0
         x1 = x0 + width
         y1 = y0 + height
-        line_left = Line2D([x0, x0], [y0, y1], color=color, linestyle="dashed", lw=0.85, alpha=1)
-        line_right = Line2D([x1, x1], [y0, y1], color=color, linestyle="dashed", lw=0.85, alpha=1)
+        line_left = Line2D(
+            [x0, x0], [y0, y1], color=color, linestyle="dashed", lw=0.85, alpha=1
+        )
+        line_right = Line2D(
+            [x1, x1], [y0, y1], color=color, linestyle="dashed", lw=0.85, alpha=1
+        )
         return [p, line_left, line_right]
