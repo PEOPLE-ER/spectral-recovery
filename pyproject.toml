@@ -30,6 +30,7 @@ dependencies = [
     "distributed >= 2023.5.1",
     "matplotlib >= 3.7.1",
     "seaborn >= 0.12.2",
+    "prettytable >= 3.9.0",
 ]
 
 [project.optional-dependencies]
