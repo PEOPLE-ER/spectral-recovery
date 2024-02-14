@@ -6,20 +6,20 @@ band names and attributes are consistent. Also handles writing.
 
 from pathlib import Path
 from typing import List, Dict
-import sys
 
 import rioxarray
 
 import pandas as pd
 import numpy as np
 import xarray as xr
-import spyndex as spx
 
-from prettytable import PrettyTable, ALL
+from spectral_recovery._utils import bands_pretty_table, common_and_long_to_short
 from rasterio._err import CPLE_AppDefinedError
 
-from spectral_recovery._config import VALID_YEAR, REQ_DIMS, SUPPORTED_PLATFORMS
+from spectral_recovery._config import VALID_YEAR, REQ_DIMS, SUPPORTED_PLATFORMS, STANDARD_BANDS
 
+COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
+BANDS_TABLE = bands_pretty_table()
 
 def read_and_stack_tifs(
     path_to_tifs: List[str] | str,
@@ -88,7 +88,6 @@ def read_and_stack_tifs(
     # Stack images along the time dimension
     stacked_data = xr.concat(image_dict.values(), dim=pd.Index(time_keys, name="time"))
 
-    standard = list(spx.bands)
     band_nums = stacked_data.band.values
     if band_names is None:
         # If band descriptions are present in the rasters, then rioxarray
@@ -106,14 +105,9 @@ def read_and_stack_tifs(
                 " names using the band_names argument."
             ) from None
 
-    if _valid_mapping(band_names, band_nums):
+    if _valid_band_name_mapping(band_names, band_nums):
         band_names = {num: band_names[num] for num in band_nums}
-        standard_names, attr_names = _all_names_to_standard(
-            band_names.values(), standard
-            )
-        # except ValueError as e:
-        #     print(e)
-        #     sys.exit()
+        standard_names, attr_names = _to_standard_band_names(band_names.values())
     else:
         raise ValueError(
             "Invalid band to name mapping. Rasters have bands"
@@ -134,38 +128,13 @@ def read_and_stack_tifs(
     return stacked_data
 
 
-def _to_standard_platform_names(platform: List[str]) -> List[str]:
-    """Convert a list of platform names to platform names"""
-    valid_names = []
-    for name in platform:
-        if name in SUPPORTED_PLATFORMS:
-            valid_names.append(name)
-        else:
-            raise ValueError(
-                f"Platform '{name}' not found. Valid platform names are:"
-                f" {list(SUPPORTED_PLATFORMS)}"
-            ) from None
-    return valid_names
-
-
 def _str_is_year(year_str) -> bool:
     """Check if a string is a valid year (YYYY)"""
     if VALID_YEAR.match(year_str) is None:
         return False
     return True
 
-
-def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.DataArray:
-    """Mask a ND stack with 2D mask"""
-    if len(mask.dims) != 2:
-        raise ValueError(
-            f"Only 2D masks are supported. {len(mask.dims)}D mask provided."
-        )
-    masked_stack = stack.where(mask, fill)
-    return masked_stack
-
-
-def _valid_mapping(band_names, band_nums):
+def _valid_band_name_mapping(band_names, band_nums):
     """Check if band_names dict maps each band to a name and vice versa.
 
     Parameters
@@ -194,24 +163,27 @@ def _valid_mapping(band_names, band_nums):
     return True
 
 
-def _common_and_short_names(standard):
-    """Dict of short and common names to standard names"""
-    common_and_short = {}
-    for band in standard:
-        common_and_short[spx.bands[band].short_name] = band
-        common_and_short[spx.bands[band].common_name] = band
-    return common_and_short
+def _to_standard_platform_names(platform: List[str]) -> List[str]:
+    """Convert a list of platform names to platform names"""
+    valid_names = []
+    for name in platform:
+        if name in SUPPORTED_PLATFORMS:
+            valid_names.append(name)
+        else:
+            raise ValueError(
+                f"Platform '{name}' not found. Valid platform names are:"
+                f" {list(SUPPORTED_PLATFORMS)}"
+            ) from None
+    return valid_names
 
 
-def _all_names_to_standard(in_names, standard):
+def _to_standard_band_names(in_names):
     """Map given names to standard names.
 
     Parameters
     -----------
     in_names : list
         Band names
-    standard : list
-        Standardized band names
 
     Returns
     -------
@@ -220,73 +192,37 @@ def _all_names_to_standard(in_names, standard):
 
 
     """
-    short_and_common = _common_and_short_names(standard)
     standard_names = []
     attr_names = []
     for given_name in in_names:
         converted = False
-        if given_name in short_and_common.keys():
+        if given_name in COMMON_LONG_SHORT_DICT.keys():
             converted = True
-            standard_names.append(short_and_common[given_name])
+            standard_names.append(COMMON_LONG_SHORT_DICT[given_name])
             attr_names.append(given_name)
 
-        elif given_name in standard:
+        elif given_name in STANDARD_BANDS:
             converted = True
-            standard_names.append(standard[given_name])
+            standard_names.append(given_name)
 
         if not converted:
             raise ValueError(
                 "Band must be named standard, common, or long name. Could not find"
                 f" '{given_name}' in catalogue. See table below for accepted names: \n\n"
-                f" {_bands_pretty_table()} \n\n"
+                f" {BANDS_TABLE} \n\n"
             ).with_traceback(None) from None
 
     return (standard_names, attr_names)
 
 
-def _bands_pretty_table():
-    band_table = PrettyTable()
-    band_table.hrules=ALL
-    band_table.field_names = [
-        "Standard/Short Name",
-        "Common Name",
-        "Long Name",
-        "Wavelength (min, max)",
-        "Platforms",
-    ]
-    for st in list(spx.bands):
-        platforms = _format_platforms(_platforms_from_band(spx.bands[st]), 3)
-        band_table.add_row([
-            st,
-            spx.bands[st].common_name,
-            spx.bands[st].long_name,
-            f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
-            platforms,
-        ])
-    return band_table
-
-def _format_platforms(comment_list, max_items_on_line):
-    #accumulated line length
-    ACC_length = 0
-    formatted_comment = ""
-    for word in comment_list:
-        if ACC_length + 1 < max_items_on_line:
-            formatted_comment = formatted_comment + word + ", "
-            ACC_length = ACC_length + 1
-        else:
-            formatted_comment = formatted_comment + "\n" + word + ", "
-            ACC_length =+ 1
-    return formatted_comment
-
-def _platforms_from_band(band_object):
-    platforms = []
-    for p in ["sentinel2a", "sentinel2b", "landsat4", "landsat5", "landsat7", "landsat8", "landsat9", "modis", "planetscope"]:
-        try:
-            platforms.append(getattr(band_object, p).platform)
-        except AttributeError:
-            continue
-    return platforms
-
+def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.DataArray:
+    """Mask a ND stack with 2D mask"""
+    if len(mask.dims) != 2:
+        raise ValueError(
+            f"Only 2D masks are supported. {len(mask.dims)}D mask provided."
+        )
+    masked_stack = stack.where(mask, fill)
+    return masked_stack
 
 
 def _metrics_to_tifs(

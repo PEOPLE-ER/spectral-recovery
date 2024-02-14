@@ -7,8 +7,10 @@ when performing operations on xarray objects.
 
 import functools
 import json
+import spyndex as spx
 
 from rioxarray.exceptions import MissingCRS
+from prettytable import PrettyTable, ALL
 
 
 def maintain_rio_attrs(func: callable) -> callable:
@@ -60,10 +62,66 @@ def maintain_rio_attrs(func: callable) -> callable:
 
     return wrapper_maintain_rio_attrs
 
+def common_and_long_to_short(standard):
+    """Dict of short and common names to standard names"""
+    common_and_short = {}
+    for band in standard:
+        common_and_short[spx.bands[band].short_name] = band
+        common_and_short[spx.bands[band].common_name] = band
+    return common_and_short
 
-def _get_bands():
-    """Gets dict of standard band ids from bands.json"""
-    f = open("src/spectral_recovery/data/bands.json")
-    bands_info = json.load(f)
-    return bands_info
+def bands_pretty_table():
+    """ Create a PrettyTable of all bands (names and id info).
+    
+    Returns
+    -------
+    band_table : PrettyTable
+        table for displaying short names, common names, long
+        names, wavelength and platform info for bands in the
+        spyndex package.
+        
+    """
+    band_table = PrettyTable()
+    band_table.hrules=ALL
+    band_table.field_names = [
+        "Standard/Short Name",
+        "Common Name",
+        "Long Name",
+        "Wavelength (min, max)",
+        "Platforms",
+    ]
+    for st in list(spx.bands):
+        platforms = _format_platforms(_platforms_from_band(spx.bands[st]), 3)
+        band_table.add_row([
+            st,
+            spx.bands[st].common_name,
+            spx.bands[st].long_name,
+            f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
+            platforms,
+        ])
+    return band_table
 
+
+def _platforms_from_band(band_object):
+    """Get list of platform names supported by each band"""
+    platforms = []
+    for p in ["sentinel2a", "sentinel2b", "landsat4", "landsat5", "landsat7", "landsat8", "landsat9", "modis", "planetscope"]:
+        try:
+            platforms.append(getattr(band_object, p).platform)
+        except AttributeError:
+            continue
+    return platforms
+
+
+def _format_platforms(comment_list, max_items_on_line):
+    """Format list of platform strs into prettier multi-line str"""
+    ACC_length = 0
+    formatted_comment = ""
+    for word in comment_list:
+        if ACC_length + 1 < max_items_on_line:
+            formatted_comment = formatted_comment + word + ", "
+            ACC_length = ACC_length + 1
+        else:
+            formatted_comment = formatted_comment + "\n" + word + ", "
+            ACC_length =+ 1
+    return formatted_comment

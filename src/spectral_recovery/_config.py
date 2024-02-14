@@ -7,6 +7,8 @@ DATETIME_FREQ = "YS"
 
 REQ_DIMS = ["band", "time", "y", "x"]
 
+STANDARD_BANDS = list(spx.bands)
+
 VALID_YEAR = re.compile(r"^\d{4}$")
 
 SUPPORTED_DOMAINS = ["vegetation", "burn"] 

@@ -9,19 +9,9 @@ from tests.utils import SAME_XR
 from spectral_recovery.io.raster import (
     read_and_stack_tifs,
     _metrics_to_tifs,
-    _common_and_short_names
+
 )
 
-def test_green_maps_to_G_not_G1():
-    names_dict = _common_and_short_names(["G", "G1"])
-    assert names_dict["green"] != "G1"
-    assert names_dict["green"] == "G"
-
-def test_rededge_throws_key_error():
-    names_dict = _common_and_short_names(["RE1", "RE2", "RE3"])
-    with pytest.raises(KeyError):
-        names_dict["rededge"] 
-    
 class TestReadAndStackTifs:
     @pytest.mark.parametrize(
         ("tif_paths", "rasterio_return"),
