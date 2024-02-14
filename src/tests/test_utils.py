@@ -10,5 +10,4 @@ def test_green_maps_to_G_not_G1():
 def test_rededge_throws_key_error():
     names_dict = common_and_long_to_short(["RE1", "RE2", "RE3"])
     with pytest.raises(KeyError):
-        names_dict["rededge"] 
-    
+        names_dict["rededge"]

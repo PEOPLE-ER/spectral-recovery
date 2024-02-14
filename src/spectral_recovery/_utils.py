@@ -6,7 +6,6 @@ when performing operations on xarray objects.
 """
 
 import functools
-import json
 import spyndex as spx
 
 from rioxarray.exceptions import MissingCRS
@@ -63,7 +62,22 @@ def maintain_rio_attrs(func: callable) -> callable:
     return wrapper_maintain_rio_attrs
 
 def common_and_long_to_short(standard):
-    """Dict of short and common names to standard names"""
+    """Dict of short and common names to standard names
+    
+    Notes
+    -----
+    This manually changes the G1, RE1, RE2, and RE3 common
+    names to green1, rededge1, rededge2, and rededge3 respectively
+    to be less ambiguous. This means that the common names returned
+    will be slightly different than those used in spyndex.
+    
+    """
+    # make 'green' and 'rededge' common names unambiguous
+    spx.bands["G1"].common_name = "green1"
+    spx.bands["RE1"].common_name = "rededge1"
+    spx.bands["RE2"].common_name = "rededge2"
+    spx.bands["RE3"].common_name = "rededge3"
+
     common_and_short = {}
     for band in standard:
         common_and_short[spx.bands[band].short_name] = band
