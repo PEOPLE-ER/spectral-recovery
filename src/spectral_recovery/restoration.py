@@ -473,6 +473,12 @@ class RestorationArea:
             alpha=0.2,
             color=palette[2],
         )
+        axi.axvline(
+            x=str(self.end_year.year),
+            color=palette[2],
+            linestyle="dashed",
+            lw=1,
+        )
 
         # Draw disturbance window
         axi.axvline(
