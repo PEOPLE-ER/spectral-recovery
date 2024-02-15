@@ -79,7 +79,6 @@ class TestRestorationAreaInit:
             assert resto_a.restoration_start == resto_start
             assert resto_a.reference_years == ref_years
 
-
     def test_composite_stack_wrong_dims_throws_value_error(self):
         with rioxarray.open_rasterio(
             "src/tests/test_data/time3_xy2_epsg3005.tif"
@@ -89,11 +88,13 @@ class TestRestorationAreaInit:
             bad_stack = bad_stack.rename({"band": "time"})
             bad_stack = bad_stack.expand_dims(dim={"bandz": [0]})
             bad_stack = bad_stack.assign_coords(
-                time=([
-                    pd.to_datetime("2020"),
-                    pd.to_datetime("2021"),
-                    pd.to_datetime("2022"),
-                ])
+                time=(
+                    [
+                        pd.to_datetime("2020"),
+                        pd.to_datetime("2021"),
+                        pd.to_datetime("2022"),
+                    ]
+                )
             )
             resto_start = "2021"
             ref_years = "2020"
@@ -120,11 +121,13 @@ class TestRestorationAreaInit:
             bad_stack = data
             bad_stack = bad_stack.rename({"band": "time"})
             bad_stack = bad_stack.assign_coords(
-                time=([
-                    pd.to_datetime("2020"),
-                    pd.to_datetime("2021"),
-                    pd.to_datetime("2023"),
-                ])
+                time=(
+                    [
+                        pd.to_datetime("2020"),
+                        pd.to_datetime("2021"),
+                        pd.to_datetime("2023"),
+                    ]
+                )
             )
             resto_start = "2021"
             resto_poly = gpd.read_file(
@@ -152,11 +155,13 @@ class TestRestorationAreaInit:
             bad_stack = bad_stack.rename({"band": "time"})
             bad_stack = bad_stack.expand_dims(dim={"band": [0]})
             bad_stack = bad_stack.assign_coords(
-                time=([
-                    pd.to_datetime("2020"),
-                    pd.to_datetime("2021"),
-                    pd.to_datetime("2023"),
-                ])
+                time=(
+                    [
+                        pd.to_datetime("2020"),
+                        pd.to_datetime("2021"),
+                        pd.to_datetime("2023"),
+                    ]
+                )
             )
             resto_start = "2021"
             resto_poly = gpd.read_file(
@@ -193,9 +198,7 @@ class TestValidateRestorationPolygons:
             ),
         ],
     )
-    def test_out_of_bounds_polygons_throw_value_err(
-        self, polygon, raster
-    ):
+    def test_out_of_bounds_polygons_throw_value_err(self, polygon, raster):
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data.rename({"band": "time"}).expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
@@ -210,24 +213,28 @@ class TestValidateRestorationPolygons:
                     restoration_polygon=resto_poly,
                     image_stack=stack,
                 )
-    
+
     def test_in_bounds_polygon_returns_same_polygon(self):
-        with rioxarray.open_rasterio("src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto") as data:
+        with rioxarray.open_rasterio(
+            "src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto"
+        ) as data:
             stack = data.rename({"band": "time"}).expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
             )
-            resto_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            resto_poly = gpd.read_file(
+                "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
+            )
 
             rp = _validate_restoration_polygons(
-                    restoration_polygon=resto_poly,
-                    image_stack=stack,
-                )
-        
+                restoration_polygon=resto_poly,
+                image_stack=stack,
+            )
+
         assert_geodataframe_equal(rp, resto_poly)
 
 
-class TestValidateReferencePolygons: 
+class TestValidateReferencePolygons:
     @pytest.mark.parametrize(
         (
             "polygon",
@@ -244,9 +251,7 @@ class TestValidateReferencePolygons:
             ),
         ],
     )
-    def test_out_of_bounds_polygons_throw_value_err(
-        self, polygon, raster
-    ):
+    def test_out_of_bounds_polygons_throw_value_err(self, polygon, raster):
         with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data.rename({"band": "time"}).expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
@@ -261,24 +266,30 @@ class TestValidateReferencePolygons:
                     reference_polygons=ref_poly,
                     image_stack=stack,
                 )
-    
+
     def test_in_bounds_polygon_returns_same_polygon(self):
-        with rioxarray.open_rasterio("src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto") as data:
+        with rioxarray.open_rasterio(
+            "src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto"
+        ) as data:
             stack = data.rename({"band": "time"}).expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
             )
-            ref_poly = gpd.read_file("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
+            ref_poly = gpd.read_file(
+                "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
+            )
 
             rp = _validate_reference_polygons(
-                    reference_polygons=ref_poly,
-                    image_stack=stack,
-                )
-        
+                reference_polygons=ref_poly,
+                image_stack=stack,
+            )
+
         assert_geodataframe_equal(rp, ref_poly)
-    
+
     def test_none_polygon_returns_none(self):
-        with rioxarray.open_rasterio("src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto") as data:
+        with rioxarray.open_rasterio(
+            "src/tests/test_data/time17_xy2_epsg3005.tif", chunks="auto"
+        ) as data:
             stack = data.rename({"band": "time"}).expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
                 time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
@@ -286,10 +297,10 @@ class TestValidateReferencePolygons:
             ref_poly = None
 
             rp = _validate_reference_polygons(
-                    reference_polygons=ref_poly,
-                    image_stack=stack,
-                )
-        
+                reference_polygons=ref_poly,
+                image_stack=stack,
+            )
+
         assert rp == None
 
 
@@ -685,16 +696,20 @@ class TestGetReferenceImageStack:
         # Note: remember that arrays are flipped in the y-axis, so the lower-left pixel is at the top of the array.
         expected_stack = xr.DataArray(
             [
-                [[
-                    [[1.0, np.nan], [np.nan, np.nan]],
-                    [[2.0, np.nan], [np.nan, np.nan]],
-                    [[3.0, np.nan], [np.nan, np.nan]],
-                ]],
-                [[
-                    [[np.nan, np.nan], [np.nan, 1.0]],
-                    [[np.nan, np.nan], [np.nan, 2.0]],
-                    [[np.nan, np.nan], [np.nan, 3.0]],
-                ]],
+                [
+                    [
+                        [[1.0, np.nan], [np.nan, np.nan]],
+                        [[2.0, np.nan], [np.nan, np.nan]],
+                        [[3.0, np.nan], [np.nan, np.nan]],
+                    ]
+                ],
+                [
+                    [
+                        [[np.nan, np.nan], [np.nan, 1.0]],
+                        [[np.nan, np.nan], [np.nan, 2.0]],
+                        [[np.nan, np.nan], [np.nan, 3.0]],
+                    ]
+                ],
             ],
             dims=["poly_id", "band", "time", "y", "x"],
         )
