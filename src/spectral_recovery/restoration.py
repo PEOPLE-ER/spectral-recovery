@@ -437,7 +437,6 @@ class RestorationArea:
 
     def _set_axis_labels(self, axi, title, xlabels):
         """Set the axis labels to desired values"""
-        axi.set_title(title)
         axi.set_xticks(
             axi.get_xticks(),
             xlabels,
@@ -445,7 +444,7 @@ class RestorationArea:
             ha="right",
         )
         axi.set_xlabel("Year")
-        axi.set_ylabel("Band/Index Value")
+        axi.set_ylabel(f"{title} Value")
 
 
     def _draw_trajectory_windows(self, axi, palette, hist_ref_sys):
