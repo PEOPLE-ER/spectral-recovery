@@ -70,8 +70,10 @@ class MedianTarget:
 
         Sequentially computes the median over time and, optionally, the
         spatial dimensions (x and y). If there is a "poly_id" dimension,
-        then the median is automatically computed along that dimension
-        after the time and space dimensions.
+        representing each individual polygon in a multi-polygon reference
+        input, then the median is automatically computed along that dimension
+        after the time and space dimensions. This results in a single 
+        target value for each band, based on the time, y, x and poly_id dims.
 
         Parameters
         ----------
@@ -111,6 +113,35 @@ class MedianTarget:
         return median_t
 
 
-def make_windowed_target() -> xr.DataArray:
-    """Compute the windowed median recovery target."""
-    return NotImplementedError
+class WindowedTarget():
+    """Windowed mean recovery target method, parameterized on window size.
+
+    Windowed mean method computes the median along the time and optional
+    poly_id dimen
+
+    Attributes
+    ----------
+    N : int
+        Size of the window (NxN). Default is 3.
+
+    """
+    def __init__(self, N: int = 3):
+        if N < 1:
+            raise ValueError("N must be greater than or equal to 1.")
+        self.N = N
+        
+    def __call__(
+        self,
+        image_stack: xr.DataArray,
+        reference_date: Tuple[datetime] | datetime,
+        ) -> xr.DataArray:
+        """Compute the windowed mean recovery target."""
+        try:
+            reference_window = image_stack.sel(time=slice(*reference_date))
+        except TypeError:
+            reference_window = image_stack.sel(time=slice(reference_date))
+
+        median_t = reference_window.median(dim="time", skipna=True)
+
+        windowed_mean = median_t.rolling({"y": self.N, "x": self.N}, center=True).mean()
+        return windowed_mean

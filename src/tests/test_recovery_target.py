@@ -5,7 +5,8 @@ import xarray as xr
 
 
 from xarray.testing import assert_equal
-from spectral_recovery.targets import MedianTarget
+from numpy.testing import assert_array_equal
+from spectral_recovery.targets import MedianTarget, WindowedTarget
 
 
 def test_invalid_scale_throws_value_error():
@@ -226,3 +227,92 @@ class TestMedianTargetPixelScale:
         out_stack = median_pixel_method(test_stack, [0, 1])
 
         assert_equal(out_stack, expected_stack)
+
+
+class TestWindowedTarget:
+
+    def test_neg_or_0_N_throws_value_err(self):
+        with pytest.raises(
+            ValueError, 
+        ):
+            WindowedTarget(N=-1)
+
+
+    def test_0_N_throws_value_err(self):
+        with pytest.raises(
+            ValueError, 
+        ):
+            WindowedTarget(N=0)
+
+
+    def test_default_window_size_is_3(self):
+        windowed_method = WindowedTarget()
+        assert windowed_method.N == 3
+
+
+    def test_window_returns_correct_dims(self):
+        input_dims = ["band", "time", "y", "x"]
+        input_data = xr.DataArray(
+            np.zeros((4, 3, 2, 2)),
+            dims=input_dims,
+            coords={"time": [1, 2, 3]} 
+        )
+        expected_dims_and_sizes = {"band": 4, "y": 2, "x": 2}
+        windowed_method = WindowedTarget()
+
+        result = windowed_method(input_data, reference_date=1)
+
+        assert len(result.dims) == len(expected_dims_and_sizes.keys())
+        for dim in result.dims:
+            assert result.sizes[dim] == expected_dims_and_sizes[dim]
+
+
+    def test_window_retains_polyid_dim(self):
+        input_dims = ["polyid", "band", "time", "y", "x"]
+        poly_id_length = 2
+        input_data = xr.DataArray(
+            np.zeros((poly_id_length, 4, 3, 2, 2)),
+            dims=input_dims,
+            coords={"time": [1, 2, 3]} 
+        )
+        windowed_method = WindowedTarget()
+
+        result = windowed_method(input_data, reference_date=1)
+
+        assert result.sizes["polyid"] == poly_id_length
+
+
+    def test_default_window_returns_correct_target_values(self):
+
+        data = np.arange(-8, 19).reshape((1, 3, 3, 3))
+        input_data = xr.DataArray(
+            data,
+            dims=["band", "time", "y", "x"],
+            coords={"time": [1, 2, 3]}
+        )
+        expected_data = np.array([[[np.nan, np.nan, np.nan],[np.nan, 5.0, np.nan], [np.nan, np.nan, np.nan]]])
+        windowed_method = WindowedTarget()
+
+        result_data = windowed_method(input_data, reference_date=[1, 3]).data
+
+        assert_array_equal(expected_data, result_data)
+
+
+    def test_default_window_returns_correct_target_values(self):
+
+        data = np.arange(-8, 19).reshape((1, 3, 3, 3))
+        input_data = xr.DataArray(
+            data,
+            dims=["band", "time", "y", "x"],
+            coords={"time": [1, 2, 3]}
+        )
+        expected_data = np.array([[[np.nan, np.nan, np.nan],[np.nan, 5.0, np.nan], [np.nan, np.nan, np.nan]]])
+        windowed_method = WindowedTarget()
+
+        result_data = windowed_method(input_data, reference_date=[1, 3]).data
+
+        assert_array_equal(expected_data, result_data)
+    
+
+
+
