@@ -18,6 +18,7 @@ from inspect import signature
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -25,42 +26,12 @@ from pandas import Index
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-from spectral_recovery.targets import MedianTarget, expected_signature
+from spectral_recovery.targets import MedianTarget, WindowedTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import VALID_YEAR
 
 from spectral_recovery import metrics as m
-
-
-def _get_reference_image_stack(reference_polygons, image_stack):
-    """Clip reference polygon data, stack along new poly_id dim.
-
-    Parameters
-    ----------
-    reference_polygons : gpd.GeoDataframe
-        Reference polygons.
-    image_stack : xr.DataArray
-        4D stack of images (band, time, y, x).
-
-    Returns
-    -------
-    reference_stack : xr.DataArray
-        5D stack of clipped image data (poly_id, band, time, y, x).
-        Coordinate values for poly_id are the row number that each
-        polygon belonged to in reference_polygons.
-
-    """
-    clipped_stacks = {}
-    for i, row in reference_polygons.iterrows():
-        polygon_stack = image_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
-        clipped_stacks[i] = polygon_stack
-
-    reference_stack = xr.concat(
-        clipped_stacks.values(),
-        dim=Index(clipped_stacks.keys(), name="poly_id"),
-    )
-    return reference_stack
 
 
 def validate_year_format(year_str, field_name):
@@ -95,16 +66,13 @@ def process_date_fields(disturbance_start, restoration_start):
         if restoration_start is None:
             restoration_start = str(int(disturbance_start) + 1)
             validate_year_order(disturbance_start, restoration_start)
-
     if restoration_start is not None:
         restoration_start = parse_and_validate_date(
             restoration_start, "restoration_start"
         )
         if disturbance_start is None:
             disturbance_start = str(int(restoration_start) - 1)
-
     validate_year_order(disturbance_start, restoration_start)
-
     return disturbance_start, restoration_start
 
 
@@ -127,7 +95,6 @@ def process_reference_years(reference_years):
             raise TypeError(
                 "reference_years must be a string or iterable of 2 strings."
             )
-
     return reference_years
 
 
@@ -147,7 +114,6 @@ def to_dt(years: str | List[str]):
     else:
         years_dt = pd.to_datetime(years)
     return years_dt
-
 
 def _validate_dates(reference_years, disturbance_start, restoration_start, image_stack):
     if disturbance_start is None and restoration_start is None:
@@ -178,12 +144,14 @@ def _validate_restoration_polygons(restoration_polygon, image_stack):
 
     return restoration_polygon
 
+
 def _validate_reference_polygons(reference_polygons, image_stack):
     if reference_polygons is not None:
         if not image_stack.satts.contains_spatial(reference_polygons):
             raise ValueError("not all reference_polygons within the bounds of images") from None
         
     return reference_polygons
+
 
 class RestorationArea:
     """A Restoration Area (RA).
@@ -227,61 +195,150 @@ class RestorationArea:
         ] = MedianTarget(scale="polygon"),
     ) -> None:
         
-        if composite_stack.satts.is_annual_composite:
-            self.restoration_polygon = _validate_restoration_polygons(
-                restoration_polygon=restoration_polygon, image_stack=composite_stack
-            )
-            (
-                self.reference_years,
-                self.disturbance_start,
-                self.restoration_start,
-            ) = _validate_dates(
-                reference_years=reference_years,
-                disturbance_start=disturbance_start,
-                restoration_start=restoration_start,
-                image_stack=composite_stack,
-            )
-            self.stack = composite_stack.rio.clip(
-                self.restoration_polygon.geometry.values
-            )
-        else:
+        if not composite_stack.satts.is_annual_composite:
             raise ValueError(
                 "composite_stack is not a valid stack of annual composites. Please"
                 " ensure there are no missing years and that the DataArray object"
                 " contains 'band', 'time', 'y' and 'x' dimensions."
             ) from None
 
+        self.image_stack = composite_stack
+        self.restoration_polygon = _validate_restoration_polygons(
+            restoration_polygon=restoration_polygon,
+            image_stack=self.image_stack
+        )
+        (
+            self.reference_years,
+            self.disturbance_start,
+            self.restoration_start,
+        ) = _validate_dates(
+            reference_years=reference_years,
+            disturbance_start=disturbance_start,
+            restoration_start=restoration_start,
+            image_stack=self.image_stack
+        )
+        self.restoration_image_stack = self.image_stack.rio.clip(self.restoration_polygon.geometry.values)
+
+        self.reference_polygons = _validate_reference_polygons(reference_polygons=reference_polygons, image_stack=self.image_stack)
+        self.recovery_target_method = self._validate_recovery_target_method(recovery_target_method)
+
+        self.reference_image_stack = self._create_reference_image_stack()
+        self.recovery_target = self.recovery_target_method(
+                self.reference_image_stack, reference_date=self.reference_years
+            )
+        self.end_year = pd.to_datetime(self.restoration_image_stack["time"].max().data)
+
+
+    def _validate_recovery_target_method(self, recovery_target_method):
+        
         if signature(recovery_target_method) != expected_signature:
             raise ValueError(
-                "The provided recovery target method have the expected call signature:"
+                "The provided recovery target method does not have the expected call signature:"
                 f" {expected_signature} (given {signature(recovery_target_method)})"
             )
-        self.recovery_target_method = recovery_target_method
-
-        self.reference_polygons = _validate_reference_polygons(reference_polygons=reference_polygons, image_stack=composite_stack)
-        if self.reference_polygons is None:
-            reference_image_stack = self.stack
-        else:  # computing recovery target using reference polygons
+        
+        if self.reference_polygons is not None:
             if isinstance(recovery_target_method, MedianTarget):
                 if recovery_target_method.scale == "pixel":
                     raise TypeError(
                         "cannot use MedianTarget with scale='pixel' when using"
                         " reference polygons."
                     )
-            reference_image_stack = _get_reference_image_stack(
-                reference_polygons=self.reference_polygons,
-                image_stack=composite_stack,
+            elif isinstance(recovery_target_method, WindowedTarget):
+                raise TypeError(
+                    "cannot use WindowedTarget when using reference polygons."
+                )
+    
+        return recovery_target_method    
+
+
+    def _create_reference_image_stack(self):
+        """Create image stack for recovery_target_method.
+
+
+        Parameters
+        ----------
+        reference_polygons : gpd.GeoDataframe
+            Reference polygons.
+        image_stack : xr.DataArray
+            4D stack of images (band, time, y, x).
+
+        Returns
+        -------
+        reference_stack : xr.DataArray
+            5D stack of clipped image data (poly_id, band, time, y, x).
+            Coordinate values for poly_id are the row number that each
+            polygon belonged to in reference_polygons.
+
+        """
+        if self.reference_polygons is None:
+            if isinstance(self.recovery_target_method, MedianTarget):
+                reference_stack = self.restoration_image_stack
+            elif isinstance(self.recovery_target_method, WindowedTarget):
+                orig_time_coords = self.image_stack.time.values
+                buffer_size = self.recovery_target_method.N
+                buffered_y_coords = self._buffer_coords(self.image_stack.y.values, self.restoration_image_stack.y.values, buffer_size)
+                buffered_x_coords = self._buffer_coords(self.image_stack.x.values, self.restoration_image_stack.x.values, buffer_size)
+                reference_stack = self.image_stack.loc[dict(time=orig_time_coords, y=buffered_y_coords, x=buffered_x_coords)]
+        else: 
+            clipped_stacks = {}
+            for i, row in self.reference_polygons.iterrows():
+                polygon_stack = self.image_stack.rio.clip(gpd.GeoSeries(row.geometry).values)
+                clipped_stacks[i] = polygon_stack
+
+            reference_stack = xr.concat(
+                clipped_stacks.values(),
+                dim=Index(clipped_stacks.keys(), name="poly_id"),
             )
+        return reference_stack
 
-        self.recovery_target = recovery_target_method(
-            reference_image_stack, reference_date=self.reference_years
-        )
 
-        self.end_year = pd.to_datetime(self.stack["time"].max().data)
+    def _compute_recovery_target(self):
+        """ Compute recovery target values.
+        
+        Computes recovery target values using the recovery_target_method. 
+        If recovery_target_method is a WindowedTarget method, then the output
+        is clipped to the restoration polygon. Otherwise, output is simply
+        the return value from the recovery target method.
 
+        This method is needed only as long as WindowedTarget takes and 
+        returns unclipped data (i.e no NaNs outside polygon bounds). If
+        the WindowedTarget ever handles NaN data, this method can
+        be replaced by a call to self.recovery_target_method in __init__.
+
+        Returns
+        -------
+        recovery_target : xr.DataArray
+            Array of recovery target values. Per-band values, with either
+            values for every pixel (x,y) that intersects with the restoration
+            polygon or a single value for the entire polygon.
+
+        """
+        if isinstance(self.recovery_target_method, WindowedTarget):
+            recovery_target_no_border = self.recovery_target_method(self.reference_image_stack, reference_date=self.reference_years)
+            recovery_target = recovery_target_no_border.rio.clip(self.restoration_polygon.geometry.values)
+        else:
+            recovery_target = self.recovery_target_method(self.reference_image_stack, reference_date=self.reference_years)
+        return recovery_target
+
+
+
+    def _buffer_coords(self, full_array_coords, subset_coords, buffer):
+        subset_index = np.where(np.in1d(full_array_coords, subset_coords))
+
+        if len(subset_index[0]) == 0:
+            raise ValueError("Subset not found in the full array.")
+        
+        subset_index = subset_index[0][0]  # Extract the index from the tuple
+        start_index = max(subset_index - buffer, 0)
+        end_index = min(subset_index + len(subset_coords) + buffer, len(full_array_coords))
+
+        buffered_coords = full_array_coords[start_index:end_index]
+        return buffered_coords
+    
     def y2r(self, percent_of_target: int = 80):
         """Compute the Years to Recovery (Y2R) metric."""
-        post_restoration = self.stack.sel(
+        post_restoration = self.restoration_image_stack.sel(
             time=slice(self.restoration_start, self.end_year)
         )
         y2r = m.y2r(
@@ -293,30 +350,33 @@ class RestorationArea:
         y2r = y2r.expand_dims(dim={"metric": [Metric.Y2R]})
         return y2r
 
+
     def yryr(self, timestep: int = 5):
         """Compute the Relative Years to Recovery (YRYR) metric."""
         yryr = m.yryr(
-            image_stack=self.stack,
+            image_stack=self.restoration_image_stack,
             rest_start=self.restoration_start,
             timestep=timestep,
         )
         yryr = yryr.expand_dims(dim={"metric": [Metric.YRYR]})
         return yryr
 
+
     def dnbr(self, timestep: int = 5):
         """Compute the differenced normalized burn ratio (dNBR) metric."""
         dnbr = m.dnbr(
-            image_stack=self.stack,
+            image_stack=self.restoration_image_stack,
             rest_start=self.restoration_start,
             timestep=timestep,
         )
         dnbr = dnbr.expand_dims(dim={"metric": [Metric.DNBR]})
         return dnbr
 
+
     def _rri(self, timestep: int = 5):
         """Compute the relative recovery index (RRI) metric."""
         rri = m.rri(
-            image_stack=self.stack,
+            image_stack=self.restoration_image_stack,
             rest_start=self.restoration_start,
             dist_start=self.disturbance_start,
             timestep=timestep,
@@ -324,10 +384,11 @@ class RestorationArea:
         rri = rri.expand_dims(dim={"metric": [Metric.RRI]})
         return rri
 
+
     def r80p(self, percent_of_target: int = 80, timestep: int = 5):
         """Compute the recovery to 80% of target (R80P) metric."""
         r80p = m.r80p(
-            image_stack=self.stack,
+            image_stack=self.restoration_image_stack,
             rest_start=self.restoration_start,
             recovery_target=self.recovery_target,
             timestep=timestep,
@@ -336,7 +397,8 @@ class RestorationArea:
         r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
         return r80p
 
-    # NOTE: Slow, probably because of the pandas stuff
+
+
     def plot_spectral_trajectory(self, path: str = None) -> None:
         """Create spectral trajectory plot of the RestorationArea
 
@@ -350,7 +412,7 @@ class RestorationArea:
         restoration_start = to_dt(self.restoration_start)
         disturbance_start = to_dt(self.disturbance_start)
 
-        stats = self.stack.satts.stats()
+        stats = self.restoration_image_stack.satts.stats()
         stats = stats.sel(
             stats=[
                 "median",

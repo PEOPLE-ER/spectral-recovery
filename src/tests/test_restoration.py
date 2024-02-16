@@ -13,7 +13,7 @@ from tests.utils import SAME_XR
 
 from spectral_recovery.targets import MedianTarget
 from spectral_recovery.restoration import (
-    _get_reference_image_stack,
+
     _validate_dates,
     _validate_restoration_polygons,
     _validate_reference_polygons,
@@ -531,7 +531,7 @@ class TestRestorationAreaMetrics:
 
         assert result.equals(expected_result)
 
-        post_restoration = valid_resto_area.stack.sel(
+        post_restoration = valid_resto_area.restoration_image_stack.sel(
             time=slice(valid_resto_area.restoration_start, None)
         )
         rest_start = valid_resto_area.restoration_start
@@ -560,7 +560,7 @@ class TestRestorationAreaMetrics:
         timestep_default = 5
 
         method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.stack),
+            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
             rest_start=valid_resto_area.restoration_start,
             timestep=timestep_default,
         )
@@ -580,7 +580,7 @@ class TestRestorationAreaMetrics:
         timestep_default = 5
 
         method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.stack),
+            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
             rest_start=valid_resto_area.restoration_start,
             timestep=timestep_default,
         )
@@ -600,7 +600,7 @@ class TestRestorationAreaMetrics:
         timestep_default = 5
 
         method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.stack),
+            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
             rest_start=valid_resto_area.restoration_start,
             dist_start=valid_resto_area.disturbance_start,
             timestep=timestep_default,
@@ -622,87 +622,97 @@ class TestRestorationAreaMetrics:
         timestep_default = 5
 
         method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.stack),
+            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
             rest_start=valid_resto_area.restoration_start,
             recovery_target=SAME_XR(self.baseline_array),
             timestep=timestep_default,
             percent=percent_default,
         )
 
+def build_valid_ra(restoration_polygon, reference_polygon):
+    polygon = "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
+    raster = "src/tests/test_data/time17_xy2_epsg3005.tif"
 
-class TestGetReferenceImageStack:
-    # Note: ReferencSystem assumes dates are passed as datetime, not str
-    @pytest.fixture()
-    def test_stack_1(self):
-        test_stack = xr.DataArray(
-            np.ones((3, 3, 10, 10)) * 0,
-            dims=["time", "band", "y", "x"],
-            coords={
-                "time": [0, 1, 2],
-                "band": [0, 1, 2],
-                "y": np.arange(0, 10),
-                "x": np.arange(0, 10),
-            },
-        )
-        return test_stack
-
-    @pytest.fixture()
-    def image_stack(self):
-        test_raster = "src/tests/test_data/time3_xy2_epsg3005.tif"
-        with rioxarray.open_rasterio(test_raster) as data:
-            test_stack = data
-            test_stack = test_stack.rename({"band": "time"})
-            test_stack = test_stack.expand_dims(dim={"band": [0]})
-            test_stack = test_stack.astype(
-                np.float64
-            )  # NOTE: if this conversion doesn't happen, test with count will fail. Filtered ints become 0.
-            test_stack = test_stack.assign_coords(
-                time=(pd.date_range("2007", "2009", freq=DATETIME_FREQ))
+    with rioxarray.open_rasterio(raster, chunks="auto") as data:
+        resto_poly = gpd.read_file(polygon)
+        stack = data
+        stack = stack.rename({"band": "time"})
+        stack = stack.expand_dims(dim={"band": [0]})
+        stack = stack.assign_coords(
+            time=(
+                pd.date_range(
+                    self.time_range[0], self.time_range[-1], freq=DATETIME_FREQ
+                )
             )
-        return test_stack
-
-    def test_init_correctly_clips_with_single_polygon(self, image_stack):
-        reference_polys = gpd.read_file(
-            "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
         )
-        expected_stack = xr.DataArray(
-            [[[[[1.0]], [[2.0]], [[3.0]]]]], dims=["poly_id", "band", "time", "y", "x"]
-        )
-
-        rs = _get_reference_image_stack(
-            reference_polygons=reference_polys,
-            image_stack=image_stack,
+        stack = xr.concat([stack, stack], dim=pd.Index([0, 1], name="band"))
+        resto_area = RestorationArea(
+            restoration_polygon=resto_poly,
+            restoration_start=restoration_start,
+            reference_years=reference_year,
+            composite_stack=stack,
         )
 
-        assert npt.assert_array_equal(rs, expected_stack.data) is None
-        assert expected_stack.dims == rs.dims
 
-    def test_init_clips_with_multipolygons_correctly(self, image_stack):
-        reference_polys = gpd.read_file(
-            "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
-        )
-        # The multipolygon contains 2 polygons, which overlap with the lower-left and upper-right pixels.
-        # Note: remember that arrays are flipped in the y-axis, so the lower-left pixel is at the top of the array.
-        expected_stack = xr.DataArray(
-            [
-                [[
-                    [[1.0, np.nan], [np.nan, np.nan]],
-                    [[2.0, np.nan], [np.nan, np.nan]],
-                    [[3.0, np.nan], [np.nan, np.nan]],
-                ]],
-                [[
-                    [[np.nan, np.nan], [np.nan, 1.0]],
-                    [[np.nan, np.nan], [np.nan, 2.0]],
-                    [[np.nan, np.nan], [np.nan, 3.0]],
-                ]],
-            ],
-            dims=["poly_id", "band", "time", "y", "x"],
-        )
+# class TestGetReferenceImageStack:
+#     # Note: ReferencSystem assumes dates are passed as datetime, not str
+#     @pytest.fixture()
+#     def image_stack(self):
+#         test_raster = "src/tests/test_data/time3_xy2_epsg3005.tif"
+#         with rioxarray.open_rasterio(test_raster) as data:
+#             test_stack = data
+#             test_stack = test_stack.rename({"band": "time"})
+#             test_stack = test_stack.expand_dims(dim={"band": [0]})
+#             test_stack = test_stack.astype(
+#                 np.float64
+#             )  # NOTE: if this conversion doesn't happen, test with count will fail. Filtered ints become 0.
+#             test_stack = test_stack.assign_coords(
+#                 time=(pd.date_range("2007", "2009", freq=DATETIME_FREQ))
+#             )
+#         return test_stack
+        
+#     def test_init_correctly_clips_with_single_polygon(self, image_stack):
+#         reference_polys = gpd.read_file(
+#             "src/tests/test_data/polygon_inbound_epsg3005.gpkg"
+#         )
+#         expected_stack = xr.DataArray(
+#             [[[[[1.0]], [[2.0]], [[3.0]]]]], dims=["poly_id", "band", "time", "y", "x"]
+#         )
 
-        rs = _get_reference_image_stack(
-            reference_polygons=reference_polys,
-            image_stack=image_stack,
-        )
+#         rs = _get_reference_image_stack(
+#             reference_polygons=reference_polys,
+#             image_stack=image_stack,
+#         )
 
-        assert npt.assert_array_equal(rs, expected_stack.data) is None
-        assert expected_stack.dims == rs.dims
+#         assert npt.assert_array_equal(rs, expected_stack.data) is None
+#         assert expected_stack.dims == rs.dims
+
+#     def test_init_clips_with_multipolygons_correctly(self, image_stack):
+#         reference_polys = gpd.read_file(
+#             "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg"
+#         )
+#         # The multipolygon contains 2 polygons, which overlap with the lower-left and upper-right pixels.
+#         # Note: remember that arrays are flipped in the y-axis, so the lower-left pixel is at the top of the array.
+#         expected_stack = xr.DataArray(
+#             [
+#                 [[
+#                     [[1.0, np.nan], [np.nan, np.nan]],
+#                     [[2.0, np.nan], [np.nan, np.nan]],
+#                     [[3.0, np.nan], [np.nan, np.nan]],
+#                 ]],
+#                 [[
+#                     [[np.nan, np.nan], [np.nan, 1.0]],
+#                     [[np.nan, np.nan], [np.nan, 2.0]],
+#                     [[np.nan, np.nan], [np.nan, 3.0]],
+#                 ]],
+#             ],
+#             dims=["poly_id", "band", "time", "y", "x"],
+#         )
+
+#         rs = _get_reference_image_stack(
+#             reference_polygons=reference_polys,
+#             image_stack=image_stack,
+#         )
+
+#         assert npt.assert_array_equal(rs, expected_stack.data) is None
+#         assert expected_stack.dims == rs.dims
