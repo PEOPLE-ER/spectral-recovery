@@ -29,7 +29,7 @@ from matplotlib.legend_handler import HandlerPatch
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 from spectral_recovery.enums import Metric
-from spectral_recovery._config import VALID_YEAR
+from spectral_recovery._config import VALID_YEAR, SUPPORTED_PLATFORMS
 
 from spectral_recovery import metrics as m
 

@@ -5,12 +5,12 @@ import numpy as np
 
 from numpy.testing import assert_array_equal
 from unittest.mock import patch
-from spectral_recovery.enums import BandCommon, Index, Platform
+from tests.utils import SAME_XR
 from spectral_recovery.io.raster import (
     read_and_stack_tifs,
     _metrics_to_tifs,
-)
 
+)
 
 class TestReadAndStackTifs:
     @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=tif_paths,
-            platform=["landsat_oli"],
+            platform=["Landsat-OLI"],
         )
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
@@ -105,6 +105,7 @@ class TestReadAndStackTifs:
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
+                    coords={"band":[1]}
                 ),
             ),
             (
@@ -112,6 +113,7 @@ class TestReadAndStackTifs:
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
+                    coords={"band":[1]}
                 ),
             ),
             (
@@ -119,6 +121,7 @@ class TestReadAndStackTifs:
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
+                    coords={"band":[1]}
                 ),
             ),
             (
@@ -126,6 +129,7 @@ class TestReadAndStackTifs:
                 xr.DataArray(
                     [[[[0]]]],
                     dims=["band", "time", "y", "x"],
+                    coords={"band":[1]}
                 ),
             ),
         ],
@@ -143,23 +147,24 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            read_and_stack_tifs(path_to_tifs=filenames, platform=["landsat_oli"])
+            read_and_stack_tifs(path_to_tifs=filenames, platform=[])
 
     @patch(
         "rioxarray.open_rasterio",
     )
     def test_correct_bands_from_tifs_with_long_name(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
+        expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]},
             attrs={"long_name": ["blue", "red", "nir"]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
         stacked_tifs = read_and_stack_tifs(
-            path_to_tifs=filenames, platform=["landsat_oli"]
+            path_to_tifs=filenames, platform=["Landsat-OLI"]
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -168,37 +173,63 @@ class TestReadAndStackTifs:
     )
     def test_correct_bands_from_tifs_w_band_dict(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
+        expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]}
         )
         mocked_rasterio_open.return_value = rasterio_return
 
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
-            band_names={0: "blue", 1: "red", 2: "nir"},
-            platform=["landsat_oli"],
+            band_names={1: "blue", 2: "red", 3: "nir"},
+            platform=["Landsat-OLI"],
         )
+
         assert np.all(stacked_tifs["band"].data == expected_bands)
+
+
+    @patch(
+        "rioxarray.open_rasterio",
+    )
+    def test_invalid_band_name_throws_error(self, mocked_rasterio_open):
+        filenames = ["test_file"]
+        rasterio_return = xr.DataArray(
+            [[[[0]]]],
+            dims=["band", "time", "y", "x"],
+            coords={"band":[1]}
+        )
+        mocked_rasterio_open.return_value = rasterio_return
+
+        with pytest.raises(
+            ValueError,
+        ):
+            stacked_tifs = read_and_stack_tifs(
+                path_to_tifs=filenames,
+                band_names={0: "not_a_band"},
+                platform=["Landsat-OLI"],
+            )
+
 
     @patch(
         "rioxarray.open_rasterio",
     )
     def test_band_dict_supersedes_band_desc(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
+        expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]},
             attrs={"long_name": ["swir", "green", "red"]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
-            band_names={0: "blue", 1: "red", 2: "nir"},
-            platform=["landsat_oli"],
+            band_names={1: "blue", 2: "red", 3: "nir"},
+            platform=["Landsat-OLI"],
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -207,17 +238,18 @@ class TestReadAndStackTifs:
     )
     def test_band_dict_assigns_name_by_key_not_order(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.RED, BandCommon.BLUE, BandCommon.NIR]
+        expected_bands = ["R", "B", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=filenames,
-            band_names={1: "blue", 0: "red", 2: "nir"},
-            platform=["landsat_oli"],
+            band_names={2: "blue", 1: "red", 3: "nir"},
+            platform=["Landsat-OLI"],
         )
         # assert
         print(stacked_tifs["band"].data, expected_bands)
@@ -231,6 +263,7 @@ class TestReadAndStackTifs:
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
@@ -240,7 +273,7 @@ class TestReadAndStackTifs:
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"},
-                platform=["landsat_oli"],
+                platform=["Landsat-OLI"],
             )
 
     @patch(
@@ -251,6 +284,7 @@ class TestReadAndStackTifs:
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
@@ -260,7 +294,7 @@ class TestReadAndStackTifs:
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
-                platform=["landsat_oli"],
+                platform=["Landsat-OLI"],
             )
 
     @patch(
@@ -271,6 +305,7 @@ class TestReadAndStackTifs:
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
@@ -279,7 +314,7 @@ class TestReadAndStackTifs:
         ):
             _ = read_and_stack_tifs(
                 path_to_tifs=filenames,
-                platform=["landsat_oli"],
+                platform=["Landsat-OLI"],
             )
 
     @pytest.mark.parametrize(
@@ -296,6 +331,7 @@ class TestReadAndStackTifs:
                 xr.DataArray(
                     [[[[0]]], [[[0]]], [[[0]]]],
                     dims=["band", "time", "y", "x"],
+                    coords={"band":[1, 2, 3]},
                     attrs={"long_name": ["blue", "red", "nir"]},
                 ),
             ),
@@ -313,7 +349,7 @@ class TestReadAndStackTifs:
     ):
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_and_stack_tifs(
-            path_to_tifs=filenames, platform=["landsat_oli"]
+            path_to_tifs=filenames, platform=["Landsat-OLI"]
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
 
@@ -324,13 +360,11 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band":[1, 2, 3]},
             attrs={"long_name": ["blue", "red", "nir"]},
         )
         stacked_tifs = read_and_stack_tifs(
             path_to_tifs=[f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
-            platform=["landsat_oli", "landsat_tm"],
+            platform=["Landsat-OLI", "Landsat-TM"],
         )
-        assert stacked_tifs.attrs["platform"] == [
-            Platform.LANDSAT_OLI,
-            Platform.LANDSAT_TM,
-        ]
+        assert stacked_tifs.attrs["platform"] == ["Landsat-OLI", "Landsat-TM"]
