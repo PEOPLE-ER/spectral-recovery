@@ -550,7 +550,7 @@ class TestRestorationAreaMetrics:
         method_mock.return_value = mocked_return
 
         result = valid_resto_area.y2r()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.Y2R]})
+        expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.Y2R)]})
 
         assert result.equals(expected_result)
 
@@ -576,7 +576,7 @@ class TestRestorationAreaMetrics:
         method_mock.return_value = mocked_return
 
         result = valid_resto_area.yryr()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.YRYR]})
+        expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.YRYR)]})
 
         assert result.equals(expected_result)
 
@@ -596,7 +596,7 @@ class TestRestorationAreaMetrics:
         method_mock.return_value = mocked_return
 
         result = valid_resto_area.dnbr()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.DNBR]})
+        expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.DNBR)]})
 
         assert result.equals(expected_result)
 
@@ -616,7 +616,7 @@ class TestRestorationAreaMetrics:
         method_mock.return_value = mocked_return
 
         result = valid_resto_area._rri()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.RRI]})
+        expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.RRI)]})
 
         assert result.equals(expected_result)
 
@@ -637,7 +637,7 @@ class TestRestorationAreaMetrics:
         method_mock.return_value = mocked_return
 
         result = valid_resto_area.r80p()
-        expected_result = mocked_return.expand_dims(dim={"metric": [Metric.R80P]})
+        expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.R80P)]})
 
         assert result.equals(expected_result)
 
