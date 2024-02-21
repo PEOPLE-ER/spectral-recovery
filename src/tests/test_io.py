@@ -92,7 +92,6 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_timeseries(
             path_to_tifs=tif_paths,
-            platform=["Landsat-OLI"],
         )
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
@@ -153,7 +152,7 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            read_timeseries(path_to_tifs=filenames, platform=[])
+            read_timeseries(path_to_tifs=filenames,)
 
     @patch(
         "rioxarray.open_rasterio",
@@ -170,7 +169,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
 
         stacked_tifs = read_timeseries(
-            path_to_tifs=filenames, platform=["Landsat-OLI"]
+            path_to_tifs=filenames
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -190,7 +189,6 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
-            platform=["Landsat-OLI"],
         )
 
         assert np.all(stacked_tifs["band"].data == expected_bands)
@@ -214,7 +212,6 @@ class TestReadAndStackTifs:
             stacked_tifs = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "not_a_band"},
-                platform=["Landsat-OLI"],
             )
 
 
@@ -235,7 +232,6 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
-            platform=["Landsat-OLI"],
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -255,7 +251,6 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={2: "blue", 1: "red", 3: "nir"},
-            platform=["Landsat-OLI"],
         )
         # assert
         print(stacked_tifs["band"].data, expected_bands)
@@ -279,7 +274,6 @@ class TestReadAndStackTifs:
             _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"},
-                platform=["Landsat-OLI"],
             )
 
     @patch(
@@ -300,7 +294,6 @@ class TestReadAndStackTifs:
             _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
-                platform=["Landsat-OLI"],
             )
 
     @patch(
@@ -320,7 +313,6 @@ class TestReadAndStackTifs:
         ):
             _ = read_timeseries(
                 path_to_tifs=filenames,
-                platform=["Landsat-OLI"],
             )
 
     @pytest.mark.parametrize(
@@ -355,25 +347,9 @@ class TestReadAndStackTifs:
     ):
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_timeseries(
-            path_to_tifs=filenames, platform=["Landsat-OLI"]
+            path_to_tifs=filenames,
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
-
-    @patch(
-        "rioxarray.open_rasterio",
-    )
-    def test_platform_is_added_to_attrs(self, mocked_rasterio_open):
-        mocked_rasterio_open.return_value = xr.DataArray(
-            [[[[0]]], [[[0]]], [[[0]]]],
-            dims=["band", "time", "y", "x"],
-            coords={"band":[1, 2, 3]},
-            attrs={"long_name": ["blue", "red", "nir"]},
-        )
-        stacked_tifs = read_timeseries(
-            path_to_tifs=[f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
-            platform=["Landsat-OLI", "Landsat-TM"],
-        )
-        assert stacked_tifs.attrs["platform"] == ["Landsat-OLI", "Landsat-TM"]
 
 class TestReadRestorationPolygons:
 
