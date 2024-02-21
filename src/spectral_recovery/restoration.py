@@ -33,7 +33,7 @@ from spectral_recovery._config import VALID_YEAR, SUPPORTED_PLATFORMS
 
 from spectral_recovery import metrics as m
 
-
+# TODO: refactor validation logic (esp. date validation) into new module
 def _get_reference_image_stack(reference_polygons, image_stack):
     """Clip reference polygon data, stack along new poly_id dim.
 
@@ -72,63 +72,22 @@ def validate_year_format(year_str, field_name):
             "Please ensure the year is in the format 'YYYY'."
         )
 
-
-def parse_and_validate_date(date_str, field_name):
-    if not isinstance(date_str, str):
-        raise TypeError(f"{field_name} must be a string.")
-
-    validate_year_format(date_str, field_name)
-    return date_str
-
-
 def validate_year_order(disturbance_start, restoration_start):
+
     if restoration_start < disturbance_start:
         raise ValueError(
             "The disturbance start year must be less than the restoration start year."
         )
 
-
-def process_date_fields(disturbance_start, restoration_start):
-    if disturbance_start is not None:
-        disturbance_start = parse_and_validate_date(
-            disturbance_start, "disturbance_start"
-        )
-        if restoration_start is None:
-            restoration_start = str(int(disturbance_start) + 1)
-            validate_year_order(disturbance_start, restoration_start)
-
-    if restoration_start is not None:
-        restoration_start = parse_and_validate_date(
-            restoration_start, "restoration_start"
-        )
-        if disturbance_start is None:
-            disturbance_start = str(int(restoration_start) - 1)
-
-    validate_year_order(disturbance_start, restoration_start)
-
-    return disturbance_start, restoration_start
-
-
 def process_reference_years(reference_years):
-    if isinstance(reference_years, str):
-        reference_years = parse_and_validate_date(reference_years, "reference_years")
-    else:
-        try:
-            _ = iter(reference_years)
-            if len(reference_years) == 2:
-                reference_years = [
-                    parse_and_validate_date(date_str, "reference_years")
-                    for date_str in reference_years
-                ]
-            else:
-                raise ValueError(
-                    "reference_years must be a string or iterable of 2 strings."
-                )
-        except TypeError:
-            raise TypeError(
-                "reference_years must be a string or iterable of 2 strings."
+    
+    validate_year_format(reference_years[0], "reference start")
+    validate_year_format(reference_years[1], "reference end")
+    if reference_years[0] is not None:
+        if reference_years[0] > reference_years[1]:
+            raise ValueError(
+                f"The reference start year must be less than or equal to the reference end year (but {reference_years[0]} > {reference_years[1]})"
             )
-
     return reference_years
 
 
@@ -150,16 +109,99 @@ def to_dt(years: str | List[str]):
     return years_dt
 
 
-def _validate_dates(reference_years, disturbance_start, restoration_start, image_stack):
-    if disturbance_start is None and restoration_start is None:
+def _get_dates_from_frame(rest_frame: gpd.GeoDataFrame, ref_frame: gpd.GeoDataFrame):
+    """Read restoration polygon dates from GeoDataframes.
+
+    Get disturbance window start, restoration window start,
+    refernce year start, and reference year end. If just restoration
+    frame is given, then the aforementioned years are read from the
+    rest_frame's 1st, 2nd, 3rd, and 4th columns respectively. If both
+    rest and ref_frames are given, then disturbance and restoration
+    start years are taken from the 1st and 2nd columns of rest_frame
+    and reference years are taken from 1st and 2nd column of ref_frame.
+
+    Parameters
+    ----------
+    rest_frame : gpd.GeoDataFrame
+        The restoration polygon dataframe
+    ref_frame : gpd.GeoDataFrame
+        The reference polygon dataframe
+
+    Returns
+    -------
+    disturbance_start : str
+        The start year of the disturbance window.
+    restoration_start : str
+        The start year of the restoration window.
+    reference_years : list of str
+        The start and end year of the reference window.
+
+    """
+    rest_frame = pd.DataFrame(rest_frame.drop(columns='geometry'))
+    if ref_frame is not None:
+        ref_frame = pd.DataFrame(ref_frame.drop(columns='geometry'))
+    try:
+        disturbance_start = rest_frame.iloc[:, 0][0]
+        restoration_start = rest_frame.iloc[:, 1][0]
+        try:
+            reference_year_start = rest_frame.iloc[:, 2][0]
+            reference_year_end = rest_frame.iloc[:, 3][0]
+        except IndexError:
+            if ref_frame is None:
+                raise ValueError(
+                    "Missing reference years. Reference years (start and end) must be"
+                    " provided in 3rd and 4th columns of the restoration polygon's"
+                    " attribute table."
+                )
+            else:
+                try:
+                    reference_year_start = ref_frame.iloc[:, 0][0]
+                    reference_year_end = ref_frame.iloc[:, 1][0]
+                except IndexError:
+                    raise ValueError(
+                        "Missing reference years. Reference years (start and end) must be"
+                        " provided in the 1st and 2nd columns of the reference polygon's"
+                        " attribute table."
+                    )
+
+    except IndexError:
         raise ValueError(
-            "At least one of disturbance_start or restoration_start needs to be set"
-            " (both are None)"
+            "Missing disturbance or restoration start years. Please ensure the 1st and"
+            " 2nd columns of the restoration polygon's attribute table contains these"
+            " years."
+        )
+    if disturbance_start is not None:
+        disturbance_start = str(disturbance_start)
+    if restoration_start is not None:
+        restoration_start = str(restoration_start)
+    if reference_year_start is not None and reference_year_end is not None:
+        reference_years = [str(reference_year_start), str(reference_year_end)]
+
+    return disturbance_start, restoration_start, reference_years
+    
+
+def _validate_dates(rest_frame, ref_frame, image_stack):
+    (
+        disturbance_start,
+        restoration_start,
+        reference_years,
+    ) = _get_dates_from_frame(
+        rest_frame=rest_frame, ref_frame=ref_frame
+    )
+
+    if disturbance_start is None:
+        raise ValueError(
+            "disturbance start year missing (NULL provided)" 
+        )
+    if restoration_start is None:
+        raise ValueError(
+            "restoration start year missing (NULL provided)"
         )
 
-    disturbance_start, restoration_start = process_date_fields(
-        disturbance_start, restoration_start
-    )
+    validate_year_format(disturbance_start, "disturbance start")
+    validate_year_format(restoration_start, "restoration start")
+    validate_year_order(disturbance_start, restoration_start)
+
     reference_years = process_reference_years(reference_years)
 
     for years in [disturbance_start, restoration_start, reference_years]:
@@ -224,11 +266,8 @@ class RestorationArea:
     def __init__(
         self,
         restoration_polygon: gpd.GeoDataFrame,
-        reference_years: str | List[str],
         composite_stack: xr.DataArray,
         reference_polygons: gpd.GeoDataFrame = None,
-        disturbance_start: str = None,
-        restoration_start: str = None,
         recovery_target_method: Callable[
             [xr.DataArray, Tuple[datetime]], xr.DataArray
         ] = MedianTarget(scale="polygon"),
@@ -237,14 +276,14 @@ class RestorationArea:
             self.restoration_polygon = _validate_restoration_polygons(
                 restoration_polygon=restoration_polygon, image_stack=composite_stack
             )
+            
             (
                 self.reference_years,
                 self.disturbance_start,
                 self.restoration_start,
             ) = _validate_dates(
-                reference_years=reference_years,
-                disturbance_start=disturbance_start,
-                restoration_start=restoration_start,
+                rest_frame=restoration_polygon,
+                ref_frame=reference_polygons,
                 image_stack=composite_stack,
             )
             self.stack = composite_stack.rio.clip(
@@ -428,12 +467,14 @@ class RestorationArea:
                 ncol=3,
                 handler_map={Patch: HandlerFilledBetween()},
             )
-            plt.subplots_adjust(bottom=plt.rcParams["figure.subplot.bottom"] + (plt.rcParams["figure.subplot.bottom"] / 1.5))
+            plt.subplots_adjust(
+                bottom=plt.rcParams["figure.subplot.bottom"]
+                + (plt.rcParams["figure.subplot.bottom"] / 1.5)
+            )
         if path:
             plt.savefig(path)
         else:
             plt.show()
-
 
     def _set_axis_labels(self, axi, title, xlabels):
         """Set the axis labels to desired values"""
@@ -445,7 +486,6 @@ class RestorationArea:
         )
         axi.set_xlabel("Year")
         axi.set_ylabel(f"{title} Value")
-
 
     def _draw_trajectory_windows(self, axi, palette, hist_ref_sys):
         """Draw the trajectory windows onto subplots.
@@ -515,7 +555,6 @@ class RestorationArea:
                     linestyle="dashed",
                     lw=1,
                 )
-
 
     def _custom_legend_labels_handles(self, palette, hist_ref_sys) -> Tuple[List, List]:
         """Create a custom legend to match trajectory plots
