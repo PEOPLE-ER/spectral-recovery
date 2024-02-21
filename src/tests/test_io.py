@@ -7,7 +7,7 @@ from numpy.testing import assert_array_equal
 from unittest.mock import patch
 from tests.utils import SAME_XR
 from spectral_recovery.io.raster import (
-    read_and_stack_tifs,
+    read_timeseries,
     _metrics_to_tifs,
 
 )
@@ -84,7 +84,7 @@ class TestReadAndStackTifs:
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=tif_paths,
             platform=["Landsat-OLI"],
         )
@@ -147,7 +147,7 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            read_and_stack_tifs(path_to_tifs=filenames, platform=[])
+            read_timeseries(path_to_tifs=filenames, platform=[])
 
     @patch(
         "rioxarray.open_rasterio",
@@ -163,7 +163,7 @@ class TestReadAndStackTifs:
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames, platform=["Landsat-OLI"]
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
@@ -181,7 +181,7 @@ class TestReadAndStackTifs:
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
             platform=["Landsat-OLI"],
@@ -205,7 +205,7 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            stacked_tifs = read_and_stack_tifs(
+            stacked_tifs = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "not_a_band"},
                 platform=["Landsat-OLI"],
@@ -226,7 +226,7 @@ class TestReadAndStackTifs:
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
             platform=["Landsat-OLI"],
@@ -246,7 +246,7 @@ class TestReadAndStackTifs:
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={2: "blue", 1: "red", 3: "nir"},
             platform=["Landsat-OLI"],
@@ -270,7 +270,7 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            _ = read_and_stack_tifs(
+            _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"},
                 platform=["Landsat-OLI"],
@@ -291,7 +291,7 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            _ = read_and_stack_tifs(
+            _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
                 platform=["Landsat-OLI"],
@@ -312,7 +312,7 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            _ = read_and_stack_tifs(
+            _ = read_timeseries(
                 path_to_tifs=filenames,
                 platform=["Landsat-OLI"],
             )
@@ -348,7 +348,7 @@ class TestReadAndStackTifs:
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames, platform=["Landsat-OLI"]
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
@@ -363,7 +363,7 @@ class TestReadAndStackTifs:
             coords={"band":[1, 2, 3]},
             attrs={"long_name": ["blue", "red", "nir"]},
         )
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=[f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
             platform=["Landsat-OLI", "Landsat-TM"],
         )

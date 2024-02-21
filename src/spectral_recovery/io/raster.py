@@ -21,7 +21,7 @@ from spectral_recovery._config import VALID_YEAR, REQ_DIMS, SUPPORTED_PLATFORMS,
 COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
 BANDS_TABLE = bands_pretty_table()
 
-def read_and_stack_tifs(
+def read_timeseries(
     path_to_tifs: List[str] | str,
     platform: List[str] | str,
     band_names: Dict[int, str] = None,
