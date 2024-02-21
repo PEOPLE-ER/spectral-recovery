@@ -63,9 +63,6 @@ def read_reference_polygons(path: str):
 
     """
     reference_polygons = gpd.read_file(path)
-    if len(reference_polygons.columns) < 2:
-        raise ValueError(f"Restoration polygon's attribute table must have 2 (disturbance start year, restoration start year) or 4 (reference start, reference end) columns (only {len(restoration_polygons.columns)} given)")
-    
     
     dates_frame = pd.DataFrame(reference_polygons.drop(columns='geometry'))
     types = dates_frame.dtypes
