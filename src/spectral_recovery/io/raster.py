@@ -23,7 +23,6 @@ BANDS_TABLE = bands_pretty_table()
 
 def read_timeseries(
     path_to_tifs: List[str] | str,
-    platform: List[str] | str,
     band_names: Dict[int, str] = None,
     path_to_mask: str = None,
     array_type: str = "numpy",
@@ -34,8 +33,6 @@ def read_timeseries(
     ----------
     path_to_tifs : list of str
         List of paths to TIFs or path to directory containing TIFs.
-    platform : {"landsat_etm", "landsat_tm", "landsat_oli", "sentinel_2"}
-        Platform(s) from which TIF imagery was derived Must be one of: 'landsat_etm', 'landsat_tm',
     band_names : dict, optional
         Dictionary mapping band numbers to band names. If not provided,
         band names will be read from the TIFs band descriptions.
@@ -123,8 +120,6 @@ def read_timeseries(
         with rioxarray.open_rasterio(Path(path_to_mask), chunks="auto") as mask:
             stacked_data = _mask_stack(stacked_data, mask)
 
-    stacked_data.attrs["platform"] = _to_standard_platform_names(platform)
-
     return stacked_data
 
 
@@ -161,20 +156,6 @@ def _valid_band_name_mapping(band_names, band_nums):
             False
 
     return True
-
-
-def _to_standard_platform_names(platform: List[str]) -> List[str]:
-    """Convert a list of platform names to platform names"""
-    valid_names = []
-    for name in platform:
-        if name in SUPPORTED_PLATFORMS:
-            valid_names.append(name)
-        else:
-            raise ValueError(
-                f"Platform '{name}' not found. Valid platform names are:"
-                f" {list(SUPPORTED_PLATFORMS)}"
-            ) from None
-    return valid_names
 
 
 def _to_standard_band_names(in_names):
