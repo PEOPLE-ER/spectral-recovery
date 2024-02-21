@@ -24,10 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Speed up plotting (#66).
 - Alter plotting visulizations for more clarity (#66).
 - Updated tutorial (#70).
+- Bring CLI up-to-date (#74).
 
 ### Removed
 
 - Remove compute_indices, RestorationArea from top-level module (#72).
+- Remove use of platform param in io and indices (#73)
 
 ## [0.2.3b0] - 2024-02-02
 
