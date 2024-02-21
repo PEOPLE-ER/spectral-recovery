@@ -117,6 +117,7 @@ def RRI(obj, timestep):
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
 def Y2R(obj, percent):
+
     click.echo(f"Computing Y2R")
     if percent:
         y2r = obj.y2r(percent_of_target=percent)
