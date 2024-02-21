@@ -11,7 +11,7 @@ the recovery target.
 
 """
 
-from typing import Callable, Optional, Union, List, Tuple
+from typing import Callable, Dict, List, Tuple
 from datetime import datetime
 from inspect import signature
 
@@ -28,12 +28,18 @@ from matplotlib.legend_handler import HandlerPatch
 
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
+from spectral_recovery.indices import compute_indices
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import VALID_YEAR, SUPPORTED_PLATFORMS
 
 from spectral_recovery import metrics as m
+<<<<<<< Updated upstream
 
 # TODO: refactor validation logic (esp. date validation) into new module
+=======
+    
+    
+>>>>>>> Stashed changes
 def _get_reference_image_stack(reference_polygons, image_stack):
     """Clip reference polygon data, stack along new poly_id dim.
 
@@ -326,7 +332,7 @@ class RestorationArea:
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
 
-    def y2r(self, percent_of_target: int = 80):
+    def y2r(self, timestep = 5, percent_of_target: int = 80):
         """Compute the Years to Recovery (Y2R) metric."""
         post_restoration = self.stack.sel(
             time=slice(self.restoration_start, self.end_year)
@@ -340,7 +346,7 @@ class RestorationArea:
         y2r = y2r.expand_dims(dim={"metric": [Metric.Y2R]})
         return y2r
 
-    def yryr(self, timestep: int = 5):
+    def yryr(self, timestep: int = 5, percent_of_target: int = 80):
         """Compute the Relative Years to Recovery (YRYR) metric."""
         yryr = m.yryr(
             image_stack=self.stack,
@@ -350,7 +356,7 @@ class RestorationArea:
         yryr = yryr.expand_dims(dim={"metric": [Metric.YRYR]})
         return yryr
 
-    def dnbr(self, timestep: int = 5):
+    def dnbr(self, timestep: int = 5, percent_of_target: int = 80):
         """Compute the differenced normalized burn ratio (dNBR) metric."""
         dnbr = m.dnbr(
             image_stack=self.stack,
@@ -360,7 +366,7 @@ class RestorationArea:
         dnbr = dnbr.expand_dims(dim={"metric": [Metric.DNBR]})
         return dnbr
 
-    def _rri(self, timestep: int = 5):
+    def _rri(self, timestep: int = 5, percent_of_target: int = 80):
         """Compute the relative recovery index (RRI) metric."""
         rri = m.rri(
             image_stack=self.stack,

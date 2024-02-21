@@ -34,11 +34,11 @@ def read_restoration_polygons(path: str):
         if data_type != 'int64':
             raise ValueError(f"Date fields must be type int (given {data_type} in field {column_name})")
     # Check that the dates make sense
-    if dates_frame.iloc[:,0] >= dates_frame.iloc[:,1]:
+    if dates_frame.iloc[:,0][0] >= dates_frame.iloc[:,1][0]:
         raise ValueError(f"Disturbance year cannot be greater than or equal to the restoration year ({dates_frame.iloc[:,0][0]} >= {dates_frame.iloc[:,0][0]})")
     if len(dates_frame.columns) > 2:
         try:
-            if dates_frame.iloc[:,2] >= dates_frame.iloc[:,3]:
+            if dates_frame.iloc[:,2][0] >= dates_frame.iloc[:,3][0]:
                 raise ValueError(f"Reference start year cannot be greater than or equal to the reference end year ({dates_frame.iloc[:,0][0]} >= {dates_frame.iloc[:,0][0]})")
         except IndexError:
             raise ValueError(f"Attribute table must have exactly 2 or 4 columns for dates ({len(dates_frame.columns)} given)")
@@ -84,7 +84,7 @@ def read_reference_polygons(path: str):
         if unique_values != 1:
             raise ValueError("All date fields (start and end years) must be the same for each polygon")
 
-    if dates_frame.iloc[:,0] >= dates_frame.iloc[:,1]:
+    if (dates_frame.iloc[:,0] >= dates_frame.iloc[:,1]).all():
         raise ValueError(f"Reference start year cannot be greater than reference end year ({dates_frame.iloc[:,0][0]} >= {dates_frame.iloc[:,0][0]})")
 
     return reference_polygons
