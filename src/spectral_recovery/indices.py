@@ -42,21 +42,19 @@ def compute_indices(image_stack: xr.DataArray, indices: list[str], constants: di
         the band dimension.
 
     """
-    platforms = image_stack.attrs["platform"]
-    if _compatible_platform(indices, platforms):
-        if _supported_domain(indices):
-            params_dict = _build_params_dict(image_stack)
-            params_dict = params_dict | constants | kwargs
-            index_stack = spx.computeIndex(
-                index=indices,
-                params=params_dict
-            )
-            try:
-                # rename 'index' dim to 'bands' to match tool's expected dims
-                index_stack = index_stack.rename({"index": "band"})
-            except ValueError:
-                # computeIndex will not return an index dim if only 1 index passed
-                index_stack = index_stack.expand_dims(dim={"band": indices})
+    if _supported_domain(indices):
+        params_dict = _build_params_dict(image_stack)
+        params_dict = params_dict | constants | kwargs
+        index_stack = spx.computeIndex(
+            index=indices,
+            params=params_dict
+        )
+        try:
+            # rename 'index' dim to 'bands' to match tool's expected dims
+            index_stack = index_stack.rename({"index": "band"})
+        except ValueError:
+            # computeIndex will not return an index dim if only 1 index passed
+            index_stack = index_stack.expand_dims(dim={"band": indices})
     return index_stack
 
 
@@ -79,36 +77,7 @@ def _supported_domain(indices: list[str]):
                 f"only application domain 'vegetation' and 'burn' are supported (index {i} has application domain '{spx.indices[i].application_domain}')"
             ) from None
     return True
-
-
-def _compatible_platform(indices: list[str], platforms: list[str]):
-    """ Determine whether platform and selected indices are compatible.
-    
-    Parameters
-    ----------
-    indices : list of str
-        list of indices
-    platforms : list of str
-        list of platforms
-    
-    Raises
-    ------
-    ValueError
-        If an index is compatible with any of the platforms.
-    """
-    for i in indices:
-        compatible_platforms = spx.indices[i].platforms
-        compatible = False
-        for p in platforms:
-            if p in compatible_platforms:
-                compatible = True
-        if not compatible:
-            raise ValueError(
-                    f"incompatible platforms for index {i}. {i} requires any of {spx.indices[i].platforms} ({platforms} provided)"
-                ) from None
-    return True
       
-
 
 def _build_params_dict(image_stack: xr.DataArray):
     """Build dict of standard names and slices required by computeIndex.
