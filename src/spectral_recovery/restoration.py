@@ -11,7 +11,7 @@ the recovery target.
 
 """
 
-from typing import Callable, Optional, Union, List, Tuple
+from typing import Callable, Dict, List, Tuple
 from datetime import datetime
 from inspect import signature
 
@@ -28,12 +28,40 @@ from matplotlib.legend_handler import HandlerPatch
 
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
+from spectral_recovery.indices import compute_indices
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import VALID_YEAR, SUPPORTED_PLATFORMS
 
 from spectral_recovery import metrics as m
 
-# TODO: refactor validation logic (esp. date validation) into new module
+def compute_metrics(
+        timeseries_data: xr.DataArray,
+        restoration_polygons: gpd.GeoDataFrame,
+        metrics: List[str],
+        indices: List[str],
+        reference_polygons: gpd.GeoDataFrame = None,
+        index_constants: Dict[str, int] = {},
+        timestep: int = 5, 
+        percent_of_target: int = 80,
+        recovery_target_method = MedianTarget(scale="polygon"),
+    ):
+
+    indices_stack = compute_indices(image_stack=timeseries_data, indices=indices, constants=index_constants)
+    restoration_area = RestorationArea(
+        restoration_polygon=restoration_polygons,
+        reference_polygons=reference_polygons,
+        composite_stack=indices_stack,
+        recovery_target_method=recovery_target_method
+    )
+    m_results = []
+    for m in metrics:
+        m_func = getattr(restoration_area, m.lower())
+        m_results.append(m_func(timestep=timestep, percent_of_target=percent_of_target))
+
+    metrics = xr.concat(m_results, "metric")
+
+    return metrics
+    
 def _get_reference_image_stack(reference_polygons, image_stack):
     """Clip reference polygon data, stack along new poly_id dim.
 
@@ -245,16 +273,8 @@ class RestorationArea:
         of type shapely.Polygon or shapely.MultiPolygon.
     composite_stack : xr.DataArray
         A 4D (band, time, y, x) DataArray of images.
-    disturbance_start : str or datetime
-        The start year of the disturbance window. If None, defaults
-        to the year prior to restoration_start.
-    restoration_start : str or datetime
-        The start year of the recovery window. If None, defaults
-        to the year following disturbance_start.
     reference_polygon : GeoDataFrame
         The spatial delinitation of the reference area(s).
-    reference_years : datetime or Tuple of datetimes
-        The year or range of years of the reference window.
     recovery_target_method : callable
         The method used for computing the recovery target. Default
         is median target method with polygon scale.
@@ -326,7 +346,7 @@ class RestorationArea:
 
         self.end_year = pd.to_datetime(self.stack["time"].max().data)
 
-    def y2r(self, percent_of_target: int = 80):
+    def y2r(self, timestep = 5, percent_of_target: int = 80):
         """Compute the Years to Recovery (Y2R) metric."""
         post_restoration = self.stack.sel(
             time=slice(self.restoration_start, self.end_year)
@@ -337,30 +357,30 @@ class RestorationArea:
             rest_start=self.restoration_start,
             percent=percent_of_target,
         )
-        y2r = y2r.expand_dims(dim={"metric": [Metric.Y2R]})
+        y2r = y2r.expand_dims(dim={"metric": [str(Metric.Y2R)]})
         return y2r
 
-    def yryr(self, timestep: int = 5):
+    def yryr(self, timestep: int = 5, percent_of_target: int = 80):
         """Compute the Relative Years to Recovery (YRYR) metric."""
         yryr = m.yryr(
             image_stack=self.stack,
             rest_start=self.restoration_start,
             timestep=timestep,
         )
-        yryr = yryr.expand_dims(dim={"metric": [Metric.YRYR]})
+        yryr = yryr.expand_dims(dim={"metric": [str(Metric.YRYR)]})
         return yryr
 
-    def dnbr(self, timestep: int = 5):
+    def dnbr(self, timestep: int = 5, percent_of_target: int = 80):
         """Compute the differenced normalized burn ratio (dNBR) metric."""
         dnbr = m.dnbr(
             image_stack=self.stack,
             rest_start=self.restoration_start,
             timestep=timestep,
         )
-        dnbr = dnbr.expand_dims(dim={"metric": [Metric.DNBR]})
+        dnbr = dnbr.expand_dims(dim={"metric": [str(Metric.DNBR)]})
         return dnbr
 
-    def _rri(self, timestep: int = 5):
+    def _rri(self, timestep: int = 5, percent_of_target: int = 80):
         """Compute the relative recovery index (RRI) metric."""
         rri = m.rri(
             image_stack=self.stack,
@@ -368,7 +388,7 @@ class RestorationArea:
             dist_start=self.disturbance_start,
             timestep=timestep,
         )
-        rri = rri.expand_dims(dim={"metric": [Metric.RRI]})
+        rri = rri.expand_dims(dim={"metric": [str(Metric.RRI)]})
         return rri
 
     def r80p(self, percent_of_target: int = 80, timestep: int = 5):
@@ -380,7 +400,7 @@ class RestorationArea:
             timestep=timestep,
             percent=percent_of_target,
         )
-        r80p = r80p.expand_dims(dim={"metric": [Metric.R80P]})
+        r80p = r80p.expand_dims(dim={"metric": [str(Metric.R80P)]})
         return r80p
 
     def plot_spectral_trajectory(self, path: str = None, legend: bool = True) -> None:
