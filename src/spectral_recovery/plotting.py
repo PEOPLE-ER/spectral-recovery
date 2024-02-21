@@ -16,6 +16,7 @@ def plot_spectral_trajectory(
         reference_polygons: gpd.GeoDataFrame = None,
         index_constants: Dict[str, int] = {},
         recovery_target_method = MedianTarget(scale="polygon"),
+        path: str = None
 ):
     """ Plot the spectral trajectory of the restoration polygon
     
@@ -43,6 +44,9 @@ def plot_spectral_trajectory(
         composite_stack=indices_stack,
         recovery_target_method=recovery_target_method
     )
-    restoration_area.plot_spectral_trajectory()
+    if path:
+        restoration_area.plot_spectral_trajectory(path=path)
+    else:
+        restoration_area.plot_spectral_trajectory()
 
     
