@@ -4,28 +4,150 @@ import numpy as np
 import pandas as pd
 import rioxarray
 
+from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.metrics import (
     y2r,
     dnbr,
     rri,
     yryr,
     r80p,
+    METRIC_FUNCS,
+    compute_metrics
 )
 
 
-# TODO: simplfy parametrize calls using this func.
-def make_da(data, dims, time=None, band=None, y=None, x=None, crs=None):
-    coords = {"time": time, "band": band, "y": y, "x": x}
-    coords = {k: v for k, v in coords.items() if v is not None}
-    obs = xr.DataArray(
-        data,
-        coords=coords,
-        dims=dims,
-    )
-    if crs:
-        obs = obs.rio.write_crs("4326")
-    return obs
+def test_metric_funcs_global_contains_all_funcs():
+    expected_dict = {"y2r" : y2r, "dnbr": dnbr, "yryr": yryr, "r80p": r80p, "rri": rri}
+    assert METRIC_FUNCS == expected_dict
 
+
+class TestComputeMetrics:
+
+    time_range = [str(x) for x in np.arange(2010, 2027)]
+    baseline_array = xr.DataArray([[[1.0]], [[2.0]]])
+
+    @pytest.fixture()
+    def valid_resto_area(self):
+
+        with rioxarray.open_rasterio(TIMESERIES_LEN_17, chunks="auto") as data:
+            resto_poly = gpd.read_file(POLYGON_INBOUND)
+            resto_poly["dist_start"] = "2014"
+            resto_poly["rest_start"] = "2015"
+            resto_poly["ref_start"] = "2011"
+            resto_poly["ref_end"] = "2011"
+
+            stack = data
+            stack = stack.rename({"band": "time"})
+            stack = stack.expand_dims(dim={"band": [0]})
+            stack = stack.assign_coords(
+                time=(
+                    pd.date_range(
+                        self.time_range[0], self.time_range[-1], freq=DATETIME_FREQ
+                    )
+                )
+            )
+            stack = xr.concat([stack, stack], dim=pd.Index([0, 1], name="band"))
+            resto_area = RestorationArea(
+                restoration_polygon=resto_poly,
+                composite_stack=stack,
+            )
+
+            mock_target_return = self.baseline_array
+            resto_area.recovery_target = self.baseline_array
+
+        return resto_area
+
+    @patch(
+        "metrics.y2r",
+    )
+    def test_Y2R_call_default(self, method_mock, valid_resto_area):
+        method_mock.return_value = xr.DataArray([[1.0]], dims=["y", "x"])
+
+
+#     @patch(
+#         "spectral_recovery.metrics.yryr",
+#     )
+#     def test_YrYr_call_default(self, method_mock, valid_resto_area):
+#         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
+#         method_mock.return_value = mocked_return
+
+#         result = valid_resto_area.yryr()
+#         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.YRYR)]})
+
+#         assert result.equals(expected_result)
+
+#         timestep_default = 5
+
+#         method_mock.assert_called_with(
+#             image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
+#             rest_start=valid_resto_area.restoration_start,
+#             timestep=timestep_default,
+#         )
+
+#     @patch(
+#         "spectral_recovery.metrics.dnbr",
+#     )
+#     def test_dNBR_call_default(self, method_mock, valid_resto_area):
+#         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
+#         method_mock.return_value = mocked_return
+
+#         result = valid_resto_area.dnbr()
+#         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.DNBR)]})
+
+#         assert result.equals(expected_result)
+
+#         timestep_default = 5
+
+#         method_mock.assert_called_with(
+#             image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
+#             rest_start=valid_resto_area.restoration_start,
+#             timestep=timestep_default,
+#         )
+
+#     @patch(
+#         "spectral_recovery.metrics.rri",
+#     )
+#     def test_RRI_call_default(self, method_mock, valid_resto_area):
+#         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
+#         method_mock.return_value = mocked_return
+
+#         result = valid_resto_area._rri()
+#         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.RRI)]})
+
+#         assert result.equals(expected_result)
+
+#         timestep_default = 5
+
+#         method_mock.assert_called_with(
+#             image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
+#             rest_start=valid_resto_area.restoration_start,
+#             dist_start=valid_resto_area.disturbance_start,
+#             timestep=timestep_default,
+#         )
+
+#     @patch(
+#         "spectral_recovery.metrics.r80p",
+#     )
+#     def test_R80P_call_default(self, method_mock, valid_resto_area):
+#         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
+#         method_mock.return_value = mocked_return
+
+#         result = valid_resto_area.r80p()
+#         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.R80P)]})
+
+#         assert result.equals(expected_result)
+
+#         percent_default = 80
+#         timestep_default = 5
+
+#         method_mock.assert_called_with(
+#             image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
+#             rest_start=valid_resto_area.restoration_start,
+#             recovery_target=SAME_XR(self.baseline_array),
+#             timestep=timestep_default,
+#             percent=percent_default,
+#         )
+    
 
 class TestY2R:
     @pytest.mark.parametrize(

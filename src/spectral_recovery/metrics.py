@@ -1,19 +1,60 @@
 """Methods for computing recovery metrics."""
+from typing import Dict, List
 
 import xarray as xr
 import numpy as np
 import pandas as pd
 
 from spectral_recovery._utils import maintain_rio_attrs
+from spectral_recovery.restoration import RestorationArea
+from spectral_recovery.indices import compute_indices
+from spectral_recovery.targets import MedianTarget
 
-# TODO: should methods that take 'percent' params not allow negative percent
-# or greater than 100 values? Right now we just throw a ValueError. This avoids
-# weird divides, so seems like the safest option, but maybe we should be more flexible?
+
 NEG_TIMESTEP_MSG = "timestep cannot be negative."
 VALID_PERC_MSP = "percent must be between 0 and 100."
+METRIC_FUNCS = {}
+
+
+def register_metric(f):
+    METRIC_FUNCS[f.__name__] = f
+    return f
 
 
 @maintain_rio_attrs
+def compute_metrics(
+        timeseries_data: xr.DataArray,
+        restoration_polygons: "geopandas.GeoDataFrame",
+        metrics: List[str],
+        indices: List[str],
+        reference_polygons: "geopandas.GeoDataFrame" = None,
+        index_constants: Dict[str, int] = {},
+        timestep: int = 5, 
+        percent_of_target: int = 80,
+        recovery_target_method = MedianTarget(scale="polygon"),
+    ):
+
+    indices_stack = compute_indices(image_stack=timeseries_data, indices=indices, constants=index_constants)
+    restoration_area = RestorationArea(
+        restoration_polygon=restoration_polygons,
+        reference_polygons=reference_polygons,
+        composite_stack=indices_stack,
+        recovery_target_method=recovery_target_method
+    )
+    m_results = []
+    for m in metrics:
+        try:
+            m_func = METRIC_FUNCS[m.lower()]
+        except KeyError:
+            raise ValueError("{m} is not a valid metric choice!")
+        m_results.append(m_func(ra=restoration_area, timestep=timestep, percent_of_target=percent_of_target))
+
+    metrics = xr.concat(m_results, "metric")
+
+    return metrics
+
+
+@register_metric
 def dnbr(
     image_stack: xr.DataArray,
     rest_start: str,
@@ -60,8 +101,7 @@ def dnbr(
         raise e
     return dnbr_v
 
-
-@maintain_rio_attrs
+@register_metric
 def yryr(
     image_stack: xr.DataArray,
     rest_start: str,
@@ -101,8 +141,7 @@ def yryr(
 
     return yryr_v
 
-
-@maintain_rio_attrs
+@register_metric
 def r80p(
     image_stack: xr.DataArray,
     rest_start: str,
@@ -162,7 +201,7 @@ def r80p(
     return r80p_v
 
 
-@maintain_rio_attrs
+@register_metric
 def y2r(
     image_stack: xr.DataArray,
     rest_start: str,
@@ -216,7 +255,7 @@ def y2r(
     return y2r_v
 
 
-@maintain_rio_attrs
+@register_metric
 def rri(
     image_stack: xr.DataArray,
     rest_start: str,

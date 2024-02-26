@@ -19,8 +19,8 @@ def maintain_rio_attrs(func: callable) -> callable:
     operations that create new instances of an xarray object
     because new accessors (e.g rio) are created for every instance.
 
-    This method ensures that a returned xarray object has the
-    same rio CRS and encoding as the input xarray object.
+    This method ensures tnhat a returned xarray object has the
+    same rio CRS and encodig as the input xarray object.
 
     Notes
     -----
@@ -34,7 +34,7 @@ def maintain_rio_attrs(func: callable) -> callable:
         """
         Returns
         --------
-        indice : xr.DataArray
+        result : xr.DataArray
             DataArray object returned by func with spatial attrs
 
         Notes
@@ -50,16 +50,17 @@ def maintain_rio_attrs(func: callable) -> callable:
         else:
             # NOTE: this only works for Python 3.6+ where dicts keep insertion order by default
             xarray_obj = next(iter(kwargs.values()))
-        indice = func(*args, **kwargs)
+        result = func(*args, **kwargs)
         try:
-            indice.rio.write_crs(xarray_obj.rio.crs, inplace=True)
+            result.rio.write_crs(xarray_obj.rio.crs, inplace=True)
         except MissingCRS:
             # TODO: add warning log here?
             pass
-        indice.rio.update_encoding(xarray_obj.encoding, inplace=True)
-        return indice
+        result.rio.update_encoding(xarray_obj.encoding, inplace=True)
+        return result
 
     return wrapper_maintain_rio_attrs
+
 
 def common_and_long_to_short(standard):
     """Dict of short and common names to standard names
@@ -83,6 +84,7 @@ def common_and_long_to_short(standard):
         common_and_short[spx.bands[band].short_name] = band
         common_and_short[spx.bands[band].common_name] = band
     return common_and_short
+
 
 def bands_pretty_table():
     """ Create a PrettyTable of all bands (names and id info).
