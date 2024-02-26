@@ -87,7 +87,7 @@ def dnbr(
         raise ValueError(NEG_TIMESTEP_MSG)
     
     rest_post_t = str(int(ra.restoration_start) + timestep)
-    if rest_post_t > ra.end_year:
+    if rest_post_t > ra.timeseries_end:
         raise ValueError(
                 f"timestep={timestep}, but {ra.restoration_start}+{timestep}={rest_post_t} not"
                 f" within time coordinates: {ra.restoration_image_stack.coords['time'].values}. "

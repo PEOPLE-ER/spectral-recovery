@@ -1,6 +1,6 @@
 """RestorationArea class
 
-The RestorationArea (RA) class is use to coordinate the restoration site
+The RestorationArea (RA) class is used to coordinate the restoration site
 polygon, reference polygons, dates and the timeseries image data. RA 
 is intended to be initialized/used by methods returning metrics and/or
 restoration info to users (e.g plot_spectral_trajectory or compute_metrics).
@@ -15,15 +15,14 @@ from inspect import signature
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 
 from pandas import Index as pdIndex
 
 from spectral_recovery.targets import MedianTarget, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
-# from spectral_recovery.enums import Metric
-from spectral_recovery._config import VALID_YEAR
 
-# from spectral_recovery import metrics as m
+from spectral_recovery._config import VALID_YEAR
 
 
 class RestorationArea:
@@ -67,20 +66,22 @@ class RestorationArea:
         self.disturbance_start = self._get_dist_from_frame()
         self.restoration_start = self._get_rest_from_frame()
         self.reference_years = self._get_ref_from_frame()
+        self.timeseries_start = self._npdt_to_year(np.min(self.full_timeseries["time"].data))
+        self.timeseries_end = self._npdt_to_year(np.max(self.full_timeseries["time"].data))
 
         # Ensure dates are valid when compared to timeseries and with each other
         self._validate_dates()
         
+        # Clip images with restoration polygon to get rid of urequired data
         self.restoration_image_stack = composite_stack.rio.clip(
             self.restoration_polygon.geometry.values
         )
+        # Get the timeseries that will be used for computing recovery targets
         self.reference_image_stack = self._get_reference_image_stack()
-
+        # Compute recovery target based on the passed/default method
         self.recovery_target = self.recovery_target_method(
             image_stack=self.reference_image_stack, reference_date=self.reference_years
         )
-
-        self.end_year = pd.to_datetime(self.restoration_image_stack["time"].max().data)
     
     full_timeseries = property(operator.attrgetter('_full_timeseries'))
     restoration_polygon = property(operator.attrgetter('_restoration_polygon'))
@@ -284,59 +285,9 @@ class RestorationArea:
             years_dt = pd.to_datetime(years)
         return years_dt
 
-    # def y2r(self, timestep = 5, percent_of_target: int = 80):
-    #     """Compute the Years to Recovery (Y2R) metric."""
-    #     post_restoration = self.restoration_image_stack.sel(
-    #         time=slice(self.restoration_start, self.end_year)
-    #     )
-    #     y2r = m.y2r(
-    #         image_stack=post_restoration,
-    #         recovery_target=self.recovery_target,
-    #         rest_start=self.restoration_start,
-    #         percent=percent_of_target,
-    #     )
-    #     y2r = y2r.expand_dims(dim={"metric": [str(Metric.Y2R)]})
-    #     return y2r
 
-    # def yryr(self, timestep: int = 5, percent_of_target: int = 80):
-    #     """Compute the Relative Years to Recovery (YRYR) metric."""
-    #     yryr = m.yryr(
-    #         image_stack=self.restoration_image_stack,
-    #         rest_start=self.restoration_start,
-    #         timestep=timestep,
-    #     )
-    #     yryr = yryr.expand_dims(dim={"metric": [str(Metric.YRYR)]})
-    #     return yryr
-
-    # def dnbr(self, timestep: int = 5, percent_of_target: int = 80):
-    #     """Compute the differenced normalized burn ratio (dNBR) metric."""
-    #     dnbr = m.dnbr(
-    #         image_stack=self.restoration_image_stack,
-    #         rest_start=self.restoration_start,
-    #         timestep=timestep,
-    #     )
-    #     dnbr = dnbr.expand_dims(dim={"metric": [str(Metric.DNBR)]})
-    #     return dnbr
-
-    # def _rri(self, timestep: int = 5, percent_of_target: int = 80):
-    #     """Compute the relative recovery index (RRI) metric."""
-    #     rri = m.rri(
-    #         image_stack=self.restoration_image_stack,
-    #         rest_start=self.restoration_start,
-    #         dist_start=self.disturbance_start,
-    #         timestep=timestep,
-    #     )
-    #     rri = rri.expand_dims(dim={"metric": [str(Metric.RRI)]})
-    #     return rri
-
-    # def r80p(self, percent_of_target: int = 80, timestep: int = 5):
-    #     """Compute the recovery to 80% of target (R80P) metric."""
-    #     r80p = m.r80p(
-    #         image_stack=self.restoration_image_stack,
-    #         rest_start=self.restoration_start,
-    #         recovery_target=self.recovery_target,
-    #         timestep=timestep,
-    #         percent=percent_of_target,
-    #     )
-    #     r80p = r80p.expand_dims(dim={"metric": [str(Metric.R80P)]})
-    #     return r80p
+    @staticmethod
+    def _npdt_to_year(np_dt: np.datetime64):
+        """ Convert np.datetime64 to year str """
+        pd_dt = pd.to_datetime(np_dt)
+        return str(pd_dt.year)
