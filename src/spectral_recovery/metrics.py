@@ -103,8 +103,7 @@ def dnbr(
 
 @register_metric
 def yryr(
-    image_stack: xr.DataArray,
-    rest_start: str,
+    ra: RestorationArea,
     timestep: int = 5,
 ):
     """Per-pixel YrYr.
@@ -134,9 +133,9 @@ def yryr(
     if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(int(rest_start) + timestep)
-    obs_post_t = image_stack.sel(time=rest_post_t).drop_vars("time")
-    obs_start = image_stack.sel(time=rest_start).drop_vars("time")
+    rest_post_t = str(int(ra.restoration_start) + timestep)
+    obs_post_t = ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
+    obs_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
     yryr_v = ((obs_post_t - obs_start) / timestep).squeeze("time")
 
     return yryr_v
