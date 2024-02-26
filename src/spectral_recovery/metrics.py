@@ -56,8 +56,7 @@ def compute_metrics(
 
 @register_metric
 def dnbr(
-    image_stack: xr.DataArray,
-    rest_start: str,
+    ra: RestorationArea,
     timestep: int = 5,
 ) -> xr.DataArray:
     """Per-pixel dNBR.
@@ -86,19 +85,20 @@ def dnbr(
     """
     if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    try:
-        rest_post_t = str(int(rest_start) + timestep)
-        dnbr_v = (
-            image_stack.sel(time=rest_post_t).drop_vars("time")
-            - image_stack.sel(time=rest_start).drop_vars("time")
-        ).squeeze("time")
-    except KeyError as e:
-        if int(rest_post_t) > year_dt(image_stack["time"].data.max(), int):
-            raise ValueError(
-                f"timestep={timestep}, but {rest_start}+{timestep}={rest_post_t} not"
-                f" within time coordinates: {image_stack.coords['time'].values}. "
+    
+    rest_post_t = str(int(ra.restoration_start) + timestep)
+    if rest_post_t > ra.end_year:
+        raise ValueError(
+                f"timestep={timestep}, but {ra.restoration_start}+{timestep}={rest_post_t} not"
+                f" within time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
             ) from None
-        raise e
+    
+    dnbr_v = (
+        ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
+        - ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
+    ).squeeze("time")
+
+            
     return dnbr_v
 
 @register_metric
