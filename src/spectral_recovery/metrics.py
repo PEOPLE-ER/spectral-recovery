@@ -203,9 +203,7 @@ def r80p(
 
 @register_metric
 def y2r(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    recovery_target: xr.DataArray,
+    ra: RestorationArea,
     percent: int = 80,
 ) -> xr.DataArray:
     """Per-pixel Y2R.
@@ -235,15 +233,15 @@ def y2r(
     """
     if percent <= 0 or percent > 100:
         raise ValueError(VALID_PERC_MSP)
-    reco_target = recovery_target * (percent / 100)
-    recovery_window = image_stack.sel(time=slice(rest_start, None))
+    reco_target = ra.recovery_target * (percent / 100)
+    recovery_window = ra.restoration_image_stack.sel(time=slice(ra.restoration_start, None))
 
     years_to_recovery = (recovery_window >= reco_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be pixels that were recovered at the first timestep, or
     # pixels that never recovered (argmax returns 0 if all values are False).
     # Only the former are valid 0's, so set pixels that never recovered to NaN.
     zero_mask = years_to_recovery == 0
-    recovered_at_zero = recovery_window.sel(time=rest_start) >= reco_target
+    recovered_at_zero = recovery_window.sel(time=ra.restoration_start) >= reco_target
     valid_zeros = zero_mask & recovered_at_zero
     valid_output = valid_zeros | (~zero_mask)
 
