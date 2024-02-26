@@ -143,9 +143,7 @@ def yryr(
 
 @register_metric
 def r80p(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    recovery_target: xr.DataArray,
+    ra: RestorationArea,
     timestep: int = None,
     percent: int = 80,
 ) -> xr.DataArray:
@@ -182,15 +180,15 @@ def r80p(
 
     """
     if timestep is None:
-        rest_post_t = image_stack["time"].data[-1]
+        rest_post_t = ra.restoration_image_stack["time"].data[-1]
     elif timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
     elif percent <= 0 or percent > 100:
         raise ValueError(VALID_PERC_MSP)
     else:
-        rest_post_t = str(int(rest_start) + timestep)
-    r80p_v = (image_stack.sel(time=rest_post_t)).drop_vars("time") / (
-        (percent / 100) * recovery_target
+        rest_post_t = str(int(ra.restoration_start) + timestep)
+    r80p_v = (ra.restoration_image_stack.sel(time=rest_post_t)).drop_vars("time") / (
+        (percent / 100) * ra.recovery_target
     )
     try:
         # if using the default timestep (the max/most recent),
