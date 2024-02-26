@@ -17,6 +17,7 @@ METRIC_FUNCS = {}
 
 
 def register_metric(f):
+    """ Add function and name to global name/func dict """
     METRIC_FUNCS[f.__name__] = f
     return f
 
