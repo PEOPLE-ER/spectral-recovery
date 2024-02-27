@@ -57,7 +57,7 @@ def plot_spectral_trajectory(
 
     
 def plot_ra(
-        ra: 'spectral_recovery.restoration.RestorationArea',
+        ra: RestorationArea,
         path: str = None,
         legend: bool = True
     ) -> None:
