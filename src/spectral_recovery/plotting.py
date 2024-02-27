@@ -1,4 +1,3 @@
-
 from typing import List, Dict, Tuple
 
 import geopandas as gpd
@@ -14,18 +13,19 @@ from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.targets import MedianTarget
 from spectral_recovery.indices import compute_indices
 
+
 # TODO: Refactor. Bring plot_spectral_trajectory into this module.
 def plot_spectral_trajectory(
-        timeseries_data: xr.DataArray,
-        restoration_polygons: gpd.GeoDataFrame,
-        indices: List[str],
-        reference_polygons: gpd.GeoDataFrame = None,
-        index_constants: Dict[str, int] = {},
-        recovery_target_method = MedianTarget(scale="polygon"),
-        path: str = None
+    timeseries_data: xr.DataArray,
+    restoration_polygons: gpd.GeoDataFrame,
+    indices: List[str],
+    reference_polygons: gpd.GeoDataFrame = None,
+    index_constants: Dict[str, int] = {},
+    recovery_target_method=MedianTarget(scale="polygon"),
+    path: str = None,
 ):
-    """ Plot the spectral trajectory of the restoration polygon
-    
+    """Plot the spectral trajectory of the restoration polygon
+
     Parameters
     ----------
     timeseries_data : xr.DataArray
@@ -40,33 +40,35 @@ def plot_spectral_trajectory(
         Constant values for indices
     recovery_target_method : callable
         Recovery target method to derive recovery target values
-    
+
     """
-    
-    indices_stack = compute_indices(image_stack=timeseries_data, indices=indices, constants=index_constants)
+
+    indices_stack = compute_indices(
+        image_stack=timeseries_data, indices=indices, constants=index_constants
+    )
     restoration_area = RestorationArea(
         restoration_polygon=restoration_polygons,
         reference_polygons=reference_polygons,
         composite_stack=indices_stack,
-        recovery_target_method=recovery_target_method
+        recovery_target_method=recovery_target_method,
     )
     if path:
         plot_ra(ra=restoration_area, path=path)
     else:
         plot_ra(ra=restoration_area)
 
-    
+
 def plot_ra(
-        ra: 'spectral_recovery.restoration.RestorationArea',
-        path: str = None,
-        legend: bool = True
-    ) -> None:
+    ra: "spectral_recovery.restoration.RestorationArea",
+    path: str = None,
+    legend: bool = True,
+) -> None:
     """Create spectral trajectory plot of the RestorationArea (ra)
 
     Parameters
     ----------
     ra : spectral_recovery.restoration.RestorationArea
-        The restoration area to plot. 
+        The restoration area to plot.
     path : str, optional
         The path to save the plot to.
     """
@@ -101,9 +103,7 @@ def plot_ra(
     palette = sns.color_palette("deep")
 
     bands = data["band"].unique()
-    fig, axs = plt.subplots(
-        len(bands), 1, sharey=False, sharex=True, figsize=[8, 7.5]
-    )
+    fig, axs = plt.subplots(len(bands), 1, sharey=False, sharex=True, figsize=[8, 7.5])
     # Plot per-band statistic lineplots
     for i, band in enumerate(bands):
         band_data = data[data["band"] == band]

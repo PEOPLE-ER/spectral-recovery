@@ -16,10 +16,16 @@ import xarray as xr
 from spectral_recovery._utils import bands_pretty_table, common_and_long_to_short
 from rasterio._err import CPLE_AppDefinedError
 
-from spectral_recovery._config import VALID_YEAR, REQ_DIMS, SUPPORTED_PLATFORMS, STANDARD_BANDS
+from spectral_recovery._config import (
+    VALID_YEAR,
+    REQ_DIMS,
+    SUPPORTED_PLATFORMS,
+    STANDARD_BANDS,
+)
 
 COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
 BANDS_TABLE = bands_pretty_table()
+
 
 def read_timeseries(
     path_to_tifs: List[str] | str,
@@ -128,6 +134,7 @@ def _str_is_year(year_str) -> bool:
     if VALID_YEAR.match(year_str) is None:
         return False
     return True
+
 
 def _valid_band_name_mapping(band_names, band_nums):
     """Check if band_names dict maps each band to a name and vice versa.

@@ -64,14 +64,14 @@ def maintain_rio_attrs(func: callable) -> callable:
 
 def common_and_long_to_short(standard):
     """Dict of short and common names to standard names
-    
+
     Notes
     -----
     This manually changes the G1, RE1, RE2, and RE3 common
     names to green1, rededge1, rededge2, and rededge3 respectively
     to be less ambiguous. This means that the common names returned
     will be slightly different than those used in spyndex.
-    
+
     """
     # make 'green' and 'rededge' common names unambiguous
     spx.bands["G1"].common_name = "green1"
@@ -87,18 +87,18 @@ def common_and_long_to_short(standard):
 
 
 def bands_pretty_table():
-    """ Create a PrettyTable of all bands (names and id info).
-    
+    """Create a PrettyTable of all bands (names and id info).
+
     Returns
     -------
     band_table : PrettyTable
         table for displaying short names, common names, long
         names, wavelength and platform info for bands in the
         spyndex package.
-        
+
     """
     band_table = PrettyTable()
-    band_table.hrules=ALL
+    band_table.hrules = ALL
     band_table.field_names = [
         "Standard/Short Name",
         "Common Name",
@@ -108,20 +108,32 @@ def bands_pretty_table():
     ]
     for st in list(spx.bands):
         platforms = _format_platforms(_platforms_from_band(spx.bands[st]), 3)
-        band_table.add_row([
-            st,
-            spx.bands[st].common_name,
-            spx.bands[st].long_name,
-            f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
-            platforms,
-        ])
+        band_table.add_row(
+            [
+                st,
+                spx.bands[st].common_name,
+                spx.bands[st].long_name,
+                f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
+                platforms,
+            ]
+        )
     return band_table
 
 
 def _platforms_from_band(band_object):
     """Get list of platform names supported by each band"""
     platforms = []
-    for p in ["sentinel2a", "sentinel2b", "landsat4", "landsat5", "landsat7", "landsat8", "landsat9", "modis", "planetscope"]:
+    for p in [
+        "sentinel2a",
+        "sentinel2b",
+        "landsat4",
+        "landsat5",
+        "landsat7",
+        "landsat8",
+        "landsat9",
+        "modis",
+        "planetscope",
+    ]:
         try:
             platforms.append(getattr(band_object, p).platform)
         except AttributeError:
@@ -139,5 +151,5 @@ def _format_platforms(comment_list, max_items_on_line):
             ACC_length = ACC_length + 1
         else:
             formatted_comment = formatted_comment + "\n" + word + ", "
-            ACC_length =+ 1
+            ACC_length = +1
     return formatted_comment

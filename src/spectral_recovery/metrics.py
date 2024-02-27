@@ -17,30 +17,31 @@ METRIC_FUNCS = {}
 
 
 def register_metric(f):
-    """ Add function and name to global name/func dict """
+    """Add function and name to global name/func dict"""
     METRIC_FUNCS[f.__name__] = f
     return f
 
 
 @maintain_rio_attrs
 def compute_metrics(
-        timeseries_data: xr.DataArray,
-        restoration_polygons: "geopandas.GeoDataFrame",
-        metrics: List[str],
-        indices: List[str],
-        reference_polygons: "geopandas.GeoDataFrame" = None,
-        index_constants: Dict[str, int] = {},
-        timestep: int = 5, 
-        percent_of_target: int = 80,
-        recovery_target_method = MedianTarget(scale="polygon"),
-    ):
-
-    indices_stack = compute_indices(image_stack=timeseries_data, indices=indices, constants=index_constants)
+    timeseries_data: xr.DataArray,
+    restoration_polygons: "geopandas.GeoDataFrame",
+    metrics: List[str],
+    indices: List[str],
+    reference_polygons: "geopandas.GeoDataFrame" = None,
+    index_constants: Dict[str, int] = {},
+    timestep: int = 5,
+    percent_of_target: int = 80,
+    recovery_target_method=MedianTarget(scale="polygon"),
+):
+    indices_stack = compute_indices(
+        image_stack=timeseries_data, indices=indices, constants=index_constants
+    )
     restoration_area = RestorationArea(
         restoration_polygon=restoration_polygons,
         reference_polygons=reference_polygons,
         composite_stack=indices_stack,
-        recovery_target_method=recovery_target_method
+        recovery_target_method=recovery_target_method,
     )
     m_results = []
     for m in metrics:
@@ -48,7 +49,13 @@ def compute_metrics(
             m_func = METRIC_FUNCS[m.lower()]
         except KeyError:
             raise ValueError("{m} is not a valid metric choice!")
-        m_results.append(m_func(ra=restoration_area, timestep=timestep, percent_of_target=percent_of_target))
+        m_results.append(
+            m_func(
+                ra=restoration_area,
+                timestep=timestep,
+                percent_of_target=percent_of_target,
+            )
+        )
 
     metrics = xr.concat(m_results, "metric")
 
@@ -86,21 +93,21 @@ def dnbr(
     """
     if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    
+
     rest_post_t = str(int(ra.restoration_start) + timestep)
     if rest_post_t > ra.timeseries_end:
         raise ValueError(
-                f"timestep={timestep}, but {ra.restoration_start}+{timestep}={rest_post_t} not"
-                f" within time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
-            ) from None
-    
+            f"timestep={timestep}, but {ra.restoration_start}+{timestep}={rest_post_t} not"
+            f" within time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
+        ) from None
+
     dnbr_v = (
         ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
         - ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
     ).squeeze("time")
 
-            
     return dnbr_v
+
 
 @register_metric
 def yryr(
@@ -136,10 +143,13 @@ def yryr(
 
     rest_post_t = str(int(ra.restoration_start) + timestep)
     obs_post_t = ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
-    obs_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
+    obs_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
+        "time"
+    )
     yryr_v = ((obs_post_t - obs_start) / timestep).squeeze("time")
 
     return yryr_v
+
 
 @register_metric
 def r80p(
@@ -232,7 +242,9 @@ def y2r(
     if percent <= 0 or percent > 100:
         raise ValueError(VALID_PERC_MSP)
     reco_target = ra.recovery_target * (percent / 100)
-    recovery_window = ra.restoration_image_stack.sel(time=slice(ra.restoration_start, None))
+    recovery_window = ra.restoration_image_stack.sel(
+        time=slice(ra.restoration_start, None)
+    )
 
     years_to_recovery = (recovery_window >= reco_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be pixels that were recovered at the first timestep, or
@@ -253,7 +265,7 @@ def y2r(
 
 @register_metric
 def rri(
-    ra: RestorationArea, 
+    ra: RestorationArea,
     timestep: int = 5,
     use_dist_avg: bool = False,
 ) -> xr.DataArray:
@@ -325,7 +337,10 @@ def rri(
         dist_pre = ra.restoration_image_stack.sel(time=dist_pre_1_2).max(dim=["time"])
 
         dist_s_e = [
-            (date >= pd.to_datetime(ra.disturbance_start) and date <= pd.to_datetime(dist_end))
+            (
+                date >= pd.to_datetime(ra.disturbance_start)
+                and date <= pd.to_datetime(dist_end)
+            )
             for date in ra.restoration_image_stack.coords["time"].values
         ]
         dist_avg = ra.restoration_image_stack.sel(time=dist_s_e).mean(dim=["time"])
@@ -340,8 +355,12 @@ def rri(
         except KeyError:
             pass
     else:
-        rest_0 = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
-        ra.disturbance_start = ra.restoration_image_stack.sel(time=ra.disturbance_start).drop_vars("time")
+        rest_0 = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
+            "time"
+        )
+        ra.disturbance_start = ra.restoration_image_stack.sel(
+            time=ra.disturbance_start
+        ).drop_vars("time")
         dist_e = rest_0
 
         # Find if/where dist_start - dist_e == 0, set to NaN to avoid divide by zero

@@ -6,7 +6,7 @@ import xarray as xr
 import numpy as np
 import spyndex as spx
 
-from typing import List 
+from typing import List
 
 from unittest.mock import Mock, patch, ANY
 from tests.utils import SAME_XR
@@ -15,12 +15,14 @@ from spectral_recovery._config import REQ_DIMS
 from spectral_recovery.indices import (
     compute_indices,
 )
+
 INDICES = list(spx.indices)
 BANDS = list(spx.bands)
 CONSTANTS = list(spx.constants)
 
+
 def bands_from_index(indices: List[str]):
-    """ Return list of bands used in an index """
+    """Return list of bands used in an index"""
     bands = []
     for index in indices:
         for b in spx.indices[index].bands:
@@ -28,8 +30,9 @@ def bands_from_index(indices: List[str]):
                 bands.append(b)
     return bands
 
+
 def constants_from_index(indices: List[str]):
-    """ Return list of constants used in an index """
+    """Return list of constants used in an index"""
     constants = []
     for index in indices:
         for b in spx.indices[index].bands:
@@ -37,8 +40,9 @@ def constants_from_index(indices: List[str]):
                 constants.append(b)
     return constants
 
+
 def platforms_from_index(indices: List[str]):
-    """ Return list of platforms compatible with an index """
+    """Return list of platforms compatible with an index"""
     platforms = []
     for index in indices:
         for p in spx.indices[index].platforms:
@@ -46,10 +50,12 @@ def platforms_from_index(indices: List[str]):
                 platforms.append(p)
     return platforms
 
+
 class TestComputeIndices:
-    
     @patch("spyndex.computeIndex")
-    def test_correct_kwargs_for_compute_index_call_no_index_constants(self, mock_spyndex):
+    def test_correct_kwargs_for_compute_index_call_no_index_constants(
+        self, mock_spyndex
+    ):
         index = "NDVI"
         bands = bands_from_index([index])
         data = xr.DataArray(
@@ -61,11 +67,13 @@ class TestComputeIndices:
 
         compute_indices(data, [index])
 
-        input_kwargs = mock_spyndex.call_args.kwargs 
+        input_kwargs = mock_spyndex.call_args.kwargs
         assert input_kwargs == {"index": [index], "params": expected_params}
-    
+
     @patch("spyndex.computeIndex")
-    def test_correct_kwargs_for_compute_index_call_with_index_constants(self, mock_spyndex):
+    def test_correct_kwargs_for_compute_index_call_with_index_constants(
+        self, mock_spyndex
+    ):
         index = "EVI"
         bands = bands_from_index([index])
         constants = constants_from_index([index])
@@ -74,15 +82,15 @@ class TestComputeIndices:
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
         )
-        bands = {b: data.sel(band=b) for b in bands} 
+        bands = {b: data.sel(band=b) for b in bands}
         constants = {c: spx.constants[c].default for c in constants}
         expected_params = bands | constants
 
         compute_indices(data, [index], constants=constants)
-        
-        input_kwargs = mock_spyndex.call_args.kwargs 
+
+        input_kwargs = mock_spyndex.call_args.kwargs
         assert input_kwargs == {"index": [index], "params": expected_params}
-    
+
     def test_return_is_data_array_obj(self):
         index = "SAVI"
         bands = bands_from_index([index])
@@ -97,7 +105,6 @@ class TestComputeIndices:
         result = compute_indices(data, [index], constants=constants_dict)
 
         assert isinstance(result, xr.DataArray)
-    
 
     def test_correct_dimensions_and_coords_on_result(self):
         index = ["CIRE", "NDVI", "EVI"]
@@ -116,7 +123,7 @@ class TestComputeIndices:
             },
         )
 
-        result = compute_indices(data, index,  constants=constants_dict)
+        result = compute_indices(data, index, constants=constants_dict)
 
         assert result.dims == tuple(REQ_DIMS)
         assert list(result.time.values) == list(data.time.values)
@@ -124,7 +131,6 @@ class TestComputeIndices:
         assert list(result.x.values) == list(data.x.values)
         assert list(result.band.values) == index
 
-     
     def test_missing_bands_throws_exception(self):
         index = "NDVI"
         bands = bands_from_index([index])
@@ -137,26 +143,15 @@ class TestComputeIndices:
 
         with pytest.raises(Exception):
             result = compute_indices(data, index)
-    
 
     @pytest.mark.parametrize(
         ("index"),
         [
-            (
-              "NDSI"
-            ),
-            (
-              "NDTI"
-            ),
-            (
-              "BI"
-            ),
-            (
-              "DBI"
-            ),
-            (
-              "DPDD"
-            ),
+            ("NDSI"),
+            ("NDTI"),
+            ("BI"),
+            ("DBI"),
+            ("DPDD"),
         ],
     )
     def test_unsupported_domain_index_throws_exception(self, index):

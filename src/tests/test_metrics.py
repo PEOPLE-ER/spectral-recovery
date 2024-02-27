@@ -14,13 +14,14 @@ from spectral_recovery.metrics import (
     yryr,
     r80p,
     METRIC_FUNCS,
-    compute_metrics
+    compute_metrics,
 )
 
 
 def test_metric_funcs_global_contains_all_funcs():
-    expected_dict = {"y2r" : y2r, "dnbr": dnbr, "yryr": yryr, "r80p": r80p, "rri": rri}
+    expected_dict = {"y2r": y2r, "dnbr": dnbr, "yryr": yryr, "r80p": r80p, "rri": rri}
     assert METRIC_FUNCS == expected_dict
+
 
 # class TestComputeMetrics:
 
@@ -221,7 +222,6 @@ class TestY2R:
     )
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_single_target_y2r(self, ra_mock, recovery_target, obs, expected):
-
         ra_mock.restoration_image_stack = obs
         ra_mock.restoration_start = "2020"
         ra_mock.recovery_target = recovery_target
@@ -231,7 +231,9 @@ class TestY2R:
         ).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
-    def test_returns_first_recovered_year_when_successive_recovered_years_smaller(self, ra_mock):
+    def test_returns_first_recovered_year_when_successive_recovered_years_smaller(
+        self, ra_mock
+    ):
         recovery_target = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
         obs = xr.DataArray(
             [[[[70]], [[90]], [[85]], [[80]], [[80]]]],
@@ -331,9 +333,7 @@ class TestY2R:
         ra_mock.restoration_start = "2020"
         ra_mock.recovery_target = recovery_target
 
-        assert y2r(
-            ra=ra_mock
-        ).equals(expected)
+        assert y2r(ra=ra_mock).equals(expected)
 
     @pytest.mark.parametrize(
         ("recovery_target", "obs", "percent", "expected"),
@@ -453,15 +453,11 @@ class TestDNBR:
     )
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_default_dNBR(self, ra_mock, obs, restoration_date, expected):
-
         ra_mock.restoration_image_stack = obs
         ra_mock.restoration_start = restoration_date
         ra_mock.timeseries_end = "2015"
 
-        assert dnbr(
-            ra=ra_mock
-        ).equals(expected)
-
+        assert dnbr(ra=ra_mock).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_timestep_dNBR(self, ra_mock):
@@ -477,7 +473,6 @@ class TestDNBR:
         ra_mock.restoration_start = restoration_date
         ra_mock.timeseries_end = "2015"
 
-
         expected = xr.DataArray(
             [[[30]]],
             dims=["band", "y", "x"],
@@ -487,7 +482,6 @@ class TestDNBR:
             ra=ra_mock,
             timestep=timestep,
         ).equals(expected)
-
 
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_invalid_timestep_throws_err(self, ra_mock):
@@ -508,7 +502,6 @@ class TestDNBR:
                 ra=ra_mock,
                 timestep=timestep,
             )
-
 
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_timestep_too_large_throws_err(self, ra_mock):
@@ -576,25 +569,22 @@ class TestRRI:
         ],
     )
     @patch("spectral_recovery.restoration.RestorationArea")
-    def test_correct_default(self, ra_mock, obs, restoration_start, dist_start, expected):
-
+    def test_correct_default(
+        self, ra_mock, obs, restoration_start, dist_start, expected
+    ):
         ra_mock.restoration_image_stack = obs
         ra_mock.restoration_start = restoration_start
         ra_mock.disturbance_start = dist_start
 
-        assert rri(
-            ra=ra_mock
-        ).equals(expected)
-
+        assert rri(ra=ra_mock).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_correct_multi_dimension_result(self, ra_mock):
         obs = xr.DataArray(
             [
                 [
-                    [[50, 2], [30, 2]], # dist_start
-                    [[20, 1], [25, 1]], # dist_end
-
+                    [[50, 2], [30, 2]],  # dist_start
+                    [[20, 1], [25, 1]],  # dist_end
                     [[20, 1.0], [20, 1.0]],
                     [[30, 2], [15, 1]],
                     [[40, 3], [20, 1]],
@@ -613,20 +603,20 @@ class TestRRI:
         ra_mock.disturbance_start = dist_start
 
         # 4 pixels for dist_start - dist_end:
-            # 1. 50 - 20 = 30
-            # 2. 2 - 1 = 1
-            # 3. 30 - 25 = 5
-            # 4. 2 - 1 = 1
+        # 1. 50 - 20 = 30
+        # 2. 2 - 1 = 1
+        # 3. 30 - 25 = 5
+        # 4. 2 - 1 = 1
         # Max of t+5 and t+4:
-            # 1. 50
-            # 2. 5
-            # 3. 30
-            # 4. 1
+        # 1. 50
+        # 2. 5
+        # 3. 30
+        # 4. 1
         # t/f RRI will be:
-            # 1. (50-20)/30 = 1
-            # 2. (5-1)/1 = 4
-            # 3. (30-25)/5 = 1
-            # 4. 1-1/1 = 0
+        # 1. (50-20)/30 = 1
+        # 2. (5-1)/1 = 4
+        # 3. (30-25)/5 = 1
+        # 4. 1-1/1 = 0
         expected = xr.DataArray(
             [[[1.0, 4.0], [1.0, 0.0]]],
             dims=["band", "y", "x"],
@@ -672,18 +662,17 @@ class TestRRI:
         ],
     )
     @patch("spectral_recovery.restoration.RestorationArea")
-    def test_timestep(self, ra_mock, obs, restoration_start, dist_start, timestep, expected):
-        
+    def test_timestep(
+        self, ra_mock, obs, restoration_start, dist_start, timestep, expected
+    ):
         ra_mock.restoration_image_stack = obs
         ra_mock.restoration_start = restoration_start
         ra_mock.disturbance_start = dist_start
-        
-        
+
         assert rri(
             ra=ra_mock,
             timestep=timestep,
         ).equals(expected)
-
 
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_neg_timestep_raises_err(self, ra_mock):
@@ -759,7 +748,7 @@ class TestRRI:
         ra_mock.restoration_image_stack = obs
         ra_mock.restoration_start = restoration_start
         ra_mock.disturbance_start = dist_start
-        
+
         # 110 / 0 = nan (not inf)
         expected = xr.DataArray(
             [[[np.nan]]],
@@ -865,9 +854,7 @@ class TestR80P:
         ra_mock.restoration_start = rest_start
         ra_mock.recovery_target = recovery_target
 
-        result = r80p(
-            ra=ra_mock
-        )
+        result = r80p(ra=ra_mock)
         assert result.equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -934,7 +921,6 @@ class TestR80P:
         ra_mock.restoration_image_stack = obs
         ra_mock.restoration_start = restoration_date
         ra_mock.recovery_target = recovery_target
-
 
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             r80p(
