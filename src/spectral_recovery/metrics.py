@@ -79,14 +79,11 @@ def dnbr(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel dNBR.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring
-        window (post rest_start) from which to evaluate absolute
-        change. Default = 5.
+    ra : RestorationArea
+        The restoration area to compute dnbr for.
+    params : Dict 
+        Parameters to customize metric computation. dnbr uses
+        the 'timestep' parameter with default = {"timestep": 5}
 
     Returns
     -------
@@ -126,14 +123,11 @@ def yryr(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel YrYr.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring
-        window (post rest_start) from which to evaluate absolute
-        change. Default = 5.
+    ra : RestorationArea
+        The restoration area to compute yryr for.
+    params : Dict 
+        Parameters to customize metric computation. yryr uses
+        the 'timestep' parameter with default = {"timestep": 5}
 
     Returns
     -------
@@ -172,18 +166,12 @@ def r80p(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel dNBR.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    recovery_target : xr.DataArray
-        Recovery target values. Must be broadcastable to image_stack.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring window
-        from which to evaluate absolute change. Default = -1 which
-        represents the max/most recent timestep.
-    percent: int, optional
-        Percent of recovery to compute recovery against. Default = 80.
+    ra : RestorationArea
+        The restoration area to compute r80p for.
+    params : Dict 
+        Parameters to customize metric computation. r80p uses
+        the 'timestep' and 'percent_of_target' parameters with
+        default = {"percent_of_target": 80, "timestep": 5}.
 
     Returns
     -------
@@ -224,14 +212,11 @@ def y2r(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel Y2R.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    recovery_target : xr.DataArray
-        Recovery target values. Must be broadcastable to image_stack.
-    percent: int, optional
-        Percent of recovery to compute recovery against. Default = 80.
+    ra : RestorationArea
+        The restoration area to compute r80p for.
+    params : Dict 
+        Parameters to customize metric computation. r80p uses
+        the 'percent_of_target' parameter with default = {"percent_of_target": 80}
 
     Returns
     -------
@@ -281,17 +266,12 @@ def rri(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel dNBR.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring window
-        (post rest_start) from which to evaluate absolute change.
-        Default = 5.
-    use_dist_avg : bool, optional
-        Whether to use the average of the disturbance period to
-        calculate the disturbance magnitude. Default = False.
+    ra : RestorationArea
+        The restoration area to compute r80p for.
+    params : Dict 
+        Parameters to customize metric computation. r80p uses
+        the 'timestep' and 'use_dist_avg' parameters with
+        default = {"use_dist_avg": False, "timestep": 5}.
 
     Returns
     -------
