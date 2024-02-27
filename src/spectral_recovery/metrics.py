@@ -265,7 +265,6 @@ def y2r(
     return y2r_v
 
 
-@register_metric
 def rri(
     ra: RestorationArea,
     params: Dict = {"timestep": 5, "use_dist_avg": False}
