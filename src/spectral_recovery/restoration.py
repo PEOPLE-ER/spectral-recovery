@@ -19,6 +19,7 @@ from inspect import signature
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 
 from pandas import Index as pdIndex
 
@@ -104,6 +105,7 @@ class RestorationArea:
 
         # Ensure dates are valid when compared to timeseries and with each other
         self._validate_dates()
+        self._validate_recovery_target_method()
         
         self.restoration_image_stack = composite_stack.rio.clip(
             self.restoration_polygon.geometry.values
@@ -236,6 +238,7 @@ class RestorationArea:
     
     
     def _validate_dates(self):
+        """ Validate reference, disturbance, and restoration dates """
         RestorationArea.validate_year_orders(self.disturbance_start, self.restoration_start, self.reference_years)
 
         for years in [self.disturbance_start, self.restoration_start, self.reference_years]:
@@ -246,6 +249,25 @@ class RestorationArea:
                     f"{year_dt} not contained in the range of the image stack: "
                     f" {self.full_timeseries.time.min().data}-{self.full_timeseries.time.max().data}"
                 )
+    
+    def _validate_recovery_target_method(self):
+        """ Validate the recovery target method.
+        
+        If reference polygons are present, ensure that the recovery
+        target method is per-polygon, not per-pixel.
+
+        Raises
+        ------
+        TypeError
+            - If reference polygons exist and recovery_target_method
+            is an instance of MedianTarget with scale == "pixel"
+
+        """
+        if self.reference_polygons is not None:
+            if isinstance(self.recovery_target_method, MedianTarget):
+                if self.recovery_target_method.scale == "pixel":
+                    raise TypeError("Pixel scale median recovery target cannot be used with reference polygons, only polygon scale.")
+
 
     def _get_reference_image_stack(self):
         """Get reference image stack.
