@@ -5,6 +5,7 @@ import pandas as pd
 import rioxarray
 
 from unittest.mock import patch
+from shapely import Polygon
 
 from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.metrics import (
@@ -25,45 +26,32 @@ def test_metric_funcs_global_contains_all_funcs():
 
 # class TestComputeMetrics:
 
-#     time_range = [str(x) for x in np.arange(2010, 2027)]
-#     baseline_array = xr.DataArray([[[1.0]], [[2.0]]])
+#     @pytest.fixture()
+#     def valid_array(self):
+#         data = np.ones((1, 5, 2, 2))
+#         latitudes = [0, 1]
+#         longitudes = [0, 1]
+#         time = pd.date_range("2010", "2014", freq="YS")
+#         xarr = xr.DataArray(
+#             data,
+#             dims=["band", "time", "y", "x"],
+#             coords={"time": time, "y": latitudes, "x": longitudes},
+#         )
+#         xarr.rio.write_crs("EPSG:4326", inplace=True)
+#         return xarr
 
 #     @pytest.fixture()
-#     def valid_resto_area(self):
-
-#         with rioxarray.open_rasterio(TIMESERIES_LEN_17, chunks="auto") as data:
-#             resto_poly = gpd.read_file(POLYGON_INBOUND)
-#             resto_poly["dist_start"] = "2014"
-#             resto_poly["rest_start"] = "2015"
-#             resto_poly["ref_start"] = "2011"
-#             resto_poly["ref_end"] = "2011"
-
-#             stack = data
-#             stack = stack.rename({"band": "time"})
-#             stack = stack.expand_dims(dim={"band": [0]})
-#             stack = stack.assign_coords(
-#                 time=(
-#                     pd.date_range(
-#                         self.time_range[0], self.time_range[-1], freq=DATETIME_FREQ
-#                     )
-#                 )
-#             )
-#             stack = xr.concat([stack, stack], dim=pd.Index([0, 1], name="band"))
-#             resto_area = RestorationArea(
-#                 restoration_polygon=resto_poly,
-#                 composite_stack=stack,
-#             )
-
-#             mock_target_return = self.baseline_array
-#             resto_area.recovery_target = self.baseline_array
-
-#         return resto_area
+#     def valid_poly(self):
+#         polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+#         return polygon
 
 #     @patch(
 #         "metrics.y2r",
 #     )
-#     def test_Y2R_call_default(self, method_mock, valid_resto_area):
-#         method_mock.return_value = xr.DataArray([[1.0]], dims=["y", "x"])
+#     def test_Y2R_call_default(self, y2r_mock, valid_array, valid_poly):
+        
+
+#         y2r_mock.return_value = xr.DataArray([[1.0]], dims=["y", "x"])
 
 
 #     @patch(
@@ -370,7 +358,7 @@ class TestY2R:
 
         assert y2r(
             ra=ra_mock,
-            percent=percent,
+            params={"percent_of_target": percent},
         ).equals(expected)
 
 
@@ -480,7 +468,7 @@ class TestDNBR:
 
         assert dnbr(
             ra=ra_mock,
-            timestep=timestep,
+            params={"timestep": timestep},
         ).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -500,7 +488,7 @@ class TestDNBR:
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             dnbr(
                 ra=ra_mock,
-                timestep=timestep,
+                params={"timestep": timestep},
             )
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -522,7 +510,7 @@ class TestDNBR:
         ):
             dnbr(
                 ra=ra_mock,
-                timestep=timestep,
+                params={"timestep": timestep},
             )
 
 
@@ -671,7 +659,7 @@ class TestRRI:
 
         assert rri(
             ra=ra_mock,
-            timestep=timestep,
+            params={"timestep": timestep, "use_dist_avg": False},
         ).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -683,7 +671,7 @@ class TestRRI:
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             rri(
                 ra=ra_mock,
-                timestep=timestep,
+                params={"timestep": timestep, "use_dist_avg": False},
             )
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -706,7 +694,7 @@ class TestRRI:
         ):
             rri(
                 ra=ra_mock,
-                timestep=timestep,
+                params={"timestep": timestep, "use_dist_avg": False},
             )
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -729,7 +717,7 @@ class TestRRI:
         ):
             rri(
                 ra=ra_mock,
-                timestep=timestep,
+                params={"timestep": timestep, "use_dist_avg": False},
             )
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -757,7 +745,7 @@ class TestRRI:
 
         assert rri(
             ra=ra_mock,
-            timestep=timestep,
+            params={"timestep": timestep, "use_dist_avg": False},
         ).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -786,8 +774,7 @@ class TestRRI:
 
         result = rri(
             ra=ra_mock,
-            timestep=timestep,
-            use_dist_avg=True,
+            params={"timestep": timestep, "use_dist_avg": True},
         )
         assert result.equals(expected)
 
@@ -879,7 +866,7 @@ class TestR80P:
 
         result = r80p(
             ra=ra_mock,
-            timestep=timestep,
+            params={"timestep": timestep, "percent_of_target": 80},
         )
         assert result.equals(expected)
 
@@ -904,7 +891,7 @@ class TestR80P:
 
         result = r80p(
             ra=ra_mock,
-            percent=percent,
+            params={"timestep": 5, "percent_of_target": percent},
         )
         assert result.equals(expected)
 
@@ -925,7 +912,7 @@ class TestR80P:
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             r80p(
                 ra=ra_mock,
-                timestep=neg_timestep,
+                params={"timestep": neg_timestep, "percent_of_target": 80},
             )
 
 
@@ -987,7 +974,6 @@ class TestYrYr:
         result = yryr(
             ra=ra_mock,
         )
-        print(result, expected)
         assert result.equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -1008,7 +994,7 @@ class TestYrYr:
         ).rio.write_crs("4326")
         result = yryr(
             ra=ra_mock,
-            timestep=timestep,
+            params={"timestep": timestep},
         )
         assert result.equals(expected)
 
@@ -1019,5 +1005,5 @@ class TestYrYr:
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             yryr(
                 ra=ra_mock,
-                timestep=timestep,
+                params={"timestep": timestep},
             )

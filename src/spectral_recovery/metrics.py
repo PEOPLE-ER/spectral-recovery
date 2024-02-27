@@ -4,6 +4,7 @@ from typing import Dict, List
 import xarray as xr
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 
 from spectral_recovery._utils import maintain_rio_attrs
 from spectral_recovery.restoration import RestorationArea
@@ -25,10 +26,10 @@ def register_metric(f):
 @maintain_rio_attrs
 def compute_metrics(
     timeseries_data: xr.DataArray,
-    restoration_polygons: "geopandas.GeoDataFrame",
+    restoration_polygons: gpd.GeoDataFrame,
     metrics: List[str],
     indices: List[str],
-    reference_polygons: "geopandas.GeoDataFrame" = None,
+    reference_polygons: gpd.GeoDataFrame = None,
     index_constants: Dict[str, int] = {},
     timestep: int = 5,
     percent_of_target: int = 80,
@@ -52,8 +53,10 @@ def compute_metrics(
         m_results.append(
             m_func(
                 ra=restoration_area,
-                timestep=timestep,
-                percent_of_target=percent_of_target,
+                params={
+                    "timestep": timestep,
+                    "percent_of_target": percent_of_target,
+                }
             )
         )
 
@@ -65,7 +68,7 @@ def compute_metrics(
 @register_metric
 def dnbr(
     ra: RestorationArea,
-    timestep: int = 5,
+    params: Dict = {"timestep": 5}
 ) -> xr.DataArray:
     """Per-pixel dNBR.
 
@@ -91,13 +94,13 @@ def dnbr(
         DataArray containing the dNBR value for each pixel.
 
     """
-    if timestep < 0:
+    if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(int(ra.restoration_start) + timestep)
+    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
     if rest_post_t > ra.timeseries_end:
         raise ValueError(
-            f"timestep={timestep}, but {ra.restoration_start}+{timestep}={rest_post_t} not"
+            f"timestep={params['timestep']}, but {ra.restoration_start}+{params['timestep']}={rest_post_t} not"
             f" within time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
         ) from None
 
@@ -112,7 +115,7 @@ def dnbr(
 @register_metric
 def yryr(
     ra: RestorationArea,
-    timestep: int = 5,
+    params: Dict = {"timestep": 5}
 ):
     """Per-pixel YrYr.
 
@@ -138,15 +141,15 @@ def yryr(
         DataArray containing the YrYr value for each pixel.
 
     """
-    if timestep < 0:
+    if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(int(ra.restoration_start) + timestep)
+    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
     obs_post_t = ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
     obs_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
         "time"
     )
-    yryr_v = ((obs_post_t - obs_start) / timestep).squeeze("time")
+    yryr_v = ((obs_post_t - obs_start) / params["timestep"]).squeeze("time")
 
     return yryr_v
 
@@ -154,8 +157,7 @@ def yryr(
 @register_metric
 def r80p(
     ra: RestorationArea,
-    timestep: int = None,
-    percent: int = 80,
+    params: Dict = {"percent_of_target": 80, "timestep": 5}
 ) -> xr.DataArray:
     """Per-pixel R80P.
 
@@ -189,16 +191,16 @@ def r80p(
         DataArray containing the R80P value for each pixel.
 
     """
-    if timestep is None:
+    if params["timestep"] is None:
         rest_post_t = ra.restoration_image_stack["time"].data[-1]
-    elif timestep < 0:
+    elif params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    elif percent <= 0 or percent > 100:
+    elif params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
     else:
-        rest_post_t = str(int(ra.restoration_start) + timestep)
+        rest_post_t = str(int(ra.restoration_start) + params["timestep"])
     r80p_v = (ra.restoration_image_stack.sel(time=rest_post_t)).drop_vars("time") / (
-        (percent / 100) * ra.recovery_target
+        (params["percent_of_target"] / 100) * ra.recovery_target
     )
     try:
         # if using the default timestep (the max/most recent),
@@ -212,7 +214,7 @@ def r80p(
 @register_metric
 def y2r(
     ra: RestorationArea,
-    percent: int = 80,
+    params: Dict = {"percent_of_target": 80}
 ) -> xr.DataArray:
     """Per-pixel Y2R.
 
@@ -239,9 +241,9 @@ def y2r(
         have not yet reached the recovery target value.
 
     """
-    if percent <= 0 or percent > 100:
+    if params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
-    reco_target = ra.recovery_target * (percent / 100)
+    reco_target = ra.recovery_target * (params["percent_of_target"] / 100)
     recovery_window = ra.restoration_image_stack.sel(
         time=slice(ra.restoration_start, None)
     )
@@ -266,8 +268,7 @@ def y2r(
 @register_metric
 def rri(
     ra: RestorationArea,
-    timestep: int = 5,
-    use_dist_avg: bool = False,
+    params: Dict = {"timestep": 5, "use_dist_avg": False}
 ) -> xr.DataArray:
     """Per-pixel RRI.
 
@@ -299,28 +300,28 @@ def rri(
         DataArray containing the RRI value for each pixel.
 
     """
-    if timestep < 0:
+    if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    if timestep == 0:
+    if params["timestep"] == 0:
         raise ValueError("timestep for RRI must be greater than 0.")
     dist_end = ra.restoration_start
 
-    rest_post_tm1 = str(int(ra.restoration_start) + (timestep - 1))
-    rest_post_t = str(int(ra.restoration_start) + timestep)
+    rest_post_tm1 = str(int(ra.restoration_start) + (params["timestep"] - 1))
+    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
     rest_t_tm1 = [
         (date == pd.to_datetime(rest_post_tm1) or date == pd.to_datetime(rest_post_t))
         for date in ra.restoration_image_stack.coords["time"].values
     ]
     if any(rest_t_tm1) == 0:
         raise ValueError(
-            f"timestep={timestep}, but ({ra.restoration_start}-1)+{timestep}={rest_post_tm1} or"
-            f" {ra.restoration_start}+{timestep}={rest_post_t} not within time coordinates:"
+            f"timestep={params['timestep']}, but ({ra.restoration_start}-1)+{params['timestep']}={rest_post_tm1} or"
+            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within time coordinates:"
             f" {ra.restoration_image_stack.coords['time'].values}. "
         )
     max_rest_t_tm1 = ra.restoration_image_stack.sel(time=rest_t_tm1).max(dim=["time"])
 
-    if use_dist_avg:
+    if params["use_dist_avg"]:
         dist_pre_1 = str(int(ra.disturbance_start) - 1)
         dist_pre_2 = str(int(ra.disturbance_start) - 2)
         dist_pre_1_2 = [
@@ -329,7 +330,7 @@ def rri(
         ]
         if any(dist_pre_1_2) == 0:
             raise ValueError(
-                f"use_dist_avg={use_dist_avg} uses the 2 years prior to disturbance"
+                f"use_dist_avg={params['use_dist_avg']} uses the 2 years prior to disturbance"
                 f" start, but {ra.disturbance_start}-2={dist_pre_1} or"
                 f" {ra.disturbance_start}-1={dist_pre_2} not within time coordinates:"
                 f" {ra.restoration_image_stack.coords['time'].values}."
