@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import rioxarray
+import geopandas as gpd
 
 from unittest.mock import patch
 from shapely import Polygon
@@ -24,34 +25,60 @@ def test_metric_funcs_global_contains_all_funcs():
     assert METRIC_FUNCS == expected_dict
 
 
-# class TestComputeMetrics:
+class TestComputeMetrics:
+    
+    valid_poly = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
 
-#     @pytest.fixture()
-#     def valid_array(self):
-#         data = np.ones((1, 5, 2, 2))
-#         latitudes = [0, 1]
-#         longitudes = [0, 1]
-#         time = pd.date_range("2010", "2014", freq="YS")
-#         xarr = xr.DataArray(
-#             data,
-#             dims=["band", "time", "y", "x"],
-#             coords={"time": time, "y": latitudes, "x": longitudes},
-#         )
-#         xarr.rio.write_crs("EPSG:4326", inplace=True)
-#         return xarr
+    @pytest.fixture()
+    def valid_array(self):
+        data = np.ones((2, 5, 2, 2))
+        latitudes = [0, 1]
+        longitudes = [0, 1]
+        time = pd.date_range("2010", "2014", freq="YS")
+        xarr = xr.DataArray(
+            data,
+            dims=["band", "time", "y", "x"],
+            coords={"band": ["N", "R"], "time": time, "y": latitudes, "x": longitudes},
+        )
+        xarr.rio.write_crs("EPSG:4326", inplace=True)
+        return xarr
+    
+    @pytest.fixture()
+    def valid_frame(self):
 
-#     @pytest.fixture()
-#     def valid_poly(self):
-#         polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
-#         return polygon
+        valid_frame = gpd.GeoDataFrame(
+            {
+                "dist_start": [2012],
+                "rest_start": [2013],
+                "reference_start": [2010],
+                "reference_end": [2010],
+                "geometry": [self.valid_poly],
+            },
+            crs="EPSG:4326",
+        )
+        return valid_frame
 
-#     @patch(
-#         "metrics.y2r",
-#     )
-#     def test_Y2R_call_default(self, y2r_mock, valid_array, valid_poly):
+
+    @patch("spectral_recovery.metrics.y2r")
+    @patch("spectral_recovery.indices.compute_indices")
+    @patch("spectral_recovery.restoration.RestorationArea")
+    def test_Y2R_call_default(self, y2r_mock, indices_mock, ra_mock, valid_array, valid_frame):
+        y2r_mock.return_value = xr.DataArray([[0.0]], dims=["y", "x"])
+        
+        compute_metrics(
+            timeseries_data=valid_array,
+            restoration_polygons=valid_frame,
+            metrics=["Y2R"],
+            indices=["NDVI"]
+        )
+
+        ra_mock.assert_called_with(composite_stack=indices_mock)
+        y2r_mock.assert_called_with(ra=ra_mock, params={"timestep": 5, "percent_of_target": 80})
+
+        
         
 
-#         y2r_mock.return_value = xr.DataArray([[1.0]], dims=["y", "x"])
+#         compute
 
 
 #     @patch(

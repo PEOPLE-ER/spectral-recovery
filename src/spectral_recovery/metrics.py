@@ -48,6 +48,7 @@ def compute_metrics(
     for m in metrics:
         try:
             m_func = METRIC_FUNCS[m.lower()]
+            print(m_func)
         except KeyError:
             raise ValueError("{m} is not a valid metric choice!")
         m_results.append(
