@@ -5,10 +5,12 @@ import pandas as pd
 import rioxarray
 import geopandas as gpd
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from shapely import Polygon
 
-from spectral_recovery.restoration import RestorationArea
+from spectral_recovery.targets import MedianTarget
+
+# from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.metrics import (
     y2r,
     dnbr,
@@ -59,25 +61,171 @@ class TestComputeMetrics:
         return valid_frame
 
 
-    @patch("spectral_recovery.metrics.y2r")
-    @patch("spectral_recovery.indices.compute_indices")
-    @patch("spectral_recovery.restoration.RestorationArea")
-    def test_Y2R_call_default(self, y2r_mock, indices_mock, ra_mock, valid_array, valid_frame):
-        y2r_mock.return_value = xr.DataArray([[0.0]], dims=["y", "x"])
-        
-        compute_metrics(
-            timeseries_data=valid_array,
-            restoration_polygons=valid_frame,
-            metrics=["Y2R"],
-            indices=["NDVI"]
-        )
+    @patch("spectral_recovery.metrics.compute_indices")
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_compute_indices_called_with_given_array_and_indices(self, ra_mock, indices_mock, valid_array, valid_frame):
+        indices_mock.return_value = "indices_return"
+        ra_mock.return_value = "ra_return"
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
 
-        ra_mock.assert_called_with(composite_stack=indices_mock)
-        y2r_mock.assert_called_with(ra=ra_mock, params={"timestep": 5, "percent_of_target": 80})
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"y2r": y2r_mock}):
 
-        
-        
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=valid_frame,
+                metrics=["Y2R"],
+                indices=["NDVI"]    
+            )
 
+            indices_mock.assert_called_with(image_stack=valid_array, indices=["NDVI"], constants={})
+    
+    @patch("spectral_recovery.metrics.compute_indices")
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_compute_indices_called_with_given_constants(self, ra_mock, indices_mock, valid_array, valid_frame):
+        indices_mock.return_value = "indices_return"
+        ra_mock.return_value = "ra_return"
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"y2r": y2r_mock}):
+
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=valid_frame,
+                metrics=["Y2R"],
+                indices=["SAVI"],
+                index_constants={"L": 0.5}, 
+            )
+
+            indices_mock.assert_called_with(image_stack=valid_array, indices=["SAVI"], constants={"L": 0.5})
+    
+
+    @patch("spectral_recovery.metrics.compute_indices")
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_ra_built_with_compute_index_return_and_given_polys(self, ra_mock, indices_mock, valid_array, valid_frame):
+        indices_mock.return_value = "indices_return"
+        ra_mock.return_value = "ra_return"
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"y2r": y2r_mock}):
+
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=valid_frame,
+                metrics=["Y2R"],
+                indices=["NDVI"]    
+            )
+             
+            pd.testing.assert_frame_equal(ra_mock.call_args.kwargs["restoration_polygon"], valid_frame)
+            assert ra_mock.call_args.kwargs["reference_polygons"] == None
+            assert ra_mock.call_args.kwargs["composite_stack"] == "indices_return"
+            assert isinstance(ra_mock.call_args.kwargs["recovery_target_method"], MedianTarget)
+            assert ra_mock.call_args.kwargs["recovery_target_method"].scale == "polygon"
+    
+    # @patch("spectral_recovery.metrics.compute_indices")
+    # @patch("spectral_recovery.metrics.RestorationArea")
+    # def test_ra_built_with_reference_polys(self, ra_mock, indices_mock, valid_array, valid_frame):
+    #     indices_mock.return_value = "indices_return"
+    #     ra_mock.return_value = "ra_return"
+    #     y2r_mock = Mock()
+    #     y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+
+    #     with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"y2r": y2r_mock}):
+
+    #         compute_metrics(
+    #             timeseries_data=valid_array,
+    #             restoration_polygons=valid_frame,
+    #             reference_polygons=___
+    #             metrics=["Y2R"],
+    #             indices=["NDVI"]    
+    #         )
+             
+    #         pd.testing.assert_frame_equal(ra_mock.call_args.kwargs["reference_polygons"], valid_frame)
+    #         assert ra_mock.call_args.kwargs["composite_stack"] == "indices_return"
+    #         assert isinstance(ra_mock.call_args.kwargs["recovery_target_method"], MedianTarget)
+    #         assert ra_mock.call_args.kwargs["recovery_target_method"].scale == "polygon"
+
+
+    @patch("spectral_recovery.metrics.compute_indices")
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_correct_metrics_called_from_metric_func_dict(self, ra_mock, indices_mock, valid_array, valid_frame):
+        ra_mock.return_value = "ra_return"
+
+        patched_dict = {}
+        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
+        for i, metric in enumerate(multi_metrics):
+            metric_mock = Mock()
+            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band","y", "x"])
+
+            patched_dict[metric.lower()] = metric_mock
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
+
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=valid_frame,
+                metrics=multi_metrics,
+                indices=["NDVI"]    
+            )
+
+        for metric_mock_func in patched_dict.values():    
+            metric_mock_func.assert_called_with(ra="ra_return", params={"timestep": 5, "percent_of_target": 80})
+    
+    @patch("spectral_recovery.metrics.compute_indices")
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_output_data_stacked_along_metric_dim(self, ra_mock, indices_mock, valid_array, valid_frame):
+        ra_mock.return_value = "ra_return"
+
+        patched_dict = {}
+        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
+        for i, metric in enumerate(multi_metrics):
+            metric_mock = Mock()
+            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
+
+            patched_dict[metric.lower()] = metric_mock
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
+
+            result = compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=valid_frame,
+                metrics=multi_metrics,
+                indices=["NDVI"]    
+            )
+
+        assert result.dims == ("metric", "band", "y", "x")
+        assert sorted(result.metric.values) == sorted(multi_metrics)
+        for i, metric in enumerate(multi_metrics):
+            np.testing.assert_array_equal(result.sel(metric=metric).data, np.array([[[i]]]))
+
+    @patch("spectral_recovery.metrics.compute_indices")
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_custom_params_passed_to_metric_funcs(self, ra_mock, indices_mock, valid_array, valid_frame):
+        indices_mock.return_value = "indices_return"
+        ra_mock.return_value = "ra_return"
+        metric = "Y2R"
+        metric_mock = Mock()
+        metric_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {metric.lower() : metric_mock}):
+
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=valid_frame,
+                metrics=[metric],
+                indices=["NDVI"], 
+                timestep=2,
+                percent_of_target=60,  
+            )
+
+            metric_mock.call_args.kwargs["params"]["timestep"] == 2
+            metric_mock.call_args.kwargs["params"]["percent_of_target"] == 60
+
+                
+
+    
 #         compute
 
 
