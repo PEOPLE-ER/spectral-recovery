@@ -48,9 +48,8 @@ def compute_metrics(
     for m in metrics:
         try:
             m_func = METRIC_FUNCS[m.lower()]
-            print(m_func)
         except KeyError:
-            raise ValueError("{m} is not a valid metric choice!")
+            raise ValueError(f"{m} is not a valid metric choice!")
         m_results.append(
             m_func(
                 ra=restoration_area,
@@ -58,7 +57,7 @@ def compute_metrics(
                     "timestep": timestep,
                     "percent_of_target": percent_of_target,
                 }
-            )
+            ).assign_coords({"metric" : m})
         )
 
     metrics = xr.concat(m_results, "metric")
