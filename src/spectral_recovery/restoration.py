@@ -1,13 +1,11 @@
-"""Restoration Area and Reference System classes.
+"""Restoration Area class and helper methods.
 
-The RestorationArea class represents a restoration event and contains
-methods for computing spectral recovery metrics. Users create a
-RestorationArea by providing a restoration polygon, reference polygon,
-event dates, and a stack of annual composites. 
-
-A RestorationArea contains a ReferenceSystem, which is a class that
-represents the reference area(s) and contains methods for computing
-the recovery target. 
+The RestorationArea class coordinates the spectral data, dates,
+polygons, and recovery target logic/computation, that is used
+to fully define a restoration area. The expectation is for 
+RestorationArea instances to be passed to recovery metric
+methods, so that each method can have encapsulated access to
+relevant restoration site information.
 
 """
 import operator 
@@ -167,7 +165,16 @@ class RestorationArea:
         self.reference_polygons = reference_polygons
         self.restoration_polygon = restoration_polygon
         self.recovery_target_method = recovery_target_method
-    
+
+        # Eagerly compute the dates by called properties
+        # This will force errors to throw early before init is complete
+        # NOTE: this is messy; the polygon and dates are controlled in
+        # difference properties making seperate calls necessary. Future
+        # refactors should consider keeping checks all in one property
+        self.disturbance_start
+        self.restoration_start
+        self.reference_years
+
     @property
     def full_timeseries(self) -> xr.DataArray:
         return self._full_timeseries
@@ -222,12 +229,16 @@ class RestorationArea:
 
         Checks that input is a GeoDataFrame, contains
         only one row/geometry and that the given geom is
-        within the bounds of self.full_timeseries. Immediately
-        (re-)computates disturbance_start, restoration_start, 
-        and the reference year cached properties. Forces lazy
-        recomputation of recovery_target.
+        within the bounds of self.full_timeseries. Forces
+        lazy (re-)computation of disturbance_start,
+        restoration_start, reference years, and recovery_target
+        cached properties.
 
         """
+        # NOTE: this is messy because restoration_polygon now takes
+        # the whole DF with the dates (not just poly), which makes
+        # the date attributes dependant on it. This attr should
+        # be refactored for clarity. 
         self._recovery_target = None
         self._disturbance_start = None
         self._restoration_start = None
@@ -247,16 +258,6 @@ class RestorationArea:
 
         self._restoration_polygon = rp
 
-        # Trigger eager computation of date attributes.
-        # Make any incompatible dates throw an error early
-        # NOTE: this is messy because restoration_polygon now takes
-        # the whole DF with the dates (not just poly), which makes
-        # the date attributes dependant on it. This attr should
-        # be refactored for clarity. 
-        self.disturbance_start
-        self.restoration_start
-        self.reference_years
-
     
     @property
     def reference_polygons(self) -> gpd.GeoDataFrame:
@@ -274,7 +275,7 @@ class RestorationArea:
     def reference_polygons(self, refp) -> None:
         """ reference_polygons setter.
 
-        If inputs is not None, checks that input is a GeoDataFrame
+        If refp is not None, checks that refp is a GeoDataFrame
         and that all geoms are within the bounds of full_timeseries
         property. Forces lazy (re-)computattion of _reference_image_stack
         property and immediately recomputes reference_years property.
@@ -297,8 +298,6 @@ class RestorationArea:
                     "not all reference_polygons within the bounds of images"
                 ) from None
         self._reference_polygons = refp
-        # Trigger eager computation of dates
-        self.reference_years
 
     
     @property
@@ -360,16 +359,23 @@ class RestorationArea:
         disturbance window. Must be within the temporal range of
         the full_timeseries property.
 
+        Raises
+        ------
+        ValueError
+            - If disturbance start year greater than restoration year.
+            - If disturbance start year is not within temporal
+              range of full_timeseries.
+
         """
         if self._disturbance_start is None:
             self._disturbance_start = self._get_dist_from_frame()
             if self._disturbance_start >= self.restoration_start:
                 raise ValueError(
-                    f"Disturbance start year must be strictly less than the restoration start year (given disturbance_start={self._disturbance_start} and restoration_start={self.restoration_start})"
+                    f"Disturbance start year cannot be greater than restoration start year (given disturbance_start={self._disturbance_start} and restoration_start={self.restoration_start})"
                 )
             if not self.full_timeseries.satts.contains_temporal(_str_to_dt(self._disturbance_start)):
                 raise ValueError(
-                    f"Restoration start year { self._disturbance_start} not within timeseries range of {self.start_year}-{self.end_year}."
+                    f"Disturbance start year { self._disturbance_start} not within timeseries range of {self.start_year}-{self.end_year}."
                 )
         return self._disturbance_start
 
@@ -381,12 +387,20 @@ class RestorationArea:
         geopandas.GeoDataFrame. Represents the start year of the
         restoration window. Must be within the temporal range of
         the full_timeseries property.
+
+        Raises
+        ------
+        ValueError
+            - If restoration start year less than disturbance start year.
+            - If restoration start year is not within temporal
+              range of full_timeseries.
+
         """
         if self._restoration_start is None:
             self._restoration_start = self._get_rest_from_frame()
             if self._restoration_start <= self.disturbance_start:
                 raise ValueError(
-                    f"Disturbance start year must be strictly less than the restoration start year (given disturbance_start={self.disturbance_start} and restoration_start={self._restoration_start})"
+                    f"Restoration start year cannot be less than disturbance start year (given disturbance_start={self.disturbance_start} and restoration_start={self._restoration_start})"
                 )
             if not self.full_timeseries.satts.contains_temporal(_str_to_dt(self._restoration_start)):
                 raise ValueError(
@@ -404,6 +418,13 @@ class RestorationArea:
         of the reference_polygons GeoDataFrame. Represents the start
         and end year of the reference window. Must be within temporal
         range of the full_timeseries property.
+
+        Raises
+        ------
+        ValueError
+            - If reference start year greater than reference end year.
+            - If range of years between reference start and end year are
+              not within temporal range of full_timeseries.
         
         """
         if self._reference_years is None:
@@ -465,6 +486,7 @@ class RestorationArea:
         return self._restoration_image_stack
 
     def _get_dist_from_frame(self):
+        """ Get and validate disturbance start year from restoration_polygon. """
         rest_dates = pd.DataFrame(self.restoration_polygon.drop(columns='geometry'))
         try:
             disturbance_start = rest_dates.iloc[:, 0][0]
@@ -476,6 +498,7 @@ class RestorationArea:
         return disturbance_start_str
     
     def _get_rest_from_frame(self):
+        """ Get and validate restoration start year from restoration_polygon. """
         rest_dates = pd.DataFrame(self.restoration_polygon.drop(columns='geometry'))
         try:
             restoration_start = rest_dates.iloc[:, 1][0]
@@ -487,6 +510,8 @@ class RestorationArea:
         return rest_start_str
     
     def _get_ref_from_frame(self):
+        """ Get and validate reference years from either restoration_polygon
+        or reference_polygons. """
         if self.reference_polygons is not None:
             ref_dates = pd.DataFrame(self.reference_polygons.drop(columns='geometry'))
             try:
