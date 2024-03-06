@@ -60,6 +60,23 @@ def compute_metrics(
 
     return metrics
 
+def _str_to_dt(years: str | List[str]):
+    if isinstance(years, list):
+        years_dt = [0, 0]
+        for i, year in enumerate(years):
+            years_dt[i] = pd.to_datetime(year)
+    else:
+        years_dt = pd.to_datetime(years)
+    return years_dt
+
+def _valid_year_format(year_str):
+    year_match = VALID_YEAR.match(year_str)
+    if not year_match:
+        raise ValueError(
+            f"Could not parse {year_str} into a year. "
+            "Please ensure the year is in the format 'YYYY'."
+        )
+    return year_str
 
 class RestorationArea:
     """A Restoration Area (RA).
@@ -69,17 +86,38 @@ class RestorationArea:
 
     Attributes
     -----------
+    full_timeseries : xr.DataArray
+        A 4D (band, time, y, x) DataArray of images.
+    start_year : datetime
+        The first year of the timeseries.
+    end_year : datetime
+        The last year of the timeseries.
     restoration_polygon : GeoDataFrame
         The spatial deliniation of the restoration event. There
         must only be one geometry in the GeoDataframe and it must be
         of type shapely.Polygon or shapely.MultiPolygon.
-    composite_stack : xr.DataArray
-        A 4D (band, time, y, x) DataArray of images.
-    reference_polygon : GeoDataFrame
-        The spatial delinitation of the reference area(s).
+    disturbance_start : str
+        The start year of the disturbance window.
+    restoration_start : str
+        The start year of the restoration window.
+    reference_years : list of str
+        List of two strings: the start and end years of the reference 
+        window, respectively. 
+    restoration_image_stack : xr.DataArray
+        The image stack which fully contains the restoration site. 
+        Derived (clipped) from full_timeseries. This is the stack used
+        by recovery metric methods when computing metrics.
+    reference_polygons : GeoDataFrame
+        The spatial delinitation of the reference system area(s).
+    reference_image_stack : xr.DataArray
+        The image stack which fully contains the reference system
+        defined by reference_polygons. If reference_polyigons is None,
+        reference_image_stack = restoration_image_stack. This is the 
+        stack used by recovery_target_method to compute recovery targets.
     recovery_target_method : callable
         The method used for computing the recovery target. Default
-        is median target method with polygon scale.
+        is median target method with polygon scale (i.e
+        MedianTarget(scale="polygon"))
     recovery_target : xr.DataArray
         The recovery target values.
 
@@ -94,17 +132,48 @@ class RestorationArea:
             [xr.DataArray, Tuple[datetime]], xr.DataArray
         ] = MedianTarget(scale="polygon"),
     ) -> None:
+        """ RestorationArea constructor.
+
+        Parameters
+        ----------
+        restoration_polygon : geopandas.GeoDataFrame
+            The polygon and associated dates of the restoration site,
+            contained in a GeoDataFrame.
+            
+            If reference_polygons is None, 0th column must contain
+            disturbance start year, 1st must restoration start year,
+            and 3rd and 4th must contain the reference start and end
+            years, respectively. If reference_polygons is not None,
+            only disturbance and restoration start year must be provided.
+        composite_stack : xr.DataArray
+            The 4D stack of images to derive recovery metrics from.
+            Must have dimensions ["band","time","y","x"] with coordinates.
+            The data is expected (but not enforced) to be index values,
+            not raw spectral data.
+        reference_polygons : geopandas.GeoDataFrame, optional
+            The polygon(s) and associated dates of the reference 
+            system, contained in a GeoDataFrame.
+
+            0th column must contain the reference start year while
+            the 1st column must contain the reference end year. If
+            reference start and end years are also provided in the
+            restoration_polygons DataFrame, the dates defined in 
+            reference_polygons will supersede.
+        recovery_target_method : Callable, optional
+            The method to compute recovery target with.
+        
+        """
         self.full_timeseries = composite_stack
         self.reference_polygons = reference_polygons
         self.restoration_polygon = restoration_polygon
         self.recovery_target_method = recovery_target_method
     
     @property
-    def full_timeseries(self):
+    def full_timeseries(self) -> xr.DataArray:
         return self._full_timeseries
     
     @full_timeseries.setter
-    def full_timeseries(self, t):
+    def full_timeseries(self, t) -> None:
         """ full_timeseries setter. 
         
         Checks that the provided timeseries contains the correct
@@ -125,17 +194,17 @@ class RestorationArea:
         self._full_timeseries = t
 
     @property
-    def end_year(self):
+    def end_year(self) -> np.datetime64:
         """The final year of the timeseries"""
         return pd.to_datetime(self.full_timeseries["time"].max().data)
     
     @property
-    def start_year(self):
+    def start_year(self) -> np.datetime64:
         """The first year of the timeseries"""
         return pd.to_datetime(self.full_timeseries["time"].min().data)
     
     @property
-    def restoration_polygon(self):
+    def restoration_polygon(self) -> gpd.GeoDataFrame:
         """Restoration site GeoDataFrame
         
         GeoDataFrame contains a Shapely.Polygon and
@@ -148,7 +217,7 @@ class RestorationArea:
         return self._restoration_polygon
     
     @restoration_polygon.setter
-    def restoration_polygon(self, rp):
+    def restoration_polygon(self, rp) -> None:
         """ restoration_polygon setter.
 
         Checks that input is a GeoDataFrame, contains
@@ -190,7 +259,7 @@ class RestorationArea:
 
     
     @property
-    def reference_polygons(self):
+    def reference_polygons(self) -> gpd.GeoDataFrame:
         """Reference system GeoDataFrame
 
         GeoDataFrame contains a Shapely.Polygon and
@@ -202,23 +271,58 @@ class RestorationArea:
         return self._reference_polygons
     
     @reference_polygons.setter
-    def reference_polygons(self, refp):
+    def reference_polygons(self, refp) -> None:
+        """ reference_polygons setter.
+
+        If inputs is not None, checks that input is a GeoDataFrame
+        and that all geoms are within the bounds of full_timeseries
+        property. Forces lazy (re-)computattion of _reference_image_stack
+        property and immediately recomputes reference_years property.
+
+        Raises
+        ------
+        TypeError 
+            - If refp not None and not geopandas.GeoDataFrame.
+        ValueError
+            - If refp not within spatial bounds of full_timeseries prop.
+
+        """
         self._reference_years = None
         self._reference_image_stack = None
         if refp is not None:
+            if not isinstance(refp, gpd.GeoDataFrame):
+                raise TypeError(f"reference_polygons must be a GeoDataFrame (recieved type {type(refp)})")
             if not self.full_timeseries.satts.contains_spatial(refp):
                 raise ValueError(
                     "not all reference_polygons within the bounds of images"
                 ) from None
         self._reference_polygons = refp
+        # Trigger eager computation of dates
+        self.reference_years
+
     
     @property
-    def recovery_target_method(self):
+    def recovery_target_method(self) -> Callable:
         """Method used to compute recovery targets for the RestorationArea"""
         return self._recovery_target_method
     
     @recovery_target_method.setter
-    def recovery_target_method(self, rtm):
+    def recovery_target_method(self, rtm) -> None:
+        """ recovery_target_method setter.
+
+        Checks that signature of method matches required signature.
+        Then checks method type is compatible with the current
+        restoration site and reference system (i.e historic or
+        reference recovery target set-up). Forces lazy (re-)computation
+        of the recovery_target property.
+
+        Raises
+        ------
+        ValueError
+            - If rtm does not have required call signature.
+            - If rtm is not compatible with current polygons.
+        
+        """
         self._recovery_target = None
         if signature(rtm) != expected_signature:
             raise ValueError(
@@ -232,7 +336,7 @@ class RestorationArea:
         self._recovery_target_method = rtm
     
     @property
-    def recovery_target(self):
+    def recovery_target(self) -> xr.DataArray:
         """Recovery target of the RestorationArea.
 
         The recovery targets of the RestorationArray provided in
@@ -248,38 +352,60 @@ class RestorationArea:
         return self._recovery_target
     
     @property
-    def disturbance_start(self):
-        """Start year of the disturbance window."""
+    def disturbance_start(self) -> str:
+        """Start year of the disturbance window.
+        
+        A str taken from first column of the restoration_polygon
+        geopandas.GeoDataFrame. Represents the start year of the
+        disturbance window. Must be within the temporal range of
+        the full_timeseries property.
+
+        """
         if self._disturbance_start is None:
             self._disturbance_start = self._get_dist_from_frame()
             if self._disturbance_start >= self.restoration_start:
                 raise ValueError(
                     f"Disturbance start year must be strictly less than the restoration start year (given disturbance_start={self._disturbance_start} and restoration_start={self.restoration_start})"
                 )
-            if not self.full_timeseries.satts.contains_temporal(RestorationArea._str_to_dt(self._disturbance_start)):
+            if not self.full_timeseries.satts.contains_temporal(_str_to_dt(self._disturbance_start)):
                 raise ValueError(
                     f"Restoration start year { self._disturbance_start} not within timeseries range of {self.start_year}-{self.end_year}."
                 )
         return self._disturbance_start
 
     @property
-    def restoration_start(self):
-        """Start year of the restoration window."""
+    def restoration_start(self) -> str:
+        """Start year of the restoration window.
+        
+        A str taken from second column of the restoration_polygon
+        geopandas.GeoDataFrame. Represents the start year of the
+        restoration window. Must be within the temporal range of
+        the full_timeseries property.
+        """
         if self._restoration_start is None:
             self._restoration_start = self._get_rest_from_frame()
             if self._restoration_start <= self.disturbance_start:
                 raise ValueError(
                     f"Disturbance start year must be strictly less than the restoration start year (given disturbance_start={self.disturbance_start} and restoration_start={self._restoration_start})"
                 )
-            if not self.full_timeseries.satts.contains_temporal(RestorationArea._str_to_dt(self._restoration_start)):
+            if not self.full_timeseries.satts.contains_temporal(_str_to_dt(self._restoration_start)):
                 raise ValueError(
                     f"Restoration start year { self._restoration_start} not within timeseries range of {self.start_year}-{self.end_year}."
                 )
         return self._restoration_start
     
     @property
-    def reference_years(self):
-        """Start and end year of the reference window."""
+    def reference_years(self) -> str:
+        """Start and end year of the reference window.
+        
+        List of 2 str taken from third and fourth column of the
+        restoration_polygon geopandas.GeoDataFrame or, if 
+        reference_polygons is not None, the first and second column
+        of the reference_polygons GeoDataFrame. Represents the start
+        and end year of the reference window. Must be within temporal
+        range of the full_timeseries property.
+        
+        """
         if self._reference_years is None:
             self._recovery_target = None
             self._reference_years = self._get_ref_from_frame()
@@ -287,21 +413,21 @@ class RestorationArea:
                 raise ValueError(
                     f"Reference start year must be less than or equal to end year (but {self._reference_years[0]} > {self._reference_years[1]})"
                 )
-            if not self.full_timeseries.satts.contains_temporal(RestorationArea._str_to_dt(self._reference_years)):
+            if not self.full_timeseries.satts.contains_temporal(_str_to_dt(self._reference_years)):
                 raise ValueError(
                     f"Reference years { self._reference_years} not within timeseries range of {self.start_year}-{self.end_year}."
                 )
         return self._reference_years
     
     @property
-    def reference_image_stack(self):
+    def reference_image_stack(self) -> xr.DataArray:
         """Reference image stack.
 
         The image stack for computing recovery targets. The reference 
-        image stack is the same as the restoration image stack if
-        using historic targets. If using a reference system, the reference
-        image stack is clipped from the given timeseries using the 
-        reference polygons. 
+        image stack is the same as restoration_image_stack if
+        reference_polygons is None (i.e looking at historic targets).
+        If reference_polygons is not None, the full_timeseries is clipped
+        using the polygons in reference_polygons. 
 
         """
         if self._reference_image_stack is None:
@@ -325,7 +451,7 @@ class RestorationArea:
         return self._reference_image_stack
     
     @property
-    def restoration_image_stack(self):
+    def restoration_image_stack(self)-> xr.DataArray:
         """Restoration image stack.
 
         The image stack containing the restoration site. 
@@ -346,7 +472,7 @@ class RestorationArea:
             raise ValueError("Missing disturbance start year. Please ensure the 1st column of the restoration polygon's "
                              " attribute table contains the disturbance window start year. ")
         disturbance_start_str = str(disturbance_start)
-        RestorationArea._valid_year_format(disturbance_start_str)
+        disturbance_start_str = _valid_year_format(disturbance_start_str)
         return disturbance_start_str
     
     def _get_rest_from_frame(self):
@@ -357,7 +483,7 @@ class RestorationArea:
             raise ValueError("Missing restoration start year. Please ensure the 2nd column of the restoration polygon's "
                              " attribute table contains the restoration window start year. ")
         rest_start_str = str(restoration_start)
-        RestorationArea._valid_year_format(rest_start_str)
+        rest_start_str = _valid_year_format(rest_start_str)
         return rest_start_str
     
     def _get_ref_from_frame(self):
@@ -382,42 +508,11 @@ class RestorationArea:
         
         ref_start_str = str(ref_start)
         ref_end_str = str(ref_end)
-        RestorationArea._valid_year_format(ref_start_str)
-        RestorationArea._valid_year_format(ref_end_str)
+        ref_start_str = _valid_year_format(ref_start_str)
+        ref_end_str = _valid_year_format(ref_end_str)
 
-        return [ref_start_str, ref_end_str]    
+        return [ref_start_str, ref_end_str]
 
-    @staticmethod
-    def _valid_year_format(year_str):
-        year_match = VALID_YEAR.match(year_str)
-        if not year_match:
-            raise ValueError(
-                f"Could not parse {year_str} into a year. "
-                "Please ensure the year is in the format 'YYYY'."
-            )
-
-    @staticmethod
-    def validate_year_orders(disturbance_start, restoration_start, reference_years):
-
-        if reference_years[0] > reference_years[1]:
-                raise ValueError(
-                    f"Reference start year must be less than or equal to the reference end year (but {reference_years[0]} > {reference_years[1]})"
-                )
-
-        if restoration_start <= disturbance_start:
-            raise ValueError(
-                "The disturbance start year must be strictly less than the restoration start year."
-            )
-
-    @staticmethod
-    def _str_to_dt(years: str | List[str]):
-        if isinstance(years, list):
-            years_dt = [0, 0]
-            for i, year in enumerate(years):
-                years_dt[i] = pd.to_datetime(year)
-        else:
-            years_dt = pd.to_datetime(years)
-        return years_dt
 
     def y2r(self, timestep = 5, percent_of_target: int = 80):
         """Compute the Years to Recovery (Y2R) metric."""
