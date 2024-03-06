@@ -480,7 +480,7 @@ class RestorationArea:
 
         """
         if self._restoration_image_stack is None:
-            self.full_timeseries.rio.clip(
+            self._restoration_image_stack = self.full_timeseries.rio.clip(
                 self.restoration_polygon.geometry.values
             )
         return self._restoration_image_stack
