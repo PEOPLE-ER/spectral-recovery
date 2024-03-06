@@ -51,14 +51,6 @@ class TestRestorationAreaInit:
                 POLYGON_INBOUND,
                 "2014",
                 "2013",
-                ["2010", "2010"],
-                TIMESERIES_LEN_17,
-                [str(x) for x in np.arange(2010, 2027)],
-            ),
-            (
-                POLYGON_INBOUND,
-                "2014",
-                "2013",
                 ["2010", "2011"],
                 TIMESERIES_LEN_17,
                 [str(x) for x in np.arange(2010, 2027)],
@@ -94,6 +86,7 @@ class TestRestorationAreaInit:
             assert (
                 resto_a.restoration_polygon.geometry.geom_equals(resto_poly.geometry)
             ).all()
+            assert resto_a.disturbance_start == dist_start
             assert resto_a.restoration_start == resto_start
             assert resto_a.reference_years == ref_years
 
@@ -500,6 +493,7 @@ class TestRestorationAreaRecoveryTarget:
         valid_method = create_autospec(MedianTarget(scale="polygon"))
 
         resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
+        resto_a.recovery_target # Trigger computation
 
         valid_method.assert_called_once()
 
@@ -532,131 +526,132 @@ class TestRestorationAreaMetrics:
     baseline_array = xr.DataArray([[[1.0]], [[2.0]]])
 
     @pytest.fixture()
-    def valid_resto_area(self):
+    def valid_ra_build(self):
+        # TODO: Simplify this to just use int coords and polygons that intersect. Shouldn't need to read the files.
+        resto_poly = gpd.read_file(POLYGON_INBOUND)
+        resto_poly["dist_start"] = "2015"
+        resto_poly["rest_start"] = "2016"
+        resto_poly["ref_start"] = "2010"
+        resto_poly["ref_end"] = "2010"
 
-        with rioxarray.open_rasterio(TIMESERIES_LEN_17, chunks="auto") as data:
-            resto_poly = gpd.read_file(POLYGON_INBOUND)
-            resto_poly["dist_start"] = "2014"
-            resto_poly["rest_start"] = "2015"
-            resto_poly["ref_start"] = "2011"
-            resto_poly["ref_end"] = "2011"
+        raster = TIMESERIES_LEN_17
+        time_range = [str(x) for x in np.arange(2010, 2027)]
 
+        with rioxarray.open_rasterio(raster, chunks="auto") as data:
             stack = data
             stack = stack.rename({"band": "time"})
             stack = stack.expand_dims(dim={"band": [0]})
             stack = stack.assign_coords(
-                time=(
-                    pd.date_range(
-                        self.time_range[0], self.time_range[-1], freq=DATETIME_FREQ
-                    )
-                )
-            )
-            stack = xr.concat([stack, stack], dim=pd.Index([0, 1], name="band"))
-            resto_area = RestorationArea(
-                restoration_polygon=resto_poly,
-                composite_stack=stack,
+                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
             )
 
-            mock_target_return = self.baseline_array
-            resto_area.recovery_target = self.baseline_array
-
-        return resto_area
+        return {
+            "restoration_polygon": resto_poly,
+            "composite_stack": stack,
+        }
 
     @patch(
         "spectral_recovery.metrics.y2r",
     )
-    def test_Y2R_call_default(self, method_mock, valid_resto_area):
+    def test_Y2R_call_default(self, method_mock, valid_ra_build):
+
+        resto_a = RestorationArea(**valid_ra_build)
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
+        expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.Y2R)]})   
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.y2r()
-        expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.Y2R)]})
+        result = resto_a.y2r()
 
-        assert result.equals(expected_result)
-
-        post_restoration = valid_resto_area.restoration_image_stack.sel(
-            time=slice(valid_resto_area.restoration_start, None)
+        post_restoration = resto_a.restoration_image_stack.sel(
+            time=slice(resto_a.restoration_start, None)
         )
-        rest_start = valid_resto_area.restoration_start
-        rest_end = str(valid_resto_area.end_year.year)
+        rest_start = resto_a.restoration_start
         default_percent = 80
 
-        method_mock.assert_called_with(
-            image_stack=SAME_XR(post_restoration),
-            recovery_target=SAME_XR(self.baseline_array),
-            rest_start=rest_start,
-            percent=default_percent,
-        )
+        args, kwargs = method_mock.call_args
+        assert result.equals(expected_result)
+        xr.testing.assert_equal(kwargs["image_stack"], post_restoration)
+        xr.testing.assert_equal(kwargs["recovery_target"], resto_a.recovery_target)
+        assert kwargs["rest_start"] == rest_start
+        assert kwargs["percent"] == default_percent
+
 
     @patch(
         "spectral_recovery.metrics.yryr",
     )
-    def test_YrYr_call_default(self, method_mock, valid_resto_area):
+    def test_YrYr_call_default(self, method_mock, valid_ra_build):
+
+        resto_a = RestorationArea(**valid_ra_build)
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.yryr()
+        result = resto_a.yryr()
         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.YRYR)]})
-
-        assert result.equals(expected_result)
-
         timestep_default = 5
 
-        method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
-            rest_start=valid_resto_area.restoration_start,
-            timestep=timestep_default,
-        )
+
+        args, kwargs = method_mock.call_args
+        assert result.equals(expected_result)
+        xr.testing.assert_equal(kwargs["image_stack"], resto_a.restoration_image_stack)
+        assert kwargs["rest_start"] == resto_a.restoration_start
+        assert kwargs["timestep"] == timestep_default
+
 
     @patch(
         "spectral_recovery.metrics.dnbr",
     )
-    def test_dNBR_call_default(self, method_mock, valid_resto_area):
+    def test_dNBR_call_default(self, method_mock, valid_ra_build):
+
+        resto_a = RestorationArea(**valid_ra_build)
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.dnbr()
+        result = resto_a.dnbr()
         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.DNBR)]})
 
         assert result.equals(expected_result)
 
         timestep_default = 5
 
-        method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
-            rest_start=valid_resto_area.restoration_start,
-            timestep=timestep_default,
-        )
+        args, kwargs = method_mock.call_args
+        assert result.equals(expected_result)
+        xr.testing.assert_equal(kwargs["image_stack"], resto_a.restoration_image_stack)
+        assert kwargs["rest_start"] == resto_a.restoration_start
+        assert kwargs["timestep"] == timestep_default
 
     @patch(
         "spectral_recovery.metrics.rri",
     )
-    def test_RRI_call_default(self, method_mock, valid_resto_area):
+    def test_RRI_call_default(self, method_mock, valid_ra_build):
+
+        resto_a = RestorationArea(**valid_ra_build)
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area._rri()
+        result = resto_a._rri()
         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.RRI)]})
 
         assert result.equals(expected_result)
 
         timestep_default = 5
 
-        method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
-            rest_start=valid_resto_area.restoration_start,
-            dist_start=valid_resto_area.disturbance_start,
-            timestep=timestep_default,
-        )
+        args, kwargs = method_mock.call_args
+        assert result.equals(expected_result)
+        xr.testing.assert_equal(kwargs["image_stack"], resto_a.restoration_image_stack)
+        assert kwargs["rest_start"] == resto_a.restoration_start
+        assert kwargs["dist_start"] == resto_a.disturbance_start
+        assert kwargs["timestep"] == timestep_default
 
     @patch(
         "spectral_recovery.metrics.r80p",
     )
-    def test_R80P_call_default(self, method_mock, valid_resto_area):
+    def test_R80P_call_default(self, method_mock, valid_ra_build):
+
+        resto_a = RestorationArea(**valid_ra_build)
         mocked_return = xr.DataArray([[1.0]], dims=["y", "x"])
         method_mock.return_value = mocked_return
 
-        result = valid_resto_area.r80p()
+        result = resto_a.r80p()
         expected_result = mocked_return.expand_dims(dim={"metric": [str(Metric.R80P)]})
 
         assert result.equals(expected_result)
@@ -664,10 +659,11 @@ class TestRestorationAreaMetrics:
         percent_default = 80
         timestep_default = 5
 
-        method_mock.assert_called_with(
-            image_stack=SAME_XR(valid_resto_area.restoration_image_stack),
-            rest_start=valid_resto_area.restoration_start,
-            recovery_target=SAME_XR(self.baseline_array),
-            timestep=timestep_default,
-            percent=percent_default,
-        )
+        args, kwargs = method_mock.call_args
+        assert result.equals(expected_result)
+        xr.testing.assert_equal(kwargs["image_stack"], resto_a.restoration_image_stack)
+        assert kwargs["rest_start"] == resto_a.restoration_start
+        assert kwargs["recovery_target"] == resto_a.recovery_target
+        assert kwargs["timestep"] == timestep_default
+        assert kwargs["percent"] == percent_default
+        
