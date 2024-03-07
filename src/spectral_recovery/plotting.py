@@ -59,10 +59,10 @@ def plot_spectral_trajectory(
 
 
 def plot_ra(
-    ra: "spectral_recovery.restoration.RestorationArea",
-    path: str = None,
-    legend: bool = True,
-) -> None:
+        ra: RestorationArea,
+        path: str = None,
+        legend: bool = True
+    ) -> None:
     """Create spectral trajectory plot of the RestorationArea (ra)
 
     Parameters
@@ -74,7 +74,7 @@ def plot_ra(
     """
     hist_ref_sys = ra.reference_polygons == None
 
-    stats = ra.stack.satts.stats()
+    stats = ra.restoration_image_stack.satts.stats()
     stats = stats.sel(
         stats=[
             "median",
@@ -189,12 +189,12 @@ def _draw_trajectory_windows(ra, axi, palette, hist_ref_sys):
     )
     axi.axvspan(
         ra.restoration_start,
-        str(ra.end_year.year),
+        ra.timeseries_end,
         alpha=0.2,
         color=palette[2],
     )
     axi.axvline(
-        x=str(ra.end_year.year),
+        x=ra.timeseries_end,
         color=palette[2],
         linestyle="dashed",
         lw=1,

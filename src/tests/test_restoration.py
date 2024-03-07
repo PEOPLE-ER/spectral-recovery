@@ -64,14 +64,6 @@ class TestRestorationAreaInit:
                 POLYGON_INBOUND,
                 "2014",
                 "2013",
-                ["2010", "2010"],
-                TIMESERIES_LEN_17,
-                [str(x) for x in np.arange(2010, 2027)],
-            ),
-            (
-                POLYGON_INBOUND,
-                "2014",
-                "2013",
                 ["2010", "2011"],
                 TIMESERIES_LEN_17,
                 [str(x) for x in np.arange(2010, 2027)],
@@ -112,6 +104,7 @@ class TestRestorationAreaInit:
                 resto_a.restoration_polygon.geometry.geom_equals(resto_poly.geometry)
             ).all()
             assert resto_a.reference_polygons == None
+            assert resto_a.disturbance_start == dist_start
             assert resto_a.restoration_start == resto_start
             assert resto_a.disturbance_start == dist_start
             assert resto_a.reference_years == ref_years
@@ -603,6 +596,7 @@ class TestRestorationAreaRecoveryTarget:
         valid_method = create_autospec(MedianTarget(scale="polygon"))
 
         resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
+        resto_a.recovery_target # Trigger computation
 
         valid_method.assert_called_once()
 
