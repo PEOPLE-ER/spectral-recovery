@@ -145,13 +145,13 @@ class TestComputeIndices:
             result = compute_indices(data, index)
 
     @pytest.mark.parametrize(
-        ("index"),
+        "index",
         [
-            ("NDSI"),
-            ("NDTI"),
-            ("BI"),
-            ("DBI"),
-            ("DPDD"),
+            "NDSI",
+            "NDTI",
+            "BI",
+            "DBI",
+            "DPDD",
         ],
     )
     def test_unsupported_domain_index_throws_exception(self, index):

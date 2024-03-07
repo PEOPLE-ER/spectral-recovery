@@ -343,15 +343,13 @@ class TestReadAndStackTifs:
 class TestReadRestorationPolygons:
     @patch("geopandas.read_file")
     def test_more_than_one_restoration_polygon_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "dist_start": [2015, 2015],
-                "rest_start": [2016, 2016],
-                "ref_start": [2012, 2012],
-                "ref_end": [2012, 2012],
-                "geometry": ["POINT (1 2)", "POINT (2 1)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": [2015, 2015],
+            "rest_start": [2016, 2016],
+            "ref_start": [2012, 2012],
+            "ref_end": [2012, 2012],
+            "geometry": ["POINT (1 2)", "POINT (2 1)"],
+        })
         with pytest.raises(ValueError):
             _ = read_restoration_polygons(path="some_path.gpkg")
 
@@ -375,43 +373,37 @@ class TestReadRestorationPolygons:
 
     @patch("geopandas.read_file")
     def test_not_int_col_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "dist_start": pd.to_datetime("2015"),
-                "rest_start": 2016,
-                "ref_start": 2012,
-                "ref_end": 2012,
-                "geometry": ["POINT (1 2)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": pd.to_datetime("2015"),
+            "rest_start": 2016,
+            "ref_start": 2012,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
         with pytest.raises(ValueError):
             _ = read_restoration_polygons(path="some_path.gpkg")
 
     @patch("geopandas.read_file")
     def test_dist_col_greater_than_rest_col_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "dist_start": 2017,
-                "rest_start": 2016,
-                "ref_start": 2012,
-                "ref_end": 2012,
-                "geometry": ["POINT (1 2)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": 2017,
+            "rest_start": 2016,
+            "ref_start": 2012,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
         with pytest.raises(ValueError):
             _ = read_restoration_polygons(path="some_path.gpkg")
 
     @patch("geopandas.read_file")
     def test_dist_ref_start_greater_than_ref_end_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "dist_start": 2017,
-                "rest_start": 2016,
-                "ref_start": 2013,
-                "ref_end": 2012,
-                "geometry": ["POINT (1 2)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": 2017,
+            "rest_start": 2016,
+            "ref_start": 2013,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
         with pytest.raises(ValueError):
             _ = read_restoration_polygons(path="some_path.gpkg")
 
@@ -419,27 +411,23 @@ class TestReadRestorationPolygons:
 class TestReadReferencePolygons:
     @patch("geopandas.read_file")
     def test_more_than_one_restoration_polygon_accepted(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "dist_start": [2015, 2015],
-                "rest_start": [2016, 2016],
-                "ref_start": [2012, 2012],
-                "ref_end": [2012, 2012],
-                "geometry": ["POINT (1 2)", "POINT (2 1)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": [2015, 2015],
+            "rest_start": [2016, 2016],
+            "ref_start": [2012, 2012],
+            "ref_end": [2012, 2012],
+            "geometry": ["POINT (1 2)", "POINT (2 1)"],
+        })
         with pytest.raises(ValueError):
             _ = read_reference_polygons(path="some_path.gpkg")
 
     @patch("geopandas.read_file")
     def test_different_dates_between_polygons_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "ref_start": [2012, 2011],
-                "ref_end": [2013, 2012],
-                "geometry": ["POINT (1 2)", "POINT (2 1)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "ref_start": [2012, 2011],
+            "ref_end": [2013, 2012],
+            "geometry": ["POINT (1 2)", "POINT (2 1)"],
+        })
         with pytest.raises(ValueError):
             _ = read_reference_polygons(path="some_path.gpkg")
 
@@ -455,26 +443,22 @@ class TestReadReferencePolygons:
 
     @patch("geopandas.read_file")
     def test_not_int_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "ref_start": pd.to_datetime(2012),
-                "ref_end": 2012,
-                "geometry": ["POINT (1 2)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "ref_start": pd.to_datetime(2012),
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
         with pytest.raises(ValueError):
             _ = read_reference_polygons(path="some_path.gpkg")
 
     @patch("geopandas.read_file")
     def test_dist_ref_start_greater_than_ref_end_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {
-                "dist_start": 2017,
-                "rest_start": 2016,
-                "ref_start": 2013,
-                "ref_end": 2012,
-                "geometry": ["POINT (1 2)"],
-            }
-        )
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": 2017,
+            "rest_start": 2016,
+            "ref_start": 2013,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
         with pytest.raises(ValueError):
             _ = read_reference_polygons(path="some_path.gpkg")

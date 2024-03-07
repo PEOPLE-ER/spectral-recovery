@@ -120,13 +120,11 @@ class TestRestorationAreaComposite:
             bad_stack = bad_stack.rename({"band": "time"})
             bad_stack = bad_stack.expand_dims(dim={"bandz": [0]})
             bad_stack = bad_stack.assign_coords(
-                time=(
-                    [
-                        pd.to_datetime("2020"),
-                        pd.to_datetime("2021"),
-                        pd.to_datetime("2022"),
-                    ]
-                )
+                time=([
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                    pd.to_datetime("2022"),
+                ])
             )
 
             resto_poly = gpd.read_file(POLYGON_INBOUND)
@@ -149,13 +147,11 @@ class TestRestorationAreaComposite:
             bad_stack = data
             bad_stack = bad_stack.rename({"band": "time"})
             bad_stack = bad_stack.assign_coords(
-                time=(
-                    [
-                        pd.to_datetime("2020"),
-                        pd.to_datetime("2021"),
-                        pd.to_datetime("2023"),
-                    ]
-                )
+                time=([
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                    pd.to_datetime("2023"),
+                ])
             )
 
             resto_poly = gpd.read_file(POLYGON_INBOUND)
@@ -179,13 +175,11 @@ class TestRestorationAreaComposite:
             bad_stack = bad_stack.rename({"band": "time"})
             bad_stack = bad_stack.expand_dims(dim={"band": [0]})
             bad_stack = bad_stack.assign_coords(
-                time=(
-                    [
-                        pd.to_datetime("2020"),
-                        pd.to_datetime("2021"),
-                        pd.to_datetime("2023"),
-                    ]
-                )
+                time=([
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                    pd.to_datetime("2023"),
+                ])
             )
 
             resto_poly = gpd.read_file(POLYGON_INBOUND)
@@ -596,7 +590,7 @@ class TestRestorationAreaRecoveryTarget:
         valid_method = create_autospec(MedianTarget(scale="polygon"))
 
         resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
-        resto_a.recovery_target # Trigger computation
+        resto_a.recovery_target  # Trigger computation
 
         valid_method.assert_called_once()
 
@@ -615,13 +609,11 @@ class TestRestorationAreaRecoveryTarget:
     def test_pixel_recovery_target_with_reference_polygons_throws_type_error(
         self, valid_ra_build
     ):
-        reference_frame = gpd.GeoDataFrame(
-            {
-                "ref_start": 2010,
-                "ref_end": 2011,
-                "geometry": valid_ra_build["restoration_polygon"].geometry.values,
-            }
-        )
+        reference_frame = gpd.GeoDataFrame({
+            "ref_start": 2010,
+            "ref_end": 2011,
+            "geometry": valid_ra_build["restoration_polygon"].geometry.values,
+        })
         valid_ra_build["reference_polygons"] = reference_frame
         median_pixel = MedianTarget(scale="pixel")
 

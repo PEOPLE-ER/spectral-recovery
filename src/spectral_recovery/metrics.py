@@ -1,4 +1,5 @@
 """Methods for computing recovery metrics."""
+
 from typing import Dict, List
 
 import xarray as xr
@@ -56,8 +57,8 @@ def compute_metrics(
                 params={
                     "timestep": timestep,
                     "percent_of_target": percent_of_target,
-                }
-            ).assign_coords({"metric" : m})
+                },
+            ).assign_coords({"metric": m})
         )
 
     metrics = xr.concat(m_results, "metric")
@@ -66,10 +67,7 @@ def compute_metrics(
 
 
 @register_metric
-def dnbr(
-    ra: RestorationArea,
-    params: Dict = {"timestep": 5}
-) -> xr.DataArray:
+def dnbr(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
     """Per-pixel dNBR.
 
     The absolute change in a spectral index’s value at a point in the
@@ -81,7 +79,7 @@ def dnbr(
     ----------
     ra : RestorationArea
         The restoration area to compute dnbr for.
-    params : Dict 
+    params : Dict
         Parameters to customize metric computation. dnbr uses
         the 'timestep' parameter with default = {"timestep": 5}
 
@@ -97,8 +95,9 @@ def dnbr(
     rest_post_t = str(int(ra.restoration_start) + params["timestep"])
     if rest_post_t > ra.timeseries_end:
         raise ValueError(
-            f"timestep={params['timestep']}, but {ra.restoration_start}+{params['timestep']}={rest_post_t} not"
-            f" within time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
+            f"timestep={params['timestep']}, but"
+            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within"
+            f" time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
         ) from None
 
     dnbr_v = (
@@ -110,10 +109,7 @@ def dnbr(
 
 
 @register_metric
-def yryr(
-    ra: RestorationArea,
-    params: Dict = {"timestep": 5}
-):
+def yryr(ra: RestorationArea, params: Dict = {"timestep": 5}):
     """Per-pixel YrYr.
 
     The average annual recovery rate relative to a fixed time interval
@@ -125,7 +121,7 @@ def yryr(
     ----------
     ra : RestorationArea
         The restoration area to compute yryr for.
-    params : Dict 
+    params : Dict
         Parameters to customize metric computation. yryr uses
         the 'timestep' parameter with default = {"timestep": 5}
 
@@ -150,8 +146,7 @@ def yryr(
 
 @register_metric
 def r80p(
-    ra: RestorationArea,
-    params: Dict = {"percent_of_target": 80, "timestep": 5}
+    ra: RestorationArea, params: Dict = {"percent_of_target": 80, "timestep": 5}
 ) -> xr.DataArray:
     """Per-pixel R80P.
 
@@ -168,7 +163,7 @@ def r80p(
     ----------
     ra : RestorationArea
         The restoration area to compute r80p for.
-    params : Dict 
+    params : Dict
         Parameters to customize metric computation. r80p uses
         the 'timestep' and 'percent_of_target' parameters with
         default = {"percent_of_target": 80, "timestep": 5}.
@@ -200,10 +195,7 @@ def r80p(
 
 
 @register_metric
-def y2r(
-    ra: RestorationArea,
-    params: Dict = {"percent_of_target": 80}
-) -> xr.DataArray:
+def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.DataArray:
     """Per-pixel Y2R.
 
     The length of time taken (in time steps/years) for a given pixel to
@@ -214,7 +206,7 @@ def y2r(
     ----------
     ra : RestorationArea
         The restoration area to compute r80p for.
-    params : Dict 
+    params : Dict
         Parameters to customize metric computation. r80p uses
         the 'percent_of_target' parameter with default = {"percent_of_target": 80}
 
@@ -251,8 +243,7 @@ def y2r(
 
 
 def rri(
-    ra: RestorationArea,
-    params: Dict = {"timestep": 5, "use_dist_avg": False}
+    ra: RestorationArea, params: Dict = {"timestep": 5, "use_dist_avg": False}
 ) -> xr.DataArray:
     """Per-pixel RRI.
 
@@ -268,7 +259,7 @@ def rri(
     ----------
     ra : RestorationArea
         The restoration area to compute r80p for.
-    params : Dict 
+    params : Dict
         Parameters to customize metric computation. r80p uses
         the 'timestep' and 'use_dist_avg' parameters with
         default = {"use_dist_avg": False, "timestep": 5}.
@@ -294,9 +285,10 @@ def rri(
     ]
     if any(rest_t_tm1) == 0:
         raise ValueError(
-            f"timestep={params['timestep']}, but ({ra.restoration_start}-1)+{params['timestep']}={rest_post_tm1} or"
-            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within time coordinates:"
-            f" {ra.restoration_image_stack.coords['time'].values}. "
+            f"timestep={params['timestep']}, but"
+            f" ({ra.restoration_start}-1)+{params['timestep']}={rest_post_tm1} or"
+            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within"
+            f" time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
         )
     max_rest_t_tm1 = ra.restoration_image_stack.sel(time=rest_t_tm1).max(dim=["time"])
 
@@ -309,8 +301,8 @@ def rri(
         ]
         if any(dist_pre_1_2) == 0:
             raise ValueError(
-                f"use_dist_avg={params['use_dist_avg']} uses the 2 years prior to disturbance"
-                f" start, but {ra.disturbance_start}-2={dist_pre_1} or"
+                f"use_dist_avg={params['use_dist_avg']} uses the 2 years prior to"
+                f" disturbance start, but {ra.disturbance_start}-2={dist_pre_1} or"
                 f" {ra.disturbance_start}-1={dist_pre_2} not within time coordinates:"
                 f" {ra.restoration_image_stack.coords['time'].values}."
             )

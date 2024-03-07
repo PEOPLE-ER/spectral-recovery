@@ -108,15 +108,13 @@ def bands_pretty_table():
     ]
     for st in list(spx.bands):
         platforms = _format_platforms(_platforms_from_band(spx.bands[st]), 3)
-        band_table.add_row(
-            [
-                st,
-                spx.bands[st].common_name,
-                spx.bands[st].long_name,
-                f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
-                platforms,
-            ]
-        )
+        band_table.add_row([
+            st,
+            spx.bands[st].common_name,
+            spx.bands[st].long_name,
+            f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
+            platforms,
+        ])
     return band_table
 
 

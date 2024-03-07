@@ -196,8 +196,8 @@ def _to_standard_band_names(in_names):
         if not converted:
             raise ValueError(
                 "Band must be named standard, common, or long name. Could not find"
-                f" '{given_name}' in catalogue. See table below for accepted names: \n\n"
-                f" {BANDS_TABLE} \n\n"
+                f" '{given_name}' in catalogue. See table below for accepted names:"
+                f" \n\n {BANDS_TABLE} \n\n"
             ).with_traceback(None) from None
 
     return (standard_names, attr_names)
