@@ -214,11 +214,12 @@ class RestorationArea:
         cached properties.
 
         """
+        self._restoration_image_stack = None
+        self._recovery_target = None
         # NOTE: this is messy because restoration_polygon now takes
         # the whole DF with the dates (not just poly), which makes
         # the date attributes dependant on it. This attr should
         # be refactored for clarity.
-        self._recovery_target = None
         self._disturbance_start = None
         self._restoration_start = None
         if self._reference_polygons is None:
