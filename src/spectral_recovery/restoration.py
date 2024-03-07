@@ -216,6 +216,7 @@ class RestorationArea:
 
         """
         self._restoration_image_stack = None
+        self._reference_image_stack = None
         self._recovery_target = None
         # NOTE: this is messy because restoration_polygon now takes
         # the whole DF with the dates (not just poly), which makes
@@ -307,6 +308,7 @@ class RestorationArea:
 
         """
         self._recovery_target = None
+        self._reference_image_stack = None
         if signature(rtm) != expected_signature:
             raise ValueError(
                 "The provided recovery target method must have the expected call"
@@ -333,8 +335,7 @@ class RestorationArea:
         """
         if self._recovery_target is None:
             self._recovery_target = self.recovery_target_method(
-                image_stack=self.reference_image_stack,
-                reference_date=self.reference_years,
+                reference_stack=self.reference_image_stack,
             )
         return self._recovery_target
 

@@ -6,7 +6,9 @@ from datetime import datetime
 
 import xarray as xr
 
-
+def compute_recovery_targets():
+    raise NotImplementedError
+    
 def _template_method(
     image_stack: xr.DataArray, reference_date: Tuple[datetime] | datetime
 ) -> xr.DataArray:
@@ -114,20 +116,27 @@ class MedianTarget:
 
 
 class WindowedTarget():
-    """Windowed mean recovery target method, parameterized on window size.
+    """Windowed recovery target method, parameterized on window size.
 
-    Windowed mean method computes the median along the time and optional
-    poly_id dimen
+    The windowed method first computes the median along the time
+    dimension and then for each pixel p in the restoration site
+    polygon, computes the mean of a window of NxN pixels centred
+    on pixel p, setting the mean to the recovery target value.
+
 
     Attributes
     ----------
     N : int
-        Size of the window (NxN). Default is 3.
+        Size of the window (NxN). Must be odd. Default is 3. 
 
     """
     def __init__(self, N: int = 3):
+        if not isinstance(N, int):
+            raise TypeError(f"N must be int not type {type(N)}")
         if N < 1:
             raise ValueError("N must be greater than or equal to 1.")
+        if (N % 2) == 0:
+            raise ValueError("N must be an odd int.")
         self.N = N
         
     def __call__(

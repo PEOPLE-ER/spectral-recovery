@@ -13,6 +13,20 @@ def test_invalid_scale_throws_value_error():
     with pytest.raises(ValueError):
         MedianTarget(scale="not_a_scale")
 
+class TestComputeRecoveryTargets:
+
+    def test_reference_with_median_pixel_method_throws_value_err():
+        raise NotImplementedError
+    
+    def test_reference_with_windowed_mean_throws_value_err():
+        raise NotImplementedError
+    
+    def test_median_target_called_with_correct_reference_stack():
+        raise NotImplementedError
+    
+    def test_windowed_target_called_with_correct_reference_stack():
+        raise NotImplementedError
+    
 
 class TestMedianTargetPolygonScale:
     def test_no_nan_returns_avg_over_time(self):
@@ -237,18 +251,15 @@ class TestWindowedTarget:
         ):
             WindowedTarget(N=-1)
 
-
-    def test_0_N_throws_value_err(self):
+    def test_even_N_throws_value_err(self):
         with pytest.raises(
             ValueError, 
         ):
-            WindowedTarget(N=0)
-
+            WindowedTarget(N=2)
 
     def test_default_window_size_is_3(self):
         windowed_method = WindowedTarget()
         assert windowed_method.N == 3
-
 
     def test_window_returns_correct_dims(self):
         input_dims = ["band", "time", "y", "x"]
@@ -266,24 +277,7 @@ class TestWindowedTarget:
         for dim in result.dims:
             assert result.sizes[dim] == expected_dims_and_sizes[dim]
 
-
-    def test_window_retains_polyid_dim(self):
-        input_dims = ["polyid", "band", "time", "y", "x"]
-        poly_id_length = 2
-        input_data = xr.DataArray(
-            np.zeros((poly_id_length, 4, 3, 2, 2)),
-            dims=input_dims,
-            coords={"time": [1, 2, 3]} 
-        )
-        windowed_method = WindowedTarget()
-
-        result = windowed_method(input_data, reference_date=1)
-
-        assert result.sizes["polyid"] == poly_id_length
-
-
     def test_default_window_returns_correct_target_values(self):
-
         data = np.arange(-8, 19).reshape((1, 3, 3, 3))
         input_data = xr.DataArray(
             data,
@@ -297,19 +291,57 @@ class TestWindowedTarget:
 
         assert_array_equal(expected_data, result_data)
 
-
     def test_default_window_returns_correct_target_values(self):
-
         data = np.arange(-8, 19).reshape((1, 3, 3, 3))
         input_data = xr.DataArray(
             data,
             dims=["band", "time", "y", "x"],
             coords={"time": [1, 2, 3]}
         )
+        # Median of `data` along time dim will be 3x3 array with values 1-9. Mean of 5.
+        # Since only the centre pixel can have a full 3x3 window, centre should be set 
+        # to 5 and all others should be NaN.
         expected_data = np.array([[[np.nan, np.nan, np.nan],[np.nan, 5.0, np.nan], [np.nan, np.nan, np.nan]]])
         windowed_method = WindowedTarget()
 
         result_data = windowed_method(input_data, reference_date=[1, 3]).data
+
+        assert_array_equal(expected_data, result_data)
+    
+    def test_polygon_borders_maintained(self):
+        """
+        Represent a polygon in an array like:
+
+            o, o, o, o
+            o, x, x, o
+            o, x, o, o
+            o, o, o, o
+        
+        where o is NaN/non-polygon space and x is non-Nan/polygon space.
+        Ensure WindowedTarget returns values for all, and only, x locations.
+        
+        """
+        data = [[[
+            [np.nan, np.nan, np.nan, np.nan],
+            [np.nan,      1,      2, np.nan],
+            [np.nan,      6, np.nan, np.nan],
+            [np.nan, np.nan, np.nan, np.nan],
+        ]]]
+        input_data = xr.DataArray(
+            data,
+            dims=["band", "time", "y", "x"],
+            coords={"time": [1]}
+        )
+        expected_data = np.array([[
+                [np.nan, np.nan, np.nan, np.nan],
+                [np.nan,    3.0,    3.0, np.nan],
+                [np.nan,    3.0, np.nan, np.nan],
+                [np.nan, np.nan, np.nan, np.nan],
+            ]]
+        )
+        windowed_method = WindowedTarget()
+
+        result_data = windowed_method(input_data, reference_date=[1, 1]).data
 
         assert_array_equal(expected_data, result_data)
     

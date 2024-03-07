@@ -550,6 +550,7 @@ class TestRestorationAreaDates:
 
 
 class TestRestorationAreaRecoveryTarget:
+
     @pytest.fixture()
     def valid_ra_build(self):
         # TODO: Simplify this to just use int coords and polygons that intersect. Shouldn't need to read the files.
@@ -583,39 +584,24 @@ class TestRestorationAreaRecoveryTarget:
 
         assert resto_a.recovery_target_method.scale == "polygon"
 
-    def test_recovery_target_method_with_valid_sig_calls_once(
+    @patch("spectral_recovery.targets.compute_recovery_targets")
+    def test_compute_recovery_target_called_with_correct_args(
         self,
+        rt_mock,
         valid_ra_build,
     ):
-        valid_method = create_autospec(MedianTarget(scale="polygon"))
+        resto_a = RestorationArea(**valid_ra_build)
 
-        resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
-        resto_a.recovery_target  # Trigger computation
+        rt_mock.assert_called_once()
 
-        valid_method.assert_called_once()
-
-    def test_recovery_target_method_with_invalid_sig_throws_value_error(
-        self, valid_ra_build
+    @patch("spectral_recovery.targets.compute_recovery_targets", return_value="test")
+    def test_recovery_target_is_result_from_compute_recovery_targets(
+        self,
+        rt_mock,
+        valid_ra_build,
     ):
-        def invalid_method(a: int, b: str):
-            """Method with incorrect signature."""
-            return 0
+        resto_a = RestorationArea(**valid_ra_build)
 
-        with pytest.raises(ValueError):
-            resto_a = RestorationArea(
-                **valid_ra_build, recovery_target_method=invalid_method
-            )
+        rt_mock.assert_called_once()
+        assert resto_a.recovery_target == "test"
 
-    def test_pixel_recovery_target_with_reference_polygons_throws_type_error(
-        self, valid_ra_build
-    ):
-        reference_frame = gpd.GeoDataFrame({
-            "ref_start": 2010,
-            "ref_end": 2011,
-            "geometry": valid_ra_build["restoration_polygon"].geometry.values,
-        })
-        valid_ra_build["reference_polygons"] = reference_frame
-        median_pixel = MedianTarget(scale="pixel")
-
-        with pytest.raises(TypeError):
-            ra = RestorationArea(**valid_ra_build, recovery_target_method=median_pixel)
