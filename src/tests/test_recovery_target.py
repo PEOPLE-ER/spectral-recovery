@@ -2,16 +2,58 @@ import pytest
 
 import numpy as np
 import xarray as xr
+import pandas as pd
+import geopandas as gpd
 
-
+from shapely import Polygon
 from xarray.testing import assert_equal
 from numpy.testing import assert_array_equal
-from spectral_recovery.targets import MedianTarget, WindowedTarget
+
+
+from spectral_recovery.targets import MedianTarget, WindowedTarget, _buffered_clip_reference_stack
 
 
 def test_invalid_scale_throws_value_error():
     with pytest.raises(ValueError):
         MedianTarget(scale="not_a_scale")
+
+class TestBufferedClip:
+
+    valid_poly = Polygon([(4, 4), (4, 5), (5, 5), (5, 4), (4, 4)])
+
+    @pytest.fixture()
+    def valid_array(self):
+        data = np.ones((1, 5, 10, 10))
+        latitudes = np.arange(0, 10)
+        longitudes = np.arange(0, 10)
+        time = pd.date_range("2010", "2014", freq="YS")
+        xarr = xr.DataArray(
+            data,
+            dims=["band", "time", "y", "x"],
+            coords={"band": ["NBR"], "time": time, "y": latitudes, "x": longitudes},
+        )
+        xarr.rio.write_crs("EPSG:4326", inplace=True)
+        return xarr
+
+    @pytest.fixture()
+    def valid_frame(self):
+
+        valid_frame = gpd.GeoDataFrame(
+            {
+                "dist_start": [2012],
+                "rest_start": [2013],
+                "reference_start": [2010],
+                "reference_end": [2010],
+                "geometry": [self.valid_poly],
+            },
+            crs="EPSG:4326",
+        )
+        return valid_frame
+
+    def test_buffered_clip_returns_correct_clip(self, valid_array, valid_frame):
+        result = _buffered_clip_reference_stack(valid_array, valid_frame, "2012", "2013", buffer=1)
+        print(result)
+
 
 class TestComputeRecoveryTargets:
 

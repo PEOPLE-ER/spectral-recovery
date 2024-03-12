@@ -4,11 +4,62 @@ from inspect import signature
 from typing import Union, Tuple
 from datetime import datetime
 
+import geopandas as gpd
+import numpy as np
+
 import xarray as xr
 
-def compute_recovery_targets():
-    raise NotImplementedError
+
+def _tight_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end, reference_polygons):
+    if reference_polygons is not None:
+        # reference stack is the same as the restoration image stack
+        reference_image_stack = timeseries.rio.clip(restoration_polygon.geometry.values)
+    else:
+        # reference image stack is clipped using the reference polygons
+        # Need to make sure that each polygon is clipped seperately then stacked
+        clipped_stacks = {}
+        for i, row in reference_polygons.iterrows():
+            polygon_stack = timeseries.rio.clip(
+                gpd.GeoSeries(row.geometry).values
+            )
+            clipped_stacks[i] = polygon_stack
+
+        reference_image_stack = xr.concat(
+            clipped_stacks.values(),
+            dim=pdIndex(clipped_stacks.keys(), name="poly_id"),
+        )
+    return reference_image_stack.sel(time=slice(reference_start, reference_end))
+
+def _buffered_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end, buffer):
+    """"""
+    tight_clip = timeseries.rio.clip(restoration_polygon.geometry.values)
+    tight_x = tight_clip['x'].values
+    tight_y = tight_clip['y'].values
+
+    x_indices = np.searchsorted(timeseries['x'].values, tight_x)
+    y_indices = np.searchsorted(timeseries['y'].values, tight_y)
+
+    buffered_x_indices = np.clip(x_indices, buffer, timeseries.sizes['x'] - (buffer + 1))[0]
+    buffered_y_indices = np.clip(y_indices, buffer, timeseries.sizes['y'] - (buffer + 1))[0]
+
     
+    buffered_clip = timeseries[:, :, buffered_y_indices - buffer:buffered_y_indices + buffer + 1, buffered_x_indices - buffer:buffered_x_indices + buffer + 1]
+
+    return buffered_clip
+
+
+
+
+def compute_recovery_targets(timeseries, restoration_polygon, reference_start, reference_end, reference_polygons, method):
+    
+    if isinstance(method, MedianTarget):
+        reference_image_stack = _tight_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end)
+        recovery_target = method(reference_image_stack)
+    if isinstance(method, WindowedTarget):
+        reference_image_stack = _buffered_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end)
+
+    return recovery_target
+
 def _template_method(
     image_stack: xr.DataArray, reference_date: Tuple[datetime] | datetime
 ) -> xr.DataArray:
@@ -64,7 +115,7 @@ class MedianTarget:
 
     def __call__(
         self,
-        image_stack: xr.DataArray,
+        reference_window: xr.DataArray,
         reference_date: Tuple[datetime] | datetime,
     ) -> xr.DataArray:
         """
@@ -95,11 +146,6 @@ class MedianTarget:
             dimensions "band", "y" and "x" and optionally, "poly_id".
 
         """
-        try:
-            reference_window = image_stack.sel(time=slice(*reference_date))
-        except TypeError:
-            reference_window = image_stack.sel(time=slice(reference_date))
-
         # Compute median sequentially
         median_t = reference_window.median(dim="time", skipna=True)
 
@@ -141,15 +187,9 @@ class WindowedTarget():
         
     def __call__(
         self,
-        image_stack: xr.DataArray,
-        reference_date: Tuple[datetime] | datetime,
+        reference_window: xr.DataArray,
         ) -> xr.DataArray:
         """Compute the windowed mean recovery target."""
-        try:
-            reference_window = image_stack.sel(time=slice(*reference_date))
-        except TypeError:
-            reference_window = image_stack.sel(time=slice(reference_date))
-
         median_t = reference_window.median(dim="time", skipna=True)
 
         windowed_mean = median_t.rolling({"y": self.N, "x": self.N}, center=True).mean()
