@@ -242,6 +242,18 @@ class TestRestorationAreaPolygons:
 
         assert_geodataframe_equal(ra.restoration_polygon, resto_poly)
 
+    def test_gdf_with_nonzero_row_index_does_not_fail(self, valid_timeseries):
+        resto_poly = gpd.read_file(POLYGON_INBOUND)
+        non_zero_row = resto_poly.rename(index={0: 20})
+        non_zero_row = set_dates(
+            non_zero_row, dist="2020", rest="2021", ref_start="2019", ref_end="2019"
+        )
+
+        RestorationArea(
+            restoration_polygon=non_zero_row,
+            composite_stack=valid_timeseries,
+        )
+
 
 class TestValidateReferencePolygons:
     @pytest.fixture()
