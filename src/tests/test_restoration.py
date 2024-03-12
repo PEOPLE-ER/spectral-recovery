@@ -260,8 +260,6 @@ class TestRestorationAreaPolygons:
         )
 
 
-
-
 class TestValidateReferencePolygons:
     @pytest.fixture()
     def valid_timeseries(self):
@@ -609,7 +607,7 @@ class TestRestorationAreaRecoveryTarget:
         valid_method = create_autospec(MedianTarget(scale="polygon"))
 
         resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
-        resto_a.recovery_target # Trigger computation
+        resto_a.recovery_target  # Trigger computation
 
         valid_method.assert_called_once()
 
@@ -628,13 +626,11 @@ class TestRestorationAreaRecoveryTarget:
     def test_pixel_recovery_target_with_reference_polygons_throws_type_error(
         self, valid_ra_build
     ):
-        reference_frame = gpd.GeoDataFrame(
-            {
-                "ref_start": 2010,
-                "ref_end": 2011,
-                "geometry": valid_ra_build["restoration_polygon"].geometry.values,
-            }
-        )
+        reference_frame = gpd.GeoDataFrame({
+            "ref_start": 2010,
+            "ref_end": 2011,
+            "geometry": valid_ra_build["restoration_polygon"].geometry.values,
+        })
         valid_ra_build["reference_polygons"] = reference_frame
         median_pixel = MedianTarget(scale="pixel")
 

@@ -58,11 +58,7 @@ def plot_spectral_trajectory(
         plot_ra(ra=restoration_area)
 
 
-def plot_ra(
-        ra: RestorationArea,
-        path: str = None,
-        legend: bool = True
-    ) -> None:
+def plot_ra(ra: RestorationArea, path: str = None, legend: bool = True) -> None:
     """Create spectral trajectory plot of the RestorationArea (ra)
 
     Parameters

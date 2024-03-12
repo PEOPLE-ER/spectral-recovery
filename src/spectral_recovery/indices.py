@@ -74,7 +74,8 @@ def _supported_domain(indices: list[str]):
     for i in indices:
         if spx.indices[i].application_domain not in SUPPORTED_DOMAINS:
             raise ValueError(
-                f"only application domain 'vegetation' and 'burn' are supported (index {i} has application domain '{spx.indices[i].application_domain}')"
+                "only application domain 'vegetation' and 'burn' are supported (index"
+                f" {i} has application domain '{spx.indices[i].application_domain}')"
             ) from None
     return True
 

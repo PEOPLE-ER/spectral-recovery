@@ -1,9 +1,4 @@
-"""Utility functions for spectral-recovery.
-
-Currently, only contains decorators for maintaining rio attributes
-when performing operations on xarray objects.
-
-"""
+"""Utility functions for spectral-recovery."""
 
 import functools
 import spyndex as spx
