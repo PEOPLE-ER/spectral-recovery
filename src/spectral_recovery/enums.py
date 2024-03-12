@@ -8,6 +8,7 @@ computations/processing.
 
 from enum import Enum
 
+
 class Metric(Enum):
     """Supported recovery metric names/acroynms"""
 
