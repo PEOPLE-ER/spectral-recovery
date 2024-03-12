@@ -9,7 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
-## [0.2.2b2] - 2024-02-11
+## [0.3.0b0] - 2024-02-21
+
+### Added
+
+- Add compute_metrics function (#72).
+- Add plot_spectral_trajectory function (#72).
+- Add read_restoration_polygon and read_reference_polygon function (#72).
+
+### Changed
+
+- Rename read_and_stack_tifs to read_timeseries (#72).
+- Read dates from restoration and reference polygon attribute tables (#70).
+- Speed up plotting (#66).
+- Alter plotting visulizations for more clarity (#66).
+- Updated tutorial (#70).
+- Bring CLI up-to-date (#74).
+
+### Removed
+
+- Remove compute_indices, RestorationArea from top-level module (#72).
+- Remove use of platform param in io and indices (#73)
+
+## [0.2.3b0] - 2024-02-02
+
+### Added
+
+- Add recovey_target_method parameter to RestorationArea (#61).
+
+### Changed
+
+- Refactor RestorationArea init method (#61).
+- Rename recovery_target module to target (#61).
+- Updated docstrings and notebooks.
+- Refactor median target method into parameterized, callable class (#61).
+
+### Removed
+
+- Remove _ReferenceSystem class (#61).
+
+
+## [0.2.2b2] - 2024-01-11
 
 ### Added
 
@@ -22,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix incorrect Y2R values bug (#42)
 
 
-## [0.2.1b2] - 2024-02-01
+## [0.2.1b2] - 2024-01-01
 
 ### Added
 

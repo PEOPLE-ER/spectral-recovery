@@ -10,11 +10,12 @@ import pandas as pd
 from typing import List
 from dask.distributed import Client, LocalCluster
 
-from spectral_recovery.enums import Index, Metric
+from spectral_recovery.enums import Metric
 from spectral_recovery.restoration import RestorationArea
-from spectral_recovery.io.raster import read_and_stack_tifs, _metrics_to_tifs
+from spectral_recovery.indices import compute_indices
+from spectral_recovery.io.raster import read_timeseries, _metrics_to_tifs
+from spectral_recovery.io.polygon import read_reference_polygons, read_restoration_polygons
 
-INDEX_CHOICE = [i.value for i in Index]
 METRIC_CHOICE = [str(m) for m in Metric]
 
 # NOTE: multi-year disturbances are not implemented in CLI yet. Users cannot provide disturbance AND restoration years.
@@ -30,27 +31,18 @@ METRIC_CHOICE = [str(m) for m in Metric]
     "rest_poly",
     type=click.Path(exists=True, path_type=Path),
 )
-@click.argument(
-    "rest_year",
-    type=click.DateTime(formats=["%Y"]),
-)
-@click.argument(
-    "ref_poly",
+@click.option(
+    "-ref",
+    "--reference",
+    required=False,
     type=click.Path(exists=True, path_type=Path),
-)
-@click.argument(
-    "ref_years",
-    type=(click.DateTime(formats=["%Y"]), click.DateTime(formats=["%Y"])),
+    help="Path to reference polygon(s) with dates."
 )
 @click.option(
     "-i",
     "--indices",
-    type=click.Choice(
-        INDEX_CHOICE,
-        case_sensitive=False,
-    ),
     multiple=True,
-    required=False,
+    required=True,
     help="The indices on which to compute recovery metrics.",
 )
 @click.option(
@@ -64,10 +56,8 @@ def cli(
     ctx,
     tif_dir: List[str],
     rest_poly: Path,
-    rest_year: str,
-    ref_poly: Path,
-    ref_years: str,
     out: Path,
+    reference: Path = None,
     indices: List[str] = None,
     mask: xr.DataArray = None,
 ) -> None:
@@ -75,51 +65,36 @@ def cli(
 
     This script will compute recovery metrics over the area of REST_POLY
     using spectral data from annual composites in TIF_DIR. Recovery targets
-    will be derived over REF_POLYGON for REF_YEARS.
+    will be derived over REF_POLYGON between reference start and end year.
 
     \b
     TIF_DIR        Path to a directory containing annual composites.
     OUT            Path to directory to write output rasters.
     REST_POLY      Path to the restoration area polygon.
-    REST_YEAR      Year the restoration event began.
-    REF_POLY       Path to reference polygon(s).
-    REF_YEARS      Start and end years over which to derive a recovery target.
+    REFERNCE       (optional) Path to reference polygon(s).
 
     """
-    # TODO: move user input prep/validation into own function?
-    rest_year = pd.to_datetime(rest_year)
-    ref_years = [pd.to_datetime(ref_years[0]), pd.to_datetime(ref_years[1])]
-
-    try:
-        valid_indices = [Index[name.lower()] for name in indices]
-    except KeyError as e:
-        raise e from None
-
     p = Path(tif_dir).glob("*.tif")
     tifs = [x for x in p if x.is_file()]
 
     with LocalCluster() as cluster, Client(cluster) as client:
         click.echo(f"\nReading in annual composites from '{tif_dir}'")
-        timeseries = read_and_stack_tifs(
+        timeseries = read_timeseries(
             path_to_tifs=tifs,
             path_to_mask=mask,
         )
         if not timeseries.satts.is_annual_composite:
             raise ValueError("Stack is not a valid annual composite stack.")
 
-        if indices is not None and len(indices) != 0:
-            click.echo(f"Computing indices: {indices}")
-            timeseries_for_metrics = timeseries.satts.indices(valid_indices)
-        else:
-            timeseries_for_metrics = timeseries
+        click.echo(f"Computing indices: {indices}")
+        timeseries_for_metrics = compute_indices(timeseries, indices)
 
-        rest_poly_gdf = gpd.read_file(rest_poly)
-        ref_poly_gdf = gpd.read_file(ref_poly)
+        rest_poly_gdf = gpd.read_restoration_polygons(rest_poly)
+        if reference:
+            ref_poly_gdf = gpd.read_reference_polygons(reference)
         ra = RestorationArea(
             restoration_polygon=rest_poly_gdf,
-            restoration_start=rest_year,
             reference_polygon=ref_poly_gdf,
-            reference_years=ref_years,
             composite_stack=timeseries_for_metrics,
         )
         ctx.obj = ra
@@ -129,7 +104,7 @@ def cli(
 @click.pass_obj
 @click.option("-t", "--timestep", type=int, required=False)
 def RRI(obj, timestep):
-    click.echo(f"RRI is not released in v0.1.0b1... skipping")
+    click.echo(f"RRI is not released in v0.3.0b0... skipping")
     return
     if timestep:
         rri = obj.RRI(timestep=timestep)
@@ -142,11 +117,12 @@ def RRI(obj, timestep):
 @click.pass_obj
 @click.option("-p", "--percent", type=int, required=False)
 def Y2R(obj, percent):
+
     click.echo(f"Computing Y2R")
     if percent:
-        y2r = obj.Y2R(percent_of_target=percent)
+        y2r = obj.y2r(percent_of_target=percent)
     else:
-        y2r = obj.Y2R()
+        y2r = obj.y2r()
     return y2r
 
 
@@ -156,9 +132,9 @@ def Y2R(obj, percent):
 def YrYr(obj, timestep):
     click.echo(f"Computing YrYr")
     if timestep:
-        yryr = obj.YrYr(timestep=timestep)
+        yryr = obj.yryr(timestep=timestep)
     else:
-        yryr = obj.YrYr()
+        yryr = obj.yryr()
     return yryr
 
 
@@ -168,9 +144,9 @@ def YrYr(obj, timestep):
 def dNBR(obj, timestep):
     click.echo(f"Computing dNBR")
     if timestep:
-        dnbr = obj.dNBR(timestep=timestep)
+        dnbr = obj.dnbr(timestep=timestep)
     else:
-        dnbr = obj.dNBR()
+        dnbr = obj.dnbr()
     return dnbr
 
 
@@ -182,14 +158,14 @@ def R80P(obj, percent, timestep):
     click.echo(f"Computing R80P")
     if percent:
         if timestep:
-            p80r = obj.R80P(percent_of_target=percent, timestep=timestep)
+            p80r = obj.r80p(percent_of_target=percent, timestep=timestep)
         else:
-            p80r = obj.R80P(percent_of_target=percent)
+            p80r = obj.r80p(percent_of_target=percent)
     else:
         if timestep:
-            p80r = obj.R80P(timestep=timestep)
+            p80r = obj.r80p(timestep=timestep)
         else:
-            p80r = obj.R80P()
+            p80r = obj.r80p()
     return p80r
 
 

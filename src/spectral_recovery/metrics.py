@@ -1,24 +1,73 @@
 """Methods for computing recovery metrics."""
 
+from typing import Dict, List
+
 import xarray as xr
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 
 from spectral_recovery._utils import maintain_rio_attrs
+from spectral_recovery.restoration import RestorationArea
+from spectral_recovery.indices import compute_indices
+from spectral_recovery.targets import MedianTarget
 
-# TODO: should methods that take 'percent' params not allow negative percent
-# or greater than 100 values? Right now we just throw a ValueError. This avoids
-# weird divides, so seems like the safest option, but maybe we should be more flexible?
+
 NEG_TIMESTEP_MSG = "timestep cannot be negative."
 VALID_PERC_MSP = "percent must be between 0 and 100."
+METRIC_FUNCS = {}
+
+
+def register_metric(f):
+    """Add function and name to global name/func dict"""
+    METRIC_FUNCS[f.__name__] = f
+    return f
 
 
 @maintain_rio_attrs
-def dnbr(
-    image_stack: xr.DataArray,
-    rest_start: str,
+def compute_metrics(
+    timeseries_data: xr.DataArray,
+    restoration_polygons: gpd.GeoDataFrame,
+    metrics: List[str],
+    indices: List[str],
+    reference_polygons: gpd.GeoDataFrame = None,
+    index_constants: Dict[str, int] = {},
     timestep: int = 5,
-) -> xr.DataArray:
+    percent_of_target: int = 80,
+    recovery_target_method=MedianTarget(scale="polygon"),
+):
+    indices_stack = compute_indices(
+        image_stack=timeseries_data, indices=indices, constants=index_constants
+    )
+    restoration_area = RestorationArea(
+        restoration_polygon=restoration_polygons,
+        reference_polygons=reference_polygons,
+        composite_stack=indices_stack,
+        recovery_target_method=recovery_target_method,
+    )
+    m_results = []
+    for m in metrics:
+        try:
+            m_func = METRIC_FUNCS[m.lower()]
+        except KeyError:
+            raise ValueError(f"{m} is not a valid metric choice!")
+        m_results.append(
+            m_func(
+                ra=restoration_area,
+                params={
+                    "timestep": timestep,
+                    "percent_of_target": percent_of_target,
+                },
+            ).assign_coords({"metric": m})
+        )
+
+    metrics = xr.concat(m_results, "metric")
+
+    return metrics
+
+
+@register_metric
+def dnbr(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
     """Per-pixel dNBR.
 
     The absolute change in a spectral index’s value at a point in the
@@ -28,14 +77,11 @@ def dnbr(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel dNBR.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring
-        window (post rest_start) from which to evaluate absolute
-        change. Default = 5.
+    ra : RestorationArea
+        The restoration area to compute dnbr for.
+    params : Dict
+        Parameters to customize metric computation. dnbr uses
+        the 'timestep' parameter with default = {"timestep": 5}
 
     Returns
     -------
@@ -43,30 +89,27 @@ def dnbr(
         DataArray containing the dNBR value for each pixel.
 
     """
-    if timestep < 0:
+    if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    try:
-        rest_post_t = str(int(rest_start) + timestep)
-        dnbr_v = (
-            image_stack.sel(time=rest_post_t).drop_vars("time")
-            - image_stack.sel(time=rest_start).drop_vars("time")
-        ).squeeze("time")
-    except KeyError as e:
-        if int(rest_post_t) > year_dt(image_stack["time"].data.max(), int):
-            raise ValueError(
-                f"timestep={timestep}, but {rest_start}+{timestep}={rest_post_t} not"
-                f" within time coordinates: {image_stack.coords['time'].values}. "
-            ) from None
-        raise e
+
+    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
+    if rest_post_t > ra.timeseries_end:
+        raise ValueError(
+            f"timestep={params['timestep']}, but"
+            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within"
+            f" time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
+        ) from None
+
+    dnbr_v = (
+        ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
+        - ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
+    ).squeeze("time")
+
     return dnbr_v
 
 
-@maintain_rio_attrs
-def yryr(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    timestep: int = 5,
-):
+@register_metric
+def yryr(ra: RestorationArea, params: Dict = {"timestep": 5}):
     """Per-pixel YrYr.
 
     The average annual recovery rate relative to a fixed time interval
@@ -76,14 +119,11 @@ def yryr(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel YrYr.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring
-        window (post rest_start) from which to evaluate absolute
-        change. Default = 5.
+    ra : RestorationArea
+        The restoration area to compute yryr for.
+    params : Dict
+        Parameters to customize metric computation. yryr uses
+        the 'timestep' parameter with default = {"timestep": 5}
 
     Returns
     -------
@@ -91,24 +131,22 @@ def yryr(
         DataArray containing the YrYr value for each pixel.
 
     """
-    if timestep < 0:
+    if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(int(rest_start) + timestep)
-    obs_post_t = image_stack.sel(time=rest_post_t).drop_vars("time")
-    obs_start = image_stack.sel(time=rest_start).drop_vars("time")
-    yryr_v = ((obs_post_t - obs_start) / timestep).squeeze("time")
+    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
+    obs_post_t = ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
+    obs_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
+        "time"
+    )
+    yryr_v = ((obs_post_t - obs_start) / params["timestep"]).squeeze("time")
 
     return yryr_v
 
 
-@maintain_rio_attrs
+@register_metric
 def r80p(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    recovery_target: xr.DataArray,
-    timestep: int = None,
-    percent: int = 80,
+    ra: RestorationArea, params: Dict = {"percent_of_target": 80, "timestep": 5}
 ) -> xr.DataArray:
     """Per-pixel R80P.
 
@@ -123,18 +161,12 @@ def r80p(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel dNBR.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    recovery_target : xr.DataArray
-        Recovery target values. Must be broadcastable to image_stack.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring window
-        from which to evaluate absolute change. Default = -1 which
-        represents the max/most recent timestep.
-    percent: int, optional
-        Percent of recovery to compute recovery against. Default = 80.
+    ra : RestorationArea
+        The restoration area to compute r80p for.
+    params : Dict
+        Parameters to customize metric computation. r80p uses
+        the 'timestep' and 'percent_of_target' parameters with
+        default = {"percent_of_target": 80, "timestep": 5}.
 
     Returns
     -------
@@ -142,16 +174,16 @@ def r80p(
         DataArray containing the R80P value for each pixel.
 
     """
-    if timestep is None:
-        rest_post_t = image_stack["time"].data[-1]
-    elif timestep < 0:
+    if params["timestep"] is None:
+        rest_post_t = ra.restoration_image_stack["time"].data[-1]
+    elif params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    elif percent <= 0 or percent > 100:
+    elif params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
     else:
-        rest_post_t = str(int(rest_start) + timestep)
-    r80p_v = (image_stack.sel(time=rest_post_t)).drop_vars("time") / (
-        (percent / 100) * recovery_target
+        rest_post_t = str(int(ra.restoration_start) + params["timestep"])
+    r80p_v = (ra.restoration_image_stack.sel(time=rest_post_t)).drop_vars("time") / (
+        (params["percent_of_target"] / 100) * ra.recovery_target
     )
     try:
         # if using the default timestep (the max/most recent),
@@ -162,13 +194,8 @@ def r80p(
     return r80p_v
 
 
-@maintain_rio_attrs
-def y2r(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    recovery_target: xr.DataArray,
-    percent: int = 80,
-) -> xr.DataArray:
+@register_metric
+def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.DataArray:
     """Per-pixel Y2R.
 
     The length of time taken (in time steps/years) for a given pixel to
@@ -177,14 +204,11 @@ def y2r(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel Y2R.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    recovery_target : xr.DataArray
-        Recovery target values. Must be broadcastable to image_stack.
-    percent: int, optional
-        Percent of recovery to compute recovery against. Default = 80.
+    ra : RestorationArea
+        The restoration area to compute r80p for.
+    params : Dict
+        Parameters to customize metric computation. r80p uses
+        the 'percent_of_target' parameter with default = {"percent_of_target": 80}
 
     Returns
     -------
@@ -194,20 +218,22 @@ def y2r(
         have not yet reached the recovery target value.
 
     """
-    if percent <= 0 or percent > 100:
+    if params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
-    reco_target = recovery_target * (percent / 100)
-    recovery_window = image_stack.sel(time=slice(rest_start, None))
+    y2r_target = ra.recovery_target * (params["percent_of_target"] / 100)
+    recovery_window = ra.restoration_image_stack.sel(
+        time=slice(ra.restoration_start, None)
+    )
 
-    years_to_recovery = (recovery_window >= reco_target).argmax(dim="time", skipna=True)
+    years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be pixels that were recovered at the first timestep,
     # pixels that never recovered (argmax returns 0 if all values are False), or
     # pixels that were NaN for the entire recovery window.
     # Only the first is a valid 0, so set pixels that never recovered to -9999,
     # and pixels that were NaN for the entire recovery window back to NaN.
     not_zero = years_to_recovery != 0
-    recovered_at_zero = recovery_window.sel(time=rest_start) >= reco_target
-    is_nan = recovery_window.sel(time=rest_start).isnull()
+    recovered_at_zero = recovery_window.sel(time=ra.restoration_start) >= y2r_target
+    is_nan = recovery_window.sel(time=ra.restoration_start).isnull()
     valid_output = not_zero | recovered_at_zero | is_nan
 
     # Set unrecovered 0's to -9999, and NaN 0's to NaN
@@ -221,13 +247,8 @@ def y2r(
     return y2r_v
 
 
-@maintain_rio_attrs
 def rri(
-    image_stack: xr.DataArray,
-    rest_start: str,
-    dist_start: int,
-    timestep: int = 5,
-    use_dist_avg: bool = False,
+    ra: RestorationArea, params: Dict = {"timestep": 5, "use_dist_avg": False}
 ) -> xr.DataArray:
     """Per-pixel RRI.
 
@@ -241,17 +262,12 @@ def rri(
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        DataArray of images over which to compute per-pixel dNBR.
-    rest_start : str
-        The starting year of the restoration monitoring window.
-    timestep : int, optional
-        The timestep (years) in the restoration monitoring window
-        (post rest_start) from which to evaluate absolute change.
-        Default = 5.
-    use_dist_avg : bool, optional
-        Whether to use the average of the disturbance period to
-        calculate the disturbance magnitude. Default = False.
+    ra : RestorationArea
+        The restoration area to compute r80p for.
+    params : Dict
+        Parameters to customize metric computation. r80p uses
+        the 'timestep' and 'use_dist_avg' parameters with
+        default = {"use_dist_avg": False, "timestep": 5}.
 
     Returns
     -------
@@ -259,48 +275,52 @@ def rri(
         DataArray containing the RRI value for each pixel.
 
     """
-    if timestep < 0:
+    if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    if timestep == 0:
+    if params["timestep"] == 0:
         raise ValueError("timestep for RRI must be greater than 0.")
-    dist_end = rest_start
+    dist_end = ra.restoration_start
 
-    rest_post_tm1 = str(int(rest_start) + (timestep - 1))
-    rest_post_t = str(int(rest_start) + timestep)
+    rest_post_tm1 = str(int(ra.restoration_start) + (params["timestep"] - 1))
+    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
     rest_t_tm1 = [
         (date == pd.to_datetime(rest_post_tm1) or date == pd.to_datetime(rest_post_t))
-        for date in image_stack.coords["time"].values
+        for date in ra.restoration_image_stack.coords["time"].values
     ]
     if any(rest_t_tm1) == 0:
         raise ValueError(
-            f"timestep={timestep}, but ({rest_start}-1)+{timestep}={rest_post_tm1} or"
-            f" {rest_start}+{timestep}={rest_post_t} not within time coordinates:"
-            f" {image_stack.coords['time'].values}. "
+            f"timestep={params['timestep']}, but"
+            f" ({ra.restoration_start}-1)+{params['timestep']}={rest_post_tm1} or"
+            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within"
+            f" time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
         )
-    max_rest_t_tm1 = image_stack.sel(time=rest_t_tm1).max(dim=["time"])
+    max_rest_t_tm1 = ra.restoration_image_stack.sel(time=rest_t_tm1).max(dim=["time"])
 
-    if use_dist_avg:
-        dist_pre_1 = str(int(dist_start) - 1)
-        dist_pre_2 = str(int(dist_start) - 2)
+    if params["use_dist_avg"]:
+        dist_pre_1 = str(int(ra.disturbance_start) - 1)
+        dist_pre_2 = str(int(ra.disturbance_start) - 2)
         dist_pre_1_2 = [
             (date == pd.to_datetime(dist_pre_1) or date == pd.to_datetime(dist_pre_2))
-            for date in image_stack.coords["time"].values
+            for date in ra.restoration_image_stack.coords["time"].values
         ]
         if any(dist_pre_1_2) == 0:
             raise ValueError(
-                f"use_dist_avg={use_dist_avg} uses the 2 years prior to disturbance"
-                f" start, but {dist_start}-2={dist_pre_1} or"
-                f" {dist_start}-1={dist_pre_2} not within time coordinates:"
-                f" {image_stack.coords['time'].values}."
+                f"use_dist_avg={params['use_dist_avg']} uses the 2 years prior to"
+                f" disturbance start, but {ra.disturbance_start}-2={dist_pre_1} or"
+                f" {ra.disturbance_start}-1={dist_pre_2} not within time coordinates:"
+                f" {ra.restoration_image_stack.coords['time'].values}."
             )
-        dist_pre = image_stack.sel(time=dist_pre_1_2).max(dim=["time"])
+        dist_pre = ra.restoration_image_stack.sel(time=dist_pre_1_2).max(dim=["time"])
 
         dist_s_e = [
-            (date >= pd.to_datetime(dist_start) and date <= pd.to_datetime(dist_end))
-            for date in image_stack.coords["time"].values
+            (
+                date >= pd.to_datetime(ra.disturbance_start)
+                and date <= pd.to_datetime(dist_end)
+            )
+            for date in ra.restoration_image_stack.coords["time"].values
         ]
-        dist_avg = image_stack.sel(time=dist_s_e).mean(dim=["time"])
+        dist_avg = ra.restoration_image_stack.sel(time=dist_s_e).mean(dim=["time"])
 
         zero_denom_mask = dist_pre - dist_avg == 0
         dist_pre = xr.where(zero_denom_mask, np.nan, dist_pre)
@@ -312,17 +332,21 @@ def rri(
         except KeyError:
             pass
     else:
-        rest_0 = image_stack.sel(time=rest_start).drop_vars("time")
-        dist_start = image_stack.sel(time=dist_start).drop_vars("time")
+        rest_0 = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
+            "time"
+        )
+        ra.disturbance_start = ra.restoration_image_stack.sel(
+            time=ra.disturbance_start
+        ).drop_vars("time")
         dist_e = rest_0
 
         # Find if/where dist_start - dist_e == 0, set to NaN to avoid divide by zero
         # NaN - X will always be NaN, so no need to worry about the other side of the equation
         # Note: this is likely a safer way to do this that doesn't count on x / NaN. We could
         # mask where 0, set to num, and then use that mask aftwards to set to NaN.
-        zero_denom_mask = dist_start - dist_e == 0
-        dist_start = xr.where(zero_denom_mask, np.nan, dist_start)
-        rri_v = (max_rest_t_tm1 - rest_0) / (dist_start - dist_e)
+        zero_denom_mask = ra.disturbance_start - dist_e == 0
+        ra.disturbance_start = xr.where(zero_denom_mask, np.nan, ra.disturbance_start)
+        rri_v = (max_rest_t_tm1 - rest_0) / (ra.disturbance_start - dist_e)
         # if dist_pre_1_2 has length greater than one we will need to squeeze the time dim
         try:
             rri_v = rri_v.squeeze("time")

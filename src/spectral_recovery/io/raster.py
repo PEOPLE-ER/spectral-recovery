@@ -13,17 +13,23 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 
+from spectral_recovery._utils import bands_pretty_table, common_and_long_to_short
 from rasterio._err import CPLE_AppDefinedError
 
-from spectral_recovery.enums import BandCommon, Index, Platform
-from spectral_recovery._config import VALID_YEAR, REQ_DIMS
+from spectral_recovery._config import (
+    VALID_YEAR,
+    REQ_DIMS,
+    SUPPORTED_PLATFORMS,
+    STANDARD_BANDS,
+)
+
+COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
+BANDS_TABLE = bands_pretty_table()
 
 
-# TODO: deprecate path_to_mask parameter/functionality?
-def read_and_stack_tifs(
+def read_timeseries(
     path_to_tifs: List[str] | str,
-    platform: List[str] | str,
-    band_names: Dict[int, str | BandCommon | Index] = None,
+    band_names: Dict[int, str] = None,
     path_to_mask: str = None,
     array_type: str = "numpy",
 ):
@@ -33,8 +39,6 @@ def read_and_stack_tifs(
     ----------
     path_to_tifs : list of str
         List of paths to TIFs or path to directory containing TIFs.
-    platform : {"landsat_etm", "landsat_tm", "landsat_oli", "sentinel_2"}
-        Platform(s) from which TIF imagery was derived Must be one of: 'landsat_etm', 'landsat_tm',
     band_names : dict, optional
         Dictionary mapping band numbers to band names. If not provided,
         band names will be read from the TIFs band descriptions.
@@ -74,6 +78,8 @@ def read_and_stack_tifs(
             with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
                 image_dict[Path(file).stem] = data
 
+    # Parse the year of the raster/composite from it's filename and use the year
+    # as the DataArray's time dimension coordinate.
     time_keys = []
     for filename in image_dict:
         if _str_is_year(filename):
@@ -82,48 +88,36 @@ def read_and_stack_tifs(
             raise ValueError(
                 f"TIF filenames must be in format 'YYYY' but recieved: '{filename}'"
             ) from None
-    # Stack all images into a single DataArray
-    stacked_data = _stack_bands(image_dict.values(), time_keys, dim_name="time")
-    # Clean up coordinates and attributes
+    # Stack images along the time dimension
+    stacked_data = xr.concat(image_dict.values(), dim=pd.Index(time_keys, name="time"))
+
+    band_nums = stacked_data.band.values
     if band_names is None:
+        # If band descriptions are present in the rasters, then rioxarray
+        # sets those descriptions as 'long_name' attributes on the DataArray.
+        #
+        # T/f check if the "long_name" attribue exists, if it doesn't then
+        # there were no band descriptions.
         try:
-            band_names_new = _to_band_or_index_enums(stacked_data.attrs["long_name"])
+            long_names = stacked_data.attrs["long_name"]
+            band_names = dict(zip(band_nums, long_names))
+
         except KeyError:
             raise ValueError(
                 "Band descriptions not found in TIFs. Please provide band "
-                " names for bands {stack_data.band.values} using the `band_names=`"
-                " argument."
+                " names using the band_names argument."
             ) from None
+
+    if _valid_band_name_mapping(band_names, band_nums):
+        band_names = {num: band_names[num] for num in band_nums}
+        standard_names, attr_names = _to_standard_band_names(band_names.values())
     else:
-        band_names_old = stacked_data.band.values
-        for b in band_names.keys():
-            if b not in band_names_old:
-                raise ValueError(
-                    f"Band {b} not found in TIFs. Please provide a mapping for only"
-                    f" bands: {band_names_old}"
-                ) from None
+        raise ValueError(
+            "Invalid band to name mapping. Rasters have bands"
+            f" {list(stacked_data.band.values)} but {list(band_names.keys())} provided."
+        )
 
-        if not all(k in band_names_old for k in band_names.keys()):
-            raise ValueError(
-                f"Band names {band_names.keys()} not found in TIFs. Please provide a"
-                f" mapping for bands: {band_names_old}"
-            ) from None
-        # This is working on the assumption that bands are always integers when no band
-        # description is provided e.g band_names_old == [0,1,2]
-        for band_num in band_names_old:
-            if band_num not in band_names.keys():
-                raise ValueError(
-                    f"Band {band_num} not found in `band_names` dictionary. Please"
-                    f" provide a mapping for all bands: {band_names_old}"
-                ) from None
-
-            band_names[band_num] = _to_band_or_index_enums([band_names[band_num]])[0]
-
-        band_names_new = [
-            band_names[k] for k in band_names_old
-        ]  # this silently discards any bands in bands_names that are not in the TIFs
-
-    stacked_data = stacked_data.assign_coords(band=band_names_new)
+    stacked_data = stacked_data.assign_coords(band=standard_names)
     # TODO: catch missing dimension error here
     stacked_data = stacked_data.transpose(*REQ_DIMS)
     stacked_data = stacked_data.sortby("time")
@@ -132,45 +126,7 @@ def read_and_stack_tifs(
         with rioxarray.open_rasterio(Path(path_to_mask), chunks="auto") as mask:
             stacked_data = _mask_stack(stacked_data, mask)
 
-    stacked_data.attrs["platform"] = _to_platform_enums(platform)
-
     return stacked_data
-
-
-def _to_platform_enums(platform: List[str]) -> List[Platform]:
-    """Convert a list of platform names to Platform enums"""
-    valid_names = []
-    for name in platform:
-        try:
-            val = Platform[name.upper()]
-            valid_names.append(val)
-        except KeyError:
-            raise ValueError(
-                f"Platform '{name}' not found. Valid platforms are: {list(Platform)}"
-            ) from None
-    return valid_names
-
-
-def _to_band_or_index_enums(names_list: List[str]) -> Dict[str, BandCommon | Index]:
-    """Convert a list of band or index names to BandCommon or Index enums"""
-    valid_names = []
-    for name in names_list:
-        try:
-            val = BandCommon[name.upper()]
-            valid_names.append(val)
-            continue
-        except KeyError:
-            pass
-        try:
-            val = Index[name.upper()]
-            valid_names.append(val)
-        except KeyError:
-            raise ValueError(
-                f"Band or index '{name}' not found. Valid bands and indices names are:"
-                f" {[str(b) for b in list(BandCommon)]} and"
-                f" {[str(i) for i in list(Index)]}"
-            ) from None
-    return valid_names
 
 
 def _str_is_year(year_str) -> bool:
@@ -180,11 +136,71 @@ def _str_is_year(year_str) -> bool:
     return True
 
 
-def _stack_bands(bands, coords, dim_name) -> xr.DataArray:
-    """Stack a bands along a named dimension with coordinates"""
-    # TODO: Probably doesn't need to be a function...
-    stacked_bands = xr.concat(bands, dim=pd.Index(coords, name=dim_name))
-    return stacked_bands
+def _valid_band_name_mapping(band_names, band_nums):
+    """Check if band_names dict maps each band to a name and vice versa.
+
+    Parameters
+    ----------
+    band_names : dict
+        User input of band numbers to band names
+    band_nums : list
+        List of band numbers from rasters
+
+    Returns
+    ------
+    bool
+        - False if band number provided that is not in band_nums.
+        - False if band number missing from band_names.
+        - True otherwise.
+
+    """
+    for b in band_names.keys():
+        if b not in band_nums:
+            return False
+
+    for num in band_nums:
+        if num not in band_names.keys():
+            False
+
+    return True
+
+
+def _to_standard_band_names(in_names):
+    """Map given names to standard names.
+
+    Parameters
+    -----------
+    in_names : list
+        Band names
+
+    Returns
+    -------
+    tuple : tuple of lists
+        lists of standard names and attribute (long) names, respectively
+
+
+    """
+    standard_names = []
+    attr_names = []
+    for given_name in in_names:
+        converted = False
+        if given_name in COMMON_LONG_SHORT_DICT.keys():
+            converted = True
+            standard_names.append(COMMON_LONG_SHORT_DICT[given_name])
+            attr_names.append(given_name)
+
+        elif given_name in STANDARD_BANDS:
+            converted = True
+            standard_names.append(given_name)
+
+        if not converted:
+            raise ValueError(
+                "Band must be named standard, common, or long name. Could not find"
+                f" '{given_name}' in catalogue. See table below for accepted names:"
+                f" \n\n {BANDS_TABLE} \n\n"
+            ).with_traceback(None) from None
+
+    return (standard_names, attr_names)
 
 
 def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.DataArray:

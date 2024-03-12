@@ -17,18 +17,20 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-version = "0.2.2b2"
+version = "0.3.0b0"
 dependencies = [
     "geopandas >= 0.13.2",
     "rioxarray >= 0.14.1",
     "rasterio >= 1.3.7",
     "xarray >= 2023.5.0",
+    "spyndex == 0.5.0",
     "numpy >= 1.24.3",
     "click >= 8.1.3",
-    "dask >= 2023.5.1",
-    "distributed >= 2023.5.1",
+    "dask >= 2023.5.1, < 2024.3",
+    "distributed >= 2023.5.1, < 2024.3",
     "matplotlib >= 3.7.1",
     "seaborn >= 0.12.2",
+    "prettytable >= 3.9.0",
 ]
 
 [project.optional-dependencies]

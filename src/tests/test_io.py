@@ -2,13 +2,19 @@ import pytest
 import xarray as xr
 import pandas as pd
 import numpy as np
+import geopandas as gpd
 
 from numpy.testing import assert_array_equal
 from unittest.mock import patch
-from spectral_recovery.enums import BandCommon, Index, Platform
+from tests.utils import SAME_XR
 from spectral_recovery.io.raster import (
-    read_and_stack_tifs,
+    read_timeseries,
     _metrics_to_tifs,
+)
+
+from spectral_recovery.io.polygon import (
+    read_restoration_polygons,
+    read_reference_polygons,
 )
 
 
@@ -84,9 +90,8 @@ class TestReadAndStackTifs:
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=tif_paths,
-            platform=["landsat_oli"],
         )
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
@@ -103,29 +108,25 @@ class TestReadAndStackTifs:
             (
                 [f"202o"],
                 xr.DataArray(
-                    [[[[0]]]],
-                    dims=["band", "time", "y", "x"],
+                    [[[[0]]]], dims=["band", "time", "y", "x"], coords={"band": [1]}
                 ),
             ),
             (
                 [f"tif2020"],
                 xr.DataArray(
-                    [[[[0]]]],
-                    dims=["band", "time", "y", "x"],
+                    [[[[0]]]], dims=["band", "time", "y", "x"], coords={"band": [1]}
                 ),
             ),
             (
                 [f"20"],
                 xr.DataArray(
-                    [[[[0]]]],
-                    dims=["band", "time", "y", "x"],
+                    [[[[0]]]], dims=["band", "time", "y", "x"], coords={"band": [1]}
                 ),
             ),
             (
                 [f"2020", f"not_a_year", f"2022"],
                 xr.DataArray(
-                    [[[[0]]]],
-                    dims=["band", "time", "y", "x"],
+                    [[[[0]]]], dims=["band", "time", "y", "x"], coords={"band": [1]}
                 ),
             ),
         ],
@@ -143,24 +144,25 @@ class TestReadAndStackTifs:
         with pytest.raises(
             ValueError,
         ):
-            read_and_stack_tifs(path_to_tifs=filenames, platform=["landsat_oli"])
+            read_timeseries(
+                path_to_tifs=filenames,
+            )
 
     @patch(
         "rioxarray.open_rasterio",
     )
     def test_correct_bands_from_tifs_with_long_name(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
+        expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
             attrs={"long_name": ["blue", "red", "nir"]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
-            path_to_tifs=filenames, platform=["landsat_oli"]
-        )
+        stacked_tifs = read_timeseries(path_to_tifs=filenames)
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
     @patch(
@@ -168,37 +170,56 @@ class TestReadAndStackTifs:
     )
     def test_correct_bands_from_tifs_w_band_dict(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
+        expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
-            band_names={0: "blue", 1: "red", 2: "nir"},
-            platform=["landsat_oli"],
+            band_names={1: "blue", 2: "red", 3: "nir"},
         )
+
         assert np.all(stacked_tifs["band"].data == expected_bands)
+
+    @patch(
+        "rioxarray.open_rasterio",
+    )
+    def test_invalid_band_name_throws_error(self, mocked_rasterio_open):
+        filenames = ["test_file"]
+        rasterio_return = xr.DataArray(
+            [[[[0]]]], dims=["band", "time", "y", "x"], coords={"band": [1]}
+        )
+        mocked_rasterio_open.return_value = rasterio_return
+
+        with pytest.raises(
+            ValueError,
+        ):
+            stacked_tifs = read_timeseries(
+                path_to_tifs=filenames,
+                band_names={0: "not_a_band"},
+            )
 
     @patch(
         "rioxarray.open_rasterio",
     )
     def test_band_dict_supersedes_band_desc(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.BLUE, BandCommon.RED, BandCommon.NIR]
+        expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
             attrs={"long_name": ["swir", "green", "red"]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
-            band_names={0: "blue", 1: "red", 2: "nir"},
-            platform=["landsat_oli"],
+            band_names={1: "blue", 2: "red", 3: "nir"},
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -207,17 +228,17 @@ class TestReadAndStackTifs:
     )
     def test_band_dict_assigns_name_by_key_not_order(self, mocked_rasterio_open):
         filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
-        expected_bands = [BandCommon.RED, BandCommon.BLUE, BandCommon.NIR]
+        expected_bands = ["R", "B", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_and_stack_tifs(
+        stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
-            band_names={1: "blue", 0: "red", 2: "nir"},
-            platform=["landsat_oli"],
+            band_names={2: "blue", 1: "red", 3: "nir"},
         )
         # assert
         print(stacked_tifs["band"].data, expected_bands)
@@ -231,16 +252,16 @@ class TestReadAndStackTifs:
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
         with pytest.raises(
             ValueError,
         ):
-            _ = read_and_stack_tifs(
+            _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"},
-                platform=["landsat_oli"],
             )
 
     @patch(
@@ -251,16 +272,16 @@ class TestReadAndStackTifs:
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
         with pytest.raises(
             ValueError,
         ):
-            _ = read_and_stack_tifs(
+            _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
-                platform=["landsat_oli"],
             )
 
     @patch(
@@ -271,15 +292,15 @@ class TestReadAndStackTifs:
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
         )
         mocked_rasterio_open.return_value = rasterio_return
 
         with pytest.raises(
             ValueError,
         ):
-            _ = read_and_stack_tifs(
+            _ = read_timeseries(
                 path_to_tifs=filenames,
-                platform=["landsat_oli"],
             )
 
     @pytest.mark.parametrize(
@@ -296,6 +317,7 @@ class TestReadAndStackTifs:
                 xr.DataArray(
                     [[[[0]]], [[[0]]], [[[0]]]],
                     dims=["band", "time", "y", "x"],
+                    coords={"band": [1, 2, 3]},
                     attrs={"long_name": ["blue", "red", "nir"]},
                 ),
             ),
@@ -312,25 +334,131 @@ class TestReadAndStackTifs:
         rasterio_return,
     ):
         mocked_rasterio_open.return_value = rasterio_return
-        stacked_tifs = read_and_stack_tifs(
-            path_to_tifs=filenames, platform=["landsat_oli"]
+        stacked_tifs = read_timeseries(
+            path_to_tifs=filenames,
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
 
-    @patch(
-        "rioxarray.open_rasterio",
-    )
-    def test_platform_is_added_to_attrs(self, mocked_rasterio_open):
-        mocked_rasterio_open.return_value = xr.DataArray(
-            [[[[0]]], [[[0]]], [[[0]]]],
-            dims=["band", "time", "y", "x"],
-            attrs={"long_name": ["blue", "red", "nir"]},
+
+class TestReadRestorationPolygons:
+    @patch("geopandas.read_file")
+    def test_more_than_one_restoration_polygon_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": [2015, 2015],
+            "rest_start": [2016, 2016],
+            "ref_start": [2012, 2012],
+            "ref_end": [2012, 2012],
+            "geometry": ["POINT (1 2)", "POINT (2 1)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_restoration_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_less_than_2_cols_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame(
+            {"dist_start": [2015], "geometry": ["POINT (1 2)"]}
         )
-        stacked_tifs = read_and_stack_tifs(
-            path_to_tifs=[f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"],
-            platform=["landsat_oli", "landsat_tm"],
+        with pytest.raises(ValueError):
+            _ = read_restoration_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_not_2_or_4_cols_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame(
+            {"dist_start": [2015], "geometry": ["POINT (1 2)"]}
         )
-        assert stacked_tifs.attrs["platform"] == [
-            Platform.LANDSAT_OLI,
-            Platform.LANDSAT_TM,
-        ]
+        with pytest.raises(ValueError):
+            _ = read_restoration_polygons(path="some_path.gpkg")
+        with pytest.raises(ValueError):
+            _ = read_restoration_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_not_int_col_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": pd.to_datetime("2015"),
+            "rest_start": 2016,
+            "ref_start": 2012,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_restoration_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_dist_col_greater_than_rest_col_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": 2017,
+            "rest_start": 2016,
+            "ref_start": 2012,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_restoration_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_dist_ref_start_greater_than_ref_end_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": 2017,
+            "rest_start": 2016,
+            "ref_start": 2013,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_restoration_polygons(path="some_path.gpkg")
+
+
+class TestReadReferencePolygons:
+    @patch("geopandas.read_file")
+    def test_more_than_one_restoration_polygon_accepted(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": [2015, 2015],
+            "rest_start": [2016, 2016],
+            "ref_start": [2012, 2012],
+            "ref_end": [2012, 2012],
+            "geometry": ["POINT (1 2)", "POINT (2 1)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_reference_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_different_dates_between_polygons_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "ref_start": [2012, 2011],
+            "ref_end": [2013, 2012],
+            "geometry": ["POINT (1 2)", "POINT (2 1)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_reference_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_not_2_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame(
+            {"ref_start": [2015], "geometry": ["POINT (1 2)"]}
+        )
+        with pytest.raises(ValueError):
+            _ = read_reference_polygons(path="some_path.gpkg")
+        with pytest.raises(ValueError):
+            _ = read_reference_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_not_int_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "ref_start": pd.to_datetime(2012),
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_reference_polygons(path="some_path.gpkg")
+
+    @patch("geopandas.read_file")
+    def test_dist_ref_start_greater_than_ref_end_throws_value_err(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": 2017,
+            "rest_start": 2016,
+            "ref_start": 2013,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
+        with pytest.raises(ValueError):
+            _ = read_reference_polygons(path="some_path.gpkg")
