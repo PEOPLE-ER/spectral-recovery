@@ -494,7 +494,7 @@ class RestorationArea:
         """Get and validate disturbance start year from restoration_polygon."""
         rest_dates = pd.DataFrame(self.restoration_polygon.drop(columns="geometry"))
         try:
-            disturbance_start = rest_dates.iloc[:, 0][0]
+            disturbance_start = rest_dates.iloc[0, 0]
         except IndexError:
             raise ValueError(
                 "Missing disturbance start year. Please ensure the 1st column of the"
@@ -509,7 +509,7 @@ class RestorationArea:
         """Get and validate restoration start year from restoration_polygon."""
         rest_dates = pd.DataFrame(self.restoration_polygon.drop(columns="geometry"))
         try:
-            restoration_start = rest_dates.iloc[:, 1][0]
+            restoration_start = rest_dates.iloc[0, 1]
         except IndexError:
             raise ValueError(
                 "Missing restoration start year. Please ensure the 2nd column of the"
@@ -526,8 +526,8 @@ class RestorationArea:
         if self.reference_polygons is not None:
             ref_dates = pd.DataFrame(self.reference_polygons.drop(columns="geometry"))
             try:
-                ref_start = ref_dates.iloc[:, 0][0]
-                ref_end = ref_dates.iloc[:, 1][0]
+                ref_start = ref_dates.iloc[0, 0]
+                ref_end = ref_dates.iloc[0, 1]
             except:
                 ValueError(
                     "Missing reference years. Reference start and end years must be"
@@ -537,8 +537,8 @@ class RestorationArea:
         else:
             ref_dates = pd.DataFrame(self.restoration_polygon.drop(columns="geometry"))
             try:
-                ref_start = ref_dates.iloc[:, 2][0]
-                ref_end = ref_dates.iloc[:, 3][0]
+                ref_start = ref_dates.iloc[0, 2]
+                ref_end = ref_dates.iloc[0, 3]
             except IndexError:
                 raise ValueError(
                     "Missing reference years. If reference_polygons is None then "
