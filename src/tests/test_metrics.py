@@ -348,7 +348,7 @@ class TestY2R:
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+                xr.DataArray([[[1.0]]], dims=["band", "y", "x"]),
             ),
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
@@ -357,7 +357,7 @@ class TestY2R:
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+                xr.DataArray([[[1.0]]], dims=["band", "y", "x"]),
             ),
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
@@ -366,7 +366,7 @@ class TestY2R:
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[0.0]]], dims=["band", "y", "x"]).rio.write_crs("4326"),
+                xr.DataArray([[[0.0]]], dims=["band", "y", "x"]),
             ),
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
@@ -375,9 +375,7 @@ class TestY2R:
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
-                    "4326"
-                ),
+                xr.DataArray([[[-9999]]], dims=["band", "y", "x"]),
             ),
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
@@ -397,8 +395,8 @@ class TestY2R:
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 xr.DataArray(
-                    [[[1.0, np.nan], [np.nan, 2.0]]], dims=["band", "y", "x"]
-                ).rio.write_crs("4326"),
+                    [[[1.0, -9999], [-9999, 2.0]]], dims=["band", "y", "x"]
+                ),
             ),
         ],
     )
@@ -408,8 +406,34 @@ class TestY2R:
         ra_mock.restoration_start = "2020"
         ra_mock.recovery_target = recovery_target
 
+        result = y2r(ra=ra_mock).drop_vars('spatial_ref')
+        print(result, expected)
+        assert result.equals(expected)
+
+    @patch("spectral_recovery.restoration.RestorationArea")
+    def test_distinguishes_unrecovered_and_nan(self, ra_mock):
+        recovery_target = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+        obs = xr.DataArray(
+            [[[[70, np.nan]], [[75, np.nan]], [[78, np.nan]]]],
+            coords={
+                "time": [
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                    pd.to_datetime("2022"),
+                ]
+            },
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        ra_mock.restoration_image_stack = obs
+        ra_mock.restoration_start = "2020"
+        ra_mock.recovery_target = recovery_target
+
+        expected = xr.DataArray([[[-9999, np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+            "4326"
+        )
+
         assert y2r(
-            ra=ra_mock,
+            ra=ra_mock
         ).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
@@ -484,7 +508,7 @@ class TestY2R:
                     coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021")]},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray([[[1.0, np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+                xr.DataArray([[[1.0, -9999]]], dims=["band", "y", "x"]).rio.write_crs(
                     "4326"
                 ),
             ),
@@ -538,7 +562,7 @@ class TestY2R:
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
                 20,  # X percent of recovery target
-                xr.DataArray([[[np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
+                xr.DataArray([[[-9999]]], dims=["band", "y", "x"]).rio.write_crs(
                     "4326"
                 ),
             ),
