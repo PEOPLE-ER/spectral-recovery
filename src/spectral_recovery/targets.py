@@ -1,17 +1,26 @@
 """ Methods for computing recovery targets """
 
-from inspect import signature
-from typing import Union, Tuple
-from datetime import datetime
 
 import geopandas as gpd
 import numpy as np
-
 import xarray as xr
+
+from inspect import signature
+from typing import Union, Tuple
+from datetime import datetime
+from pandas import Index as pdIndex
+
+class BufferError(ValueError):
+    def __init__(self, message, y_back, y_front, x_back, x_front):
+        self.y_back = y_back
+        self.y_front = y_front
+        self.x_back = x_back
+        self.x_front = x_front
+        super().__init__(message)
 
 
 def _tight_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end, reference_polygons):
-    if reference_polygons is not None:
+    if reference_polygons is None:
         # reference stack is the same as the restoration image stack
         reference_image_stack = timeseries.rio.clip(restoration_polygon.geometry.values)
     else:
@@ -38,30 +47,67 @@ def _buffered_clip_reference_stack(timeseries, restoration_polygon, reference_st
 
     x_indices = np.searchsorted(timeseries['x'].values, tight_x)
     y_indices = np.searchsorted(timeseries['y'].values, tight_y)
-
-    buffered_x_indices = np.clip(x_indices, buffer, timeseries.sizes['x'] - (buffer + 1))[0]
-    buffered_y_indices = np.clip(y_indices, buffer, timeseries.sizes['y'] - (buffer + 1))[0]
-
     
-    buffered_clip = timeseries[:, :, buffered_y_indices - buffer:buffered_y_indices + buffer + 1, buffered_x_indices - buffer:buffered_x_indices + buffer + 1]
+    y_back_step = int(y_indices[-1] + buffer)
+    y_front_step = int(y_indices[0] - buffer)
+    x_back_step = int(x_indices[0] - buffer)
+    x_front_step = int(x_indices[-1] + buffer)
 
-    return buffered_clip
-
-
-
-
-def compute_recovery_targets(timeseries, restoration_polygon, reference_start, reference_end, reference_polygons, method):
+    req_padding = [0,0,0,0]
+    if y_front_step < 0:
+        req_padding[0] = abs(y_back_step)
+    if y_back_step > (len(timeseries.y.values) - 1):
+        req_padding[1] = (y_front_step - (len(timeseries.y.values) - 1))
+    if x_back_step < 0:
+        req_padding[2] = abs(x_back_step)
+    if x_front_step > (len(timeseries.x.values) - 1):
+        req_padding[3] = (x_front_step - (len(timeseries.x.values) - 1))
     
-    if isinstance(method, MedianTarget):
-        reference_image_stack = _tight_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end)
-        recovery_target = method(reference_image_stack)
-    if isinstance(method, WindowedTarget):
-        reference_image_stack = _buffered_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end)
+    print(f"{y_back_step}:{y_front_step} + 1, {x_back_step}:{x_front_step} + 1")
+    if not all([p == 0 for p in req_padding]):
+        raise BufferError("Buffer exceeds boundaries, padding required to use rolling window over desired polygon.", *req_padding)
 
+    buffered_clip = timeseries[:, :, y_back_step:y_front_step + 1, x_back_step:x_front_step + 1]
+
+    return buffered_clip.sel(time=slice(reference_start, reference_end))
+    
+def compute_recovery_targets(timeseries, restoration_polygon, reference_start, reference_end, func, reference_polygons=None):
+    
+    if isinstance(func, MedianTarget):
+        # Median method does not need any information outside
+        # of the polygon pixels. Clip data tightly to polygon.
+        clip_image_stack = _tight_clip_reference_stack(
+            timeseries=timeseries, 
+            restoration_polygon=restoration_polygon,
+            reference_start=reference_start,
+            reference_end=reference_end,
+            reference_polygons=reference_polygons,
+        )
+        # Pass tightly clipped image stack (reference window) to the method
+        recovery_target = func(clip_image_stack)
+
+    elif isinstance(func, WindowedTarget):
+        # Windowed method needs a bbox clip buffered by (N-1)/2 pixels
+        # to ensure every polygon pixel has a full window when applying
+        # the moving window. If cannot buffer the array, padding is applied.
+        buffer_size = (func.N - 1)/2
+        buff_image_stack = _buffered_clip_reference_stack(
+            timeseries=timeseries,
+            restoration_polygon=restoration_polygon,
+            reference_start=reference_start,
+            reference_end=reference_end,
+            buffer=buffer_size,
+        )
+        # Once buffered image stack (reference window) is made, pass to the method
+        recovery_target_unmasked = func(buff_image_stack)
+        # Clip out polygon
+        recovery_target = recovery_target_unmasked.rio.clip(restoration_polygon.geometry.values)
+
+    print(recovery_target)
     return recovery_target
 
 def _template_method(
-    image_stack: xr.DataArray, reference_date: Tuple[datetime] | datetime
+    reference_window: xr.DataArray
 ) -> xr.DataArray:
     """
     Template recovery target method.
@@ -116,7 +162,6 @@ class MedianTarget:
     def __call__(
         self,
         reference_window: xr.DataArray,
-        reference_date: Tuple[datetime] | datetime,
     ) -> xr.DataArray:
         """
         Median recovery target.
@@ -153,11 +198,11 @@ class MedianTarget:
         # NOTE: scale is referenced from the containing scope make_median_target
         if self.scale == "polygon":
             median_t = median_t.median(dim=["y", "x"], skipna=True)
-        if "poly_id" in image_stack.dims:
+        if "poly_id" in reference_window.dims:
             median_t = median_t.median(dim="poly_id", skipna=True)
 
         # Re-assign lost band coords.
-        median_t = median_t.assign_coords(band=image_stack.coords["band"])
+        median_t = median_t.assign_coords(band=reference_window.coords["band"])
         return median_t
 
 
@@ -169,6 +214,8 @@ class WindowedTarget():
     polygon, computes the mean of a window of NxN pixels centred
     on pixel p, setting the mean to the recovery target value.
 
+    Implementation is based on raster focal method in R.
+
 
     Attributes
     ----------
@@ -176,7 +223,7 @@ class WindowedTarget():
         Size of the window (NxN). Must be odd. Default is 3. 
 
     """
-    def __init__(self, N: int = 3):
+    def __init__(self, N: int = 3, na_rm=False):
         if not isinstance(N, int):
             raise TypeError(f"N must be int not type {type(N)}")
         if N < 1:
@@ -184,6 +231,7 @@ class WindowedTarget():
         if (N % 2) == 0:
             raise ValueError("N must be an odd int.")
         self.N = N
+        self.na_rm = na_rm
         
     def __call__(
         self,
@@ -192,5 +240,13 @@ class WindowedTarget():
         """Compute the windowed mean recovery target."""
         median_t = reference_window.median(dim="time", skipna=True)
 
-        windowed_mean = median_t.rolling({"y": self.N, "x": self.N}, center=True).mean()
+        if self.na_rm:
+            # Only 1 non-NaN value is required to set a value.
+            min_periods = 1
+        else:
+            # All values in the window must be non-NaN 
+            min_periods = None
+
+        print(median_t)
+        windowed_mean = median_t.rolling({"y": self.N, "x": self.N}, center=True, min_periods=min_periods).mean()
         return windowed_mean

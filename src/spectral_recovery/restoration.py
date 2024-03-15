@@ -20,9 +20,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from pandas import Index as pdIndex
-
-from spectral_recovery.targets import MedianTarget, WindowedTarget, expected_signature
+from spectral_recovery.targets import MedianTarget, compute_recovery_targets, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 
 from spectral_recovery._config import VALID_YEAR
@@ -86,11 +84,6 @@ class RestorationArea:
         by recovery metric methods when computing metrics.
     reference_polygons : GeoDataFrame
         The spatial delinitation of the reference system area(s).
-    reference_image_stack : xr.DataArray
-        The image stack which fully contains the reference system
-        defined by reference_polygons. If reference_polyigons is None,
-        reference_image_stack = restoration_image_stack. This is the
-        stack used by recovery_target_method to compute recovery targets.
     recovery_target_method : callable
         The method used for computing the recovery target. Default
         is median target method with polygon scale (i.e
@@ -165,11 +158,10 @@ class RestorationArea:
         Checks that the provided timeseries contains the correct
         dims and is an annual timeseries before setting the property.
         Forces lazy (re-)computation of the dependant cached properties,
-        restoration_image_stack and reference_image_stack.
+        restoration_image_stack.
 
         """
         self._restoration_image_stack = None
-        self._reference_image_stack = None
 
         if not t.satts.is_annual_composite:
             raise ValueError(
@@ -216,7 +208,6 @@ class RestorationArea:
 
         """
         self._restoration_image_stack = None
-        self._reference_image_stack = None
         self._recovery_target = None
         # NOTE: this is messy because restoration_polygon now takes
         # the whole DF with the dates (not just poly), which makes
@@ -260,8 +251,7 @@ class RestorationArea:
 
         If refp is not None, checks that refp is a GeoDataFrame
         and that all geoms are within the bounds of full_timeseries
-        property. Forces lazy (re-)computattion of _reference_image_stack
-        property and immediately recomputes reference_years property.
+        property. Immediately recomputes reference_years property.
 
         Raises
         ------
@@ -272,7 +262,6 @@ class RestorationArea:
 
         """
         self._reference_years = None
-        self._reference_image_stack = None
         if refp is not None:
             if not isinstance(refp, gpd.GeoDataFrame):
                 raise TypeError(
@@ -308,7 +297,6 @@ class RestorationArea:
 
         """
         self._recovery_target = None
-        self._reference_image_stack = None
         if signature(rtm) != expected_signature:
             raise ValueError(
                 "The provided recovery target method must have the expected call"
@@ -330,12 +318,18 @@ class RestorationArea:
         The recovery targets of the RestorationArray provided in
         an xarray.DataArray. The targets are computed using the
         recovery_target_method and based on either historic conditions
-        or a reference system, if provided.
+        or a reference system, if provided. See targets module for
+        more information.
 
         """
         if self._recovery_target is None:
-            self._recovery_target = self.recovery_target_method(
-                reference_stack=self.reference_image_stack,
+            self._recovery_target = compute_recovery_targets(
+                timeseries=self.full_timeseries,
+                restoration_polygon=self.restoration_polygon,
+                reference_start=self.reference_years[0],
+                reference_end=self.reference_years[1],
+                reference_polygons=self.reference_polygons, 
+                func=self.recovery_target_method
             )
         return self._recovery_target
 
@@ -444,39 +438,6 @@ class RestorationArea:
                     f" range of {self.timeseries_start}-{self.timeseries_end}."
                 )
         return self._reference_years
-
-    @property
-    def reference_image_stack(self) -> xr.DataArray:
-        """Reference image stack.
-
-        The image stack for computing recovery targets. The reference
-        image stack is the same as restoration_image_stack if
-        reference_polygons is None (i.e looking at historic targets).
-        If reference_polygons is not None, the full_timeseries is clipped
-        using the polygons in reference_polygons.
-
-        """
-        if self._reference_image_stack is None:
-            self._recovery_target = None
-            if self.reference_polygons is None:
-                # reference stack is the same as the restoration image stack
-                self._reference_image_stack = self.restoration_image_stack
-            else:
-                # reference image stack is clipped using the reference polygons
-                # Need to make sure that each polygon is clipped seperately then stacked
-                clipped_stacks = {}
-                for i, row in self.reference_polygons.iterrows():
-                    polygon_stack = self.full_timeseries.rio.clip(
-                        gpd.GeoSeries(row.geometry).values
-                    )
-                    clipped_stacks[i] = polygon_stack
-
-                self._reference_image_stack = xr.concat(
-                    clipped_stacks.values(),
-                    dim=pdIndex(clipped_stacks.keys(), name="poly_id"),
-                )
-
-        return self._reference_image_stack
 
     @property
     def restoration_image_stack(self) -> xr.DataArray:

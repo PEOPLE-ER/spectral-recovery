@@ -13,7 +13,6 @@ from geopandas.testing import assert_geodataframe_equal
 
 from tests.utils import SAME_XR
 
-from spectral_recovery.targets import MedianTarget
 from spectral_recovery.restoration import (
     RestorationArea,
 )
@@ -591,6 +590,9 @@ class TestRestorationAreaRecoveryTarget:
         valid_ra_build,
     ):
         resto_a = RestorationArea(**valid_ra_build)
+        resto_a.recovery_target
+
+        print(resto_a.recovery_target)
 
         rt_mock.assert_called_once()
 
