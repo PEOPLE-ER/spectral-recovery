@@ -20,6 +20,7 @@ def test_invalid_scale_throws_value_error():
 
 class TestBufferedClip:
 
+    # Polygon for North-Western Hemisphere
     valid_poly = Polygon([(3.5, 3.5), (3.5, 5.5), (5.5, 5.5), (5.5, 3.5)])
 
     @pytest.fixture()
@@ -51,19 +52,78 @@ class TestBufferedClip:
         )
         return valid_frame
 
-    def test_returns_buffered_clip_sliced_to_reference_years(self, valid_array, valid_frame):
+    def test_clip_sliced_to_reference_years(self, valid_array, valid_frame):
+        buffer = 1
+
+        result = _buffered_clip_reference_stack(valid_array, valid_frame, "2012", "2013", buffer=buffer)
+        result = result.drop_vars("spatial_ref")
+        assert np.all(result.time.values == pd.date_range("2012", "2013", freq="YS"))
+
+    def test_pos_lat_lon_returns_buffered_clip(self, valid_array, valid_frame):
         buffer = 1
         square_side = 2
         time = pd.date_range("2012", "2013", freq="YS")
         expected_result = xr.DataArray(
             np.ones((1, 2, buffer*2+square_side, buffer*2+square_side)),
             dims=["band", "time", "y", "x"],
-            coords={"band": ["NBR"], "time": time, "y": [3, 4, 5, 6], "x": [3, 4, 5, 6]},
+            coords={"band": ["NBR"], "time": time, "y": [6, 5, 4, 3], "x": [3, 4, 5, 6]},
         )
         print(valid_array)
         result = _buffered_clip_reference_stack(valid_array, valid_frame, "2012", "2013", buffer=buffer)
         result = result.drop_vars("spatial_ref")
+        assert result.equals(expected_result)
+    
+    def test_neg_lat_pos_lon_returns_buffered_clip(self, valid_array, valid_frame):
+        buffer = 1
+        square_side = 2
+        valid_array = valid_array.assign_coords({"y": (valid_array.y.values * -1)[::-1]})
+        valid_frame.at[0, 'geometry'] = Polygon([(3.5, -3.5), (3.5, -5.5), (5.5, -5.5), (5.5, -3.5)])
 
+
+        time = pd.date_range("2012", "2013", freq="YS")
+        expected_result = xr.DataArray(
+            np.ones((1, 2, buffer*2+square_side, buffer*2+square_side)),
+            dims=["band", "time", "y", "x"],
+            coords={"band": ["NBR"], "time": time, "y": [-3, -4, -5, -6], "x": [3, 4, 5, 6]},
+        )
+        result = _buffered_clip_reference_stack(valid_array, valid_frame, "2012", "2013", buffer=buffer)
+        result = result.drop_vars("spatial_ref")
+        assert result.equals(expected_result)
+    
+    def test_neg_lat_lon_returns_buffered_clip(self, valid_array, valid_frame):
+        buffer = 1
+        square_side = 2
+        valid_array = valid_array.assign_coords({"y": (valid_array.y.values * -1)[::-1], "x": (valid_array.x.values * -1)[::-1]})
+        valid_frame.at[0, 'geometry'] = Polygon([(-3.5, -3.5), (-3.5, -5.5), (-5.5, -5.5), (-5.5, -3.5)])
+
+
+        time = pd.date_range("2012", "2013", freq="YS")
+        expected_result = xr.DataArray(
+            np.ones((1, 2, buffer*2+square_side, buffer*2+square_side)),
+            dims=["band", "time", "y", "x"],
+            coords={"band": ["NBR"], "time": time, "y": [-3, -4, -5, -6], "x": [-6, -5, -4, -3]},
+        )
+        result = _buffered_clip_reference_stack(valid_array, valid_frame, "2012", "2013", buffer=buffer)
+        result = result.drop_vars("spatial_ref")
+        print(result, expected_result)
+        assert result.equals(expected_result)
+    
+    def test_pos_lat_neg_lon_returns_buffered_clip(self, valid_array, valid_frame):
+        buffer = 1
+        square_side = 2
+        valid_array = valid_array.assign_coords({"x": (valid_array.x.values * -1)[::-1]})
+        valid_frame.at[0, 'geometry'] = Polygon([(-3.5, 3.5), (-3.5, 5.5), (-5.5, 5.5), (-5.5, 3.5)])
+
+
+        time = pd.date_range("2012", "2013", freq="YS")
+        expected_result = xr.DataArray(
+            np.ones((1, 2, buffer*2+square_side, buffer*2+square_side)),
+            dims=["band", "time", "y", "x"],
+            coords={"band": ["NBR"], "time": time, "y": [6, 5, 4, 3], "x": [-6, -5, -4, -3]},
+        )
+        result = _buffered_clip_reference_stack(valid_array, valid_frame, "2012", "2013", buffer=buffer)
+        result = result.drop_vars("spatial_ref")
+        print(result, expected_result)
         assert result.equals(expected_result)
     
     # def test_buffer_beyond_bounds_returns_value_err_with_pad_values(self, valid_array, valid_frame):
@@ -463,9 +523,10 @@ class TestWindowedTarget:
         ):
             WindowedTarget(N=2)
 
-    def test_default_window_size_is_3(self):
+    def test_default_init(self):
         windowed_method = WindowedTarget()
         assert windowed_method.N == 3
+        assert windowed_method.na_rm == False
 
     def test_window_returns_correct_dims(self):
         input_dims = ["band", "time", "y", "x"]
@@ -524,7 +585,8 @@ class TestWindowedTarget:
             o, o, o, o
         
         where o is NaN space and x is non-Nan/polygon space, ensure
-        WindowedTarget returns values for all, and only, x locations.
+        WindowedTarget returns mean values for all cells where a 
+        3x3 window contains at least one value.
         
         """
         data = [[[
@@ -546,6 +608,31 @@ class TestWindowedTarget:
             ]]
         )
         windowed_method = WindowedTarget(N=3, na_rm=True)
+
+        result_data = windowed_method(input_data).data
+
+        assert_array_equal(expected_data, result_data)
+
+    def test_default_computes_correct_means(self):
+        data = np.ones((1,1,6,6))
+        for i in range(1, 7):
+            data[:,:,i-1,:] = data[:,:,i-1,:] * i
+
+        input_data = xr.DataArray(
+            data,
+            dims=["band", "time", "y", "x"],
+            coords={"time": [1]}
+        )
+        expected_data = np.array([[
+                [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+                [np.nan,    2.0,    2.0,    2.0,    2.0, np.nan],
+                [np.nan,    3.0,    3.0,    3.0,    3.0, np.nan],
+                [np.nan,    4.0,    4.0,    4.0,    4.0, np.nan],
+                [np.nan,    5.0,    5.0,    5.0,    5.0, np.nan],
+                [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            ]]
+        )
+        windowed_method = WindowedTarget()
 
         result_data = windowed_method(input_data).data
 

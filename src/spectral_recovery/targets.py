@@ -46,26 +46,26 @@ def _buffered_clip_reference_stack(timeseries, restoration_polygon, reference_st
     tight_y = tight_clip['y'].values
 
     x_indices = np.searchsorted(timeseries['x'].values, tight_x)
-    y_indices = np.searchsorted(timeseries['y'].values, tight_y)
-    
-    y_back_step = int(y_indices[-1] + buffer)
-    y_front_step = int(y_indices[0] - buffer)
+    y_indices = np.searchsorted(-timeseries['y'].values, -tight_y)
+
+    y_back_step = int(y_indices[0] - buffer)
+    y_front_step = int(y_indices[-1] + buffer)
+
     x_back_step = int(x_indices[0] - buffer)
     x_front_step = int(x_indices[-1] + buffer)
 
     req_padding = [0,0,0,0]
-    if y_front_step < 0:
-        req_padding[0] = abs(y_back_step)
-    if y_back_step > (len(timeseries.y.values) - 1):
-        req_padding[1] = (y_front_step - (len(timeseries.y.values) - 1))
+    if y_back_step < 0:
+        req_padding[1] = abs(y_back_step)
+    if y_front_step > (len(timeseries.y.values) - 1):
+        req_padding[0] = (y_front_step - (len(timeseries.y.values) - 1))
     if x_back_step < 0:
         req_padding[2] = abs(x_back_step)
     if x_front_step > (len(timeseries.x.values) - 1):
         req_padding[3] = (x_front_step - (len(timeseries.x.values) - 1))
     
-    print(f"{y_back_step}:{y_front_step} + 1, {x_back_step}:{x_front_step} + 1")
     if not all([p == 0 for p in req_padding]):
-        raise BufferError("Buffer exceeds boundaries, padding required to use rolling window over desired polygon.", *req_padding)
+        raise BufferError(f"Buffer exceeds boundaries, padding required to use rolling window of size {(buffer*2)+1}", *req_padding)
 
     buffered_clip = timeseries[:, :, y_back_step:y_front_step + 1, x_back_step:x_front_step + 1]
 
@@ -103,7 +103,6 @@ def compute_recovery_targets(timeseries, restoration_polygon, reference_start, r
         # Clip out polygon
         recovery_target = recovery_target_unmasked.rio.clip(restoration_polygon.geometry.values)
 
-    print(recovery_target)
     return recovery_target
 
 def _template_method(
@@ -225,11 +224,13 @@ class WindowedTarget():
     """
     def __init__(self, N: int = 3, na_rm=False):
         if not isinstance(N, int):
-            raise TypeError(f"N must be int not type {type(N)}")
+            raise TypeError("N must be int.")
         if N < 1:
             raise ValueError("N must be greater than or equal to 1.")
         if (N % 2) == 0:
             raise ValueError("N must be an odd int.")
+        if not isinstance(na_rm, bool):
+            raise TypeError("na_rm must be boolean.")
         self.N = N
         self.na_rm = na_rm
         
@@ -247,6 +248,5 @@ class WindowedTarget():
             # All values in the window must be non-NaN 
             min_periods = None
 
-        print(median_t)
         windowed_mean = median_t.rolling({"y": self.N, "x": self.N}, center=True, min_periods=min_periods).mean()
         return windowed_mean

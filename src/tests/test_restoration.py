@@ -18,6 +18,8 @@ from spectral_recovery.restoration import (
 )
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import DATETIME_FREQ
+# Import this until patching of compute_recovery_targets in RestorationArea is solved
+from spectral_recovery.targets import compute_recovery_targets, MedianTarget
 
 # TODO: move test data into their own folders, create temp dirs so individual tests
 # don't conflict while reading the data
@@ -584,26 +586,39 @@ class TestRestorationAreaRecoveryTarget:
         assert resto_a.recovery_target_method.scale == "polygon"
 
     @patch("spectral_recovery.targets.compute_recovery_targets")
-    def test_compute_recovery_target_called_with_correct_args(
+    def test_recovery_target_should_call_compute_recovery_targets(
         self,
-        rt_mock,
+        crt_mock,
         valid_ra_build,
     ):
+        # NOTE: patching doesn't work here. Directly compute results for now
+        # as a round-about way to check that compute_recovery_targets is called
+        expected_result = compute_recovery_targets(
+            valid_ra_build["composite_stack"],
+            valid_ra_build["restoration_polygon"],
+            "2010",
+            "2010",
+            func=MedianTarget(scale="polygon")
+        )
         resto_a = RestorationArea(**valid_ra_build)
-        resto_a.recovery_target
+        # Trigger lazy computation of recovery target
+        result = resto_a.recovery_target
+        result.drop_vars("spatial_ref")
 
-        print(resto_a.recovery_target)
+        xr.testing.assert_equal(result, expected_result)
 
-        rt_mock.assert_called_once()
+    # @patch("spectral_recovery.targets.compute_recovery_targets", return_value="test")
+    # def test_recovery_target_is_result_from_compute_recovery_targets(
+    #     self,
+    #     rt_mock,
+    #     valid_ra_build,
+    # ):
+    #     # NOTE: patching doesn't work here. Directly compute results for now.
+    #     resto_a = RestorationArea(**valid_ra_build)
 
-    @patch("spectral_recovery.targets.compute_recovery_targets", return_value="test")
-    def test_recovery_target_is_result_from_compute_recovery_targets(
-        self,
-        rt_mock,
-        valid_ra_build,
-    ):
-        resto_a = RestorationArea(**valid_ra_build)
+    #     # Trigger lazy computation of recovery target
+    #     result = resto_a.recovery_target
 
-        rt_mock.assert_called_once()
-        assert resto_a.recovery_target == "test"
+    #     rt_mock.assert_called_once()
+    #     assert result == "test"
 
