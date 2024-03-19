@@ -52,7 +52,6 @@ def _valid_year_format(year_str):
     return year_str
 
 
-
 class RestorationArea:
     """A Restoration Area (RA).
 

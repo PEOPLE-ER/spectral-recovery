@@ -220,21 +220,26 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
     """
     if params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
-    reco_target = ra.recovery_target * (params["percent_of_target"] / 100)
+    y2r_target = ra.recovery_target * (params["percent_of_target"] / 100)
     recovery_window = ra.restoration_image_stack.sel(
         time=slice(ra.restoration_start, None)
     )
 
-    years_to_recovery = (recovery_window >= reco_target).argmax(dim="time", skipna=True)
-    # Pixels with value 0 could be pixels that were recovered at the first timestep, or
-    # pixels that never recovered (argmax returns 0 if all values are False).
-    # Only the former are valid 0's, so set pixels that never recovered to NaN.
-    zero_mask = years_to_recovery == 0
-    recovered_at_zero = recovery_window.sel(time=ra.restoration_start) >= reco_target
-    valid_zeros = zero_mask & recovered_at_zero
-    valid_output = valid_zeros | (~zero_mask)
+    years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
+    # Pixels with value 0 could be pixels that were recovered at the first timestep,
+    # pixels that never recovered (argmax returns 0 if all values are False), or
+    # pixels that were NaN for the entire recovery window.
+    # Only the first is a valid 0, so set pixels that never recovered to -9999,
+    # and pixels that were NaN for the entire recovery window back to NaN.
+    not_zero = years_to_recovery != 0
+    recovered_at_zero = recovery_window.sel(time=ra.restoration_start) >= y2r_target
+    is_nan = recovery_window.sel(time=ra.restoration_start).isnull()
+    valid_output = not_zero | recovered_at_zero | is_nan
 
-    y2r_v = years_to_recovery.where(valid_output, np.nan).drop_vars("time")
+    # Set unrecovered 0's to -9999, and NaN 0's to NaN
+    y2r_v = years_to_recovery.where(valid_output, -9999)
+    y2r_v = y2r_v.where(~is_nan, np.nan).drop_vars("time")
+
     try:
         y2r_v = y2r_v.squeeze("time")
     except KeyError:
