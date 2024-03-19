@@ -40,7 +40,31 @@ def _tight_clip_reference_stack(timeseries, restoration_polygon, reference_start
     return reference_image_stack.sel(time=slice(reference_start, reference_end))
 
 def _buffered_clip_reference_stack(timeseries, restoration_polygon, reference_start, reference_end, buffer):
-    """"""
+    """ Compute reference stack based on buffered clip of polygons.
+
+    Parameters
+    ----------
+    timeseries : xr.DataArray
+        The timeseries of spectral data to derive recovery targets from.
+        Must contain all years reference_start - reference_end
+    restoration_polygon : gpd.GeoDataFrame
+        The restoration polygons.
+     reference_start : str
+        The first year of the reference window
+    reference_end : str
+        The last year of the reference window. Can be equal to `reference_start`
+        if reference window is only one year long.
+    buffer : float
+        The number of pixels required as buffer from the polygon to allow
+        for a window of size buffer * 2 + 1 to successfully maintain 
+        the polygon boundaries.
+    
+    Returns
+    -------
+    xr.DataArray
+        Reference stack. Buffered clip of timeseries, sliced to
+        reference years.
+    """
     tight_clip = timeseries.rio.clip(restoration_polygon.geometry.values)
     tight_x = tight_clip['x'].values
     tight_y = tight_clip['y'].values
@@ -72,7 +96,25 @@ def _buffered_clip_reference_stack(timeseries, restoration_polygon, reference_st
     return buffered_clip.sel(time=slice(reference_start, reference_end))
     
 def compute_recovery_targets(timeseries, restoration_polygon, reference_start, reference_end, func, reference_polygons=None):
-    
+    """ Compute recovery target array.
+
+    Parameters
+    ----------
+    timeseries : xr.DataArray
+        The timeseries of spectral data to derive recovery targets from.
+        Must contain all years reference_start - reference_end
+    restoration_polygon : gpd.GeoDataFrame
+        The restoration polygons.
+    reference_start : str
+        The first year of the reference window
+    reference_end : str
+        The last year of the reference window. Can be equal to `reference_start`
+        if reference window is only one year long.
+    func : callable
+        The recovery target method to use.
+    reference_polygons : gpd.GeoDataFrame, optional
+        The reference polygons.
+    """
     if isinstance(func, MedianTarget):
         # Median method does not need any information outside
         # of the polygon pixels. Clip data tightly to polygon.
