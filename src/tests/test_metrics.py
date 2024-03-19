@@ -23,7 +23,7 @@ from spectral_recovery.metrics import (
 
 
 def test_metric_funcs_global_contains_all_funcs():
-    expected_dict = {"y2r": y2r, "dnbr": dnbr, "yryr": yryr, "r80p": r80p}
+    expected_dict = {"y2r": y2r, "dnbr": dnbr, "yryr": yryr, "r80p": r80p, "rri": rri}
     assert METRIC_FUNCS == expected_dict
 
 
@@ -965,7 +965,7 @@ class TestRRI:
             )
 
     @patch("spectral_recovery.restoration.RestorationArea")
-    def test_0_denom_sets_nan(self, ra_mock):
+    def test_0_denom_sets_inf(self, ra_mock):
         obs = xr.DataArray(
             [[[[10]], [[10]], [[70]], [[80]], [[90]], [[100]], [[110]]]],
             coords={"time": self.year_period_RI},
@@ -983,7 +983,7 @@ class TestRRI:
 
         # 110 / 0 = nan (not inf)
         expected = xr.DataArray(
-            [[[np.nan]]],
+            [[[np.inf]]],
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
@@ -991,36 +991,6 @@ class TestRRI:
             ra=ra_mock,
             params={"timestep": timestep, "use_dist_avg": False},
         ).equals(expected)
-
-    @patch("spectral_recovery.restoration.RestorationArea")
-    def test_use_dist_avg_uses_avg_of_dist(self, ra_mock):
-        obs = xr.DataArray(
-            [[[[80]], [[80]], [[60]], [[70]], [[50]], [[100]], [[120]]]],
-            coords={"time": self.year_period_RI},
-            dims=["band", "time", "y", "x"],
-        ).rio.write_crs("4326")
-        restoration_start = "2004"
-        dist_start = "2002"
-        timestep = 2
-
-        ra_mock.restoration_image_stack = obs
-        ra_mock.restoration_start = restoration_start
-        ra_mock.disturbance_start = dist_start
-
-        # Disturbance window of [60, 70, 50] has an average of 60
-        # Previous disturbance window of [80, 80] has an average of 80
-        # Maximum of t+2 and t+1 is 120
-        # t/f (120 - 60) / (80 - 60) = 0.5
-        expected = xr.DataArray(
-            [[[3.0]]],
-            dims=["band", "y", "x"],
-        ).rio.write_crs("4326")
-
-        result = rri(
-            ra=ra_mock,
-            params={"timestep": timestep, "use_dist_avg": True},
-        )
-        assert result.equals(expected)
 
 
 class TestR80P:

@@ -248,9 +248,9 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
         pass
     return y2r_v
 
-
+@register_metric
 def rri(
-    ra: RestorationArea, params: Dict = {"timestep": 5, "use_dist_avg": False}
+    ra: RestorationArea, params: Dict = {"timestep": 5}
 ) -> xr.DataArray:
     """Per-pixel RRI.
 
@@ -258,9 +258,7 @@ def rri(
     noise in trajectory by using the maximum from the 4th or 5th year
     in monitoring window. The metric relates recovery magnitude to
     disturbance magnitude, and is the change in index value in 4 or 5
-    years divided by the change due to disturbance. Users can optionally
-    choose to use the average of the disturbance period and the pre-disturbance
-    window to calculate the disturbance magnitude, by setting `use_dist_avg=True`.
+    years divided by the change due to disturbance.
 
     Parameters
     ----------
@@ -269,7 +267,7 @@ def rri(
     params : Dict
         Parameters to customize metric computation. r80p uses
         the 'timestep' and 'use_dist_avg' parameters with
-        default = {"use_dist_avg": False, "timestep": 5}.
+        default = {"timestep": 5}.
 
     Returns
     -------
@@ -282,78 +280,26 @@ def rri(
 
     if params["timestep"] == 0:
         raise ValueError("timestep for RRI must be greater than 0.")
-    dist_end = ra.restoration_start
 
     rest_post_tm1 = str(int(ra.restoration_start) + (params["timestep"] - 1))
     rest_post_t = str(int(ra.restoration_start) + params["timestep"])
-    rest_t_tm1 = [
-        (date == pd.to_datetime(rest_post_tm1) or date == pd.to_datetime(rest_post_t))
-        for date in ra.restoration_image_stack.coords["time"].values
-    ]
-    if any(rest_t_tm1) == 0:
-        raise ValueError(
-            f"timestep={params['timestep']}, but"
-            f" ({ra.restoration_start}-1)+{params['timestep']}={rest_post_tm1} or"
-            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within"
-            f" time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
-        )
-    max_rest_t_tm1 = ra.restoration_image_stack.sel(time=rest_t_tm1).max(dim=["time"])
 
-    if params["use_dist_avg"]:
-        dist_pre_1 = str(int(ra.disturbance_start) - 1)
-        dist_pre_2 = str(int(ra.disturbance_start) - 2)
-        dist_pre_1_2 = [
-            (date == pd.to_datetime(dist_pre_1) or date == pd.to_datetime(dist_pre_2))
-            for date in ra.restoration_image_stack.coords["time"].values
-        ]
-        if any(dist_pre_1_2) == 0:
-            raise ValueError(
-                f"use_dist_avg={params['use_dist_avg']} uses the 2 years prior to"
-                f" disturbance start, but {ra.disturbance_start}-2={dist_pre_1} or"
-                f" {ra.disturbance_start}-1={dist_pre_2} not within time coordinates:"
-                f" {ra.restoration_image_stack.coords['time'].values}."
-            )
-        dist_pre = ra.restoration_image_stack.sel(time=dist_pre_1_2).max(dim=["time"])
+    if pd.to_datetime(rest_post_tm1) not in ra.restoration_image_stack.time.values:
+        raise ValueError(f"{rest_post_tm1} (year of timestep - 1) not found in time dim.")
+    if  pd.to_datetime(rest_post_t) not in ra.restoration_image_stack.time.values:
+        raise ValueError(f"{rest_post_t} (year of timestep) not found in time dim.")
 
-        dist_s_e = [
-            (
-                date >= pd.to_datetime(ra.disturbance_start)
-                and date <= pd.to_datetime(dist_end)
-            )
-            for date in ra.restoration_image_stack.coords["time"].values
-        ]
-        dist_avg = ra.restoration_image_stack.sel(time=dist_s_e).mean(dim=["time"])
+    max_rest_t_tm1 = ra.restoration_image_stack.sel(time=slice(rest_post_tm1, rest_post_t)).max(dim=["time"])
+    rest_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
+    dist_start = ra.restoration_image_stack.sel(time=ra.disturbance_start).drop_vars("time")
+    dist_end = rest_start
 
-        zero_denom_mask = dist_pre - dist_avg == 0
-        dist_pre = xr.where(zero_denom_mask, np.nan, dist_pre)
-        rri_v = (max_rest_t_tm1 - dist_avg) / (dist_pre - dist_avg)
-        # if dist_pre_1_2 or dist_s_e has length greater than one we will need
-        # to squeeze the time dim
-        try:
-            rri_v = rri_v.squeeze("time")
-        except KeyError:
-            pass
-    else:
-        rest_0 = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
-            "time"
-        )
-        ra.disturbance_start = ra.restoration_image_stack.sel(
-            time=ra.disturbance_start
-        ).drop_vars("time")
-        dist_e = rest_0
-
-        # Find if/where dist_start - dist_e == 0, set to NaN to avoid divide by zero
-        # NaN - X will always be NaN, so no need to worry about the other side of the equation
-        # Note: this is likely a safer way to do this that doesn't count on x / NaN. We could
-        # mask where 0, set to num, and then use that mask aftwards to set to NaN.
-        zero_denom_mask = ra.disturbance_start - dist_e == 0
-        ra.disturbance_start = xr.where(zero_denom_mask, np.nan, ra.disturbance_start)
-        rri_v = (max_rest_t_tm1 - rest_0) / (ra.disturbance_start - dist_e)
-        # if dist_pre_1_2 has length greater than one we will need to squeeze the time dim
-        try:
-            rri_v = rri_v.squeeze("time")
-        except KeyError:
-            pass
+    rri_v = (max_rest_t_tm1 - rest_start) / (dist_start - dist_end)
+    # if dist_pre_1_2 has length greater than one we will need to squeeze the time dim
+    try:
+        rri_v = rri_v.squeeze("time")
+    except KeyError:
+        pass
     return rri_v
 
 
