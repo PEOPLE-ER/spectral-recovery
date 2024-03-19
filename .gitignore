@@ -117,4 +117,5 @@ scheduler.json
 
 # test_data stuff
 docs/test_data/outputs/*.tif
+docs/test_data/annual_composites/landsat/*.tif.aux.xml
 docs/test_data/outputs/.nfs*
