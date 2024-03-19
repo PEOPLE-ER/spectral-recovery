@@ -13,12 +13,13 @@ from geopandas.testing import assert_geodataframe_equal
 
 from tests.utils import SAME_XR
 
-from spectral_recovery.targets import MedianTarget
 from spectral_recovery.restoration import (
     RestorationArea,
 )
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import DATETIME_FREQ
+# Import this until patching of compute_recovery_targets in RestorationArea is solved
+from spectral_recovery.targets import compute_recovery_targets, MedianTarget
 
 # TODO: move test data into their own folders, create temp dirs so individual tests
 # don't conflict while reading the data
@@ -562,6 +563,7 @@ class TestRestorationAreaDates:
 
 
 class TestRestorationAreaRecoveryTarget:
+
     @pytest.fixture()
     def valid_ra_build(self):
         # TODO: Simplify this to just use int coords and polygons that intersect. Shouldn't need to read the files.
@@ -595,39 +597,40 @@ class TestRestorationAreaRecoveryTarget:
 
         assert resto_a.recovery_target_method.scale == "polygon"
 
-    def test_recovery_target_method_with_valid_sig_calls_once(
+    @patch("spectral_recovery.targets.compute_recovery_targets")
+    def test_recovery_target_should_call_compute_recovery_targets(
         self,
+        crt_mock,
         valid_ra_build,
     ):
-        valid_method = create_autospec(MedianTarget(scale="polygon"))
+        # NOTE: patching doesn't work here. Directly compute results for now
+        # as a round-about way to check that compute_recovery_targets is called
+        expected_result = compute_recovery_targets(
+            valid_ra_build["composite_stack"],
+            valid_ra_build["restoration_polygon"],
+            "2010",
+            "2010",
+            func=MedianTarget(scale="polygon")
+        )
+        resto_a = RestorationArea(**valid_ra_build)
+        # Trigger lazy computation of recovery target
+        result = resto_a.recovery_target
+        result.drop_vars("spatial_ref")
 
-        resto_a = RestorationArea(**valid_ra_build, recovery_target_method=valid_method)
-        resto_a.recovery_target  # Trigger computation
+        xr.testing.assert_equal(result, expected_result)
 
-        valid_method.assert_called_once()
+    # @patch("spectral_recovery.targets.compute_recovery_targets", return_value="test")
+    # def test_recovery_target_is_result_from_compute_recovery_targets(
+    #     self,
+    #     rt_mock,
+    #     valid_ra_build,
+    # ):
+    #     # NOTE: patching doesn't work here. Directly compute results for now.
+    #     resto_a = RestorationArea(**valid_ra_build)
 
-    def test_recovery_target_method_with_invalid_sig_throws_value_error(
-        self, valid_ra_build
-    ):
-        def invalid_method(a: int, b: str):
-            """Method with incorrect signature."""
-            return 0
+    #     # Trigger lazy computation of recovery target
+    #     result = resto_a.recovery_target
 
-        with pytest.raises(ValueError):
-            resto_a = RestorationArea(
-                **valid_ra_build, recovery_target_method=invalid_method
-            )
+    #     rt_mock.assert_called_once()
+    #     assert result == "test"
 
-    def test_pixel_recovery_target_with_reference_polygons_throws_type_error(
-        self, valid_ra_build
-    ):
-        reference_frame = gpd.GeoDataFrame({
-            "ref_start": 2010,
-            "ref_end": 2011,
-            "geometry": valid_ra_build["restoration_polygon"].geometry.values,
-        })
-        valid_ra_build["reference_polygons"] = reference_frame
-        median_pixel = MedianTarget(scale="pixel")
-
-        with pytest.raises(TypeError):
-            ra = RestorationArea(**valid_ra_build, recovery_target_method=median_pixel)

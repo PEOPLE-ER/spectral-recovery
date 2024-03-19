@@ -14,8 +14,8 @@ def maintain_rio_attrs(func: callable) -> callable:
     operations that create new instances of an xarray object
     because new accessors (e.g rio) are created for every instance.
 
-    This method ensures that a returned xarray object has the
-    same rio CRS and encoding as the input xarray object.
+    This method ensures tnhat a returned xarray object has the
+    same rio CRS and encodig as the input xarray object.
 
     Notes
     -----

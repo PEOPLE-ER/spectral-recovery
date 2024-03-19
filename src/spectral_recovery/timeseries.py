@@ -26,7 +26,6 @@ def _datetime_to_index(
     else:
         try:
             if len(value) > 2:
-                print(type(value))
                 raise ValueError(
                     f"Passed value={value} but `datetime` must be a single Timestamp or"
                     " an iterable with exactly two Timestamps."
