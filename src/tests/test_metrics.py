@@ -435,6 +435,36 @@ class TestY2R:
         assert y2r(
             ra=ra_mock
         ).equals(expected)
+    
+    @patch("spectral_recovery.restoration.RestorationArea")
+    def test_only_first_year_nan_returns_value(self, ra_mock):
+        recovery_target = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+        obs = xr.DataArray(
+            [[[[np.nan]], [[75]], [[81]]]],
+            coords={
+                "time": [
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                    pd.to_datetime("2022"),
+                ]
+            },
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        ra_mock.restoration_image_stack = obs
+        ra_mock.restoration_start = "2020"
+        ra_mock.recovery_target = recovery_target
+
+        expected = xr.DataArray([[[2]]], dims=["band", "y", "x"]).rio.write_crs(
+            "4326"
+        )
+
+        print(y2r(
+            ra=ra_mock
+        ), expected)
+
+        assert y2r(
+            ra=ra_mock
+        ).equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")
     def test_returns_first_recovered_year_when_successive_recovered_years_smaller(
