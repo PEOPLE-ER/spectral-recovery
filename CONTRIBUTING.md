@@ -37,7 +37,7 @@ cd Spectral-Recovery
 From the top-level directory of your Spectral-Recovery clone, you can install the `spectral_recovery` package using pip:
 
 ```{bash}
-python3 -m pip install -e .
+python3 -m pip install -e ".[test]"
 ```
 This is an "Editable Install" of the spectral_recovery package, meaning you do not have to re-build or re-install each
 time you make changes to the source code. See [Development Mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) for more information on Development Mode/Editable Installs.
