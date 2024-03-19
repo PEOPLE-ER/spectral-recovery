@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [0.3.1] - 2024-03-19
+
+### Added
+
+- Add initial WindowedTarget recovery target function (#84)
+- Re-introduce RRI as available metric (#93)
+
+### Changed
+
+- Change "unrecovered" Y2R values to -9999 (#56)
+- Move compute_metrics from restoration to metrics (#78)
+- Move plotting logic from restoraiton to plotting (#78)
+
+### Removed
+
+- Metric methods from RestorationArea object (#78)
+
+## Fixed
+
+- Fix non-zero GDF row error (#83)
+- Fix dask_exp import err (#82)
+
+
 ## [0.3.0b0] - 2024-02-21
 
 ### Added
