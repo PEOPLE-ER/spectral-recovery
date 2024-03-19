@@ -226,17 +226,19 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
     )
 
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
-    # Pixels with value 0 could be pixels that were recovered at the first timestep,
-    # pixels that never recovered (argmax returns 0 if all values are False), or
-    # pixels that were NaN for the entire recovery window.
-    # Only the first is a valid 0, so set pixels that never recovered to -9999,
+    # Pixels with value 0 could be:
+    # 1. pixels that were recovered at the first timestep
+    # 2. pixels that never recovered (argmax returns 0 if all values are False)
+    # 3. pixels that were NaN for the entire recovery window.
+    #
+    # Only 1. is a valid 0, so set pixels that never recovered to -9999,
     # and pixels that were NaN for the entire recovery window back to NaN.
     not_zero = years_to_recovery != 0
     recovered_at_zero = recovery_window.sel(time=ra.restoration_start) >= y2r_target
-    is_nan = recovery_window.sel(time=ra.restoration_start).isnull()
+    is_nan = recovery_window.isnull().all("time")
     valid_output = not_zero | recovered_at_zero | is_nan
 
-    # Set unrecovered 0's to -9999, and NaN 0's to NaN
+    # Set unrecovered 0's to -9999, aund NaN 0's to NaN
     y2r_v = years_to_recovery.where(valid_output, -9999)
     y2r_v = y2r_v.where(~is_nan, np.nan).drop_vars("time")
 
