@@ -158,24 +158,88 @@ class TestBufferedClip:
     #     assert b_info.value.x_back == expected_x_back
     #     assert b_info.value.x_front == expected_x_front
 
-# class TestComputeRecoveryTargetsMedian:
+class TestComputeRecoveryTargetsMedian:
 
-# def test_median_recovery_targets_is_return(self, valid_array, valid_frame):
-#     # Mock objects
-#     median_target_mock = MagicMock(spec=MedianTarget)
+    valid_poly = Polygon([(3.5, 3.5), (3.5, 5.5), (5.5, 5.5), (5.5, 3.5)])
 
-#     # Mock behaviors
-#     median_target_mock.return_value = "Mocked median target"
+    @pytest.fixture()
+    def valid_array(self):
+        data = np.ones((1, 5, 10, 10))
+        latitudes = np.arange(0, 10)
+        longitudes = np.arange(0, 10)
+        time = pd.date_range("2010", "2014", freq="YS")
+        xarr = xr.DataArray(
+            data,
+            dims=["band", "time", "y", "x"],
+            coords={"band": ["NBR"], "time": time, "y": latitudes, "x": longitudes},
+        )
+        xarr = xarr.rio.write_crs("EPSG:3348", inplace=True)
+        return xarr
 
-#     # Test with MedianTarget
-#     result_median = compute_recovery_targets(
-#         timeseries=timeseries,
-#         restoration_polygon=restoration_polygon,
-#         reference_start="2012",
-#         reference_end="2013",
-#         func=median_target_mock
-#     )
-#     assert result_median == "Mocked median target"
+    @pytest.fixture()
+    def valid_frame(self):
+
+        valid_frame = gpd.GeoDataFrame(
+            {
+                "dist_start": [2012],
+                "rest_start": [2013],
+                "reference_start": [2010],
+                "reference_end": [2010],
+                "geometry": [self.valid_poly],
+            },
+            crs="EPSG:3348",
+        )
+        return valid_frame
+
+    @patch("spectral_recovery.targets._tight_clip_reference_stack")
+    def test_recovery_targets_is_median_target_return(self, tight_clip_mock, valid_array, valid_frame):
+        median_polygon_mock = MagicMock(spec=MedianTarget)
+        median_polygon_mock.scale = "polygon"
+        median_polygon_mock.return_value = valid_array
+
+        median_pixel_mock = MagicMock(spec=MedianTarget)
+        median_pixel_mock.scale = "polygon"
+        median_pixel_mock.return_value = valid_array
+
+        result_polygon_median = compute_recovery_targets(
+            timeseries=valid_array,
+            restoration_polygon=valid_frame,
+            reference_start="2010",
+            reference_end="2010",
+            func=median_polygon_mock
+        )
+        result_pixel_median = compute_recovery_targets(
+            timeseries=valid_array,
+            restoration_polygon=valid_frame,
+            reference_start="2010",
+            reference_end="2010",
+            func=median_pixel_mock
+        )
+
+        xr.testing.assert_equal(result_pixel_median, valid_array)
+        xr.testing.assert_equal(result_polygon_median, valid_array)
+    
+    @patch("spectral_recovery.targets._tight_clip_reference_stack")
+    def test_calls_buffer_clip_once(self, tight_clip_mock, valid_array, valid_frame):
+        tight_clip_mock.side_effect = valid_array
+        windowed_method = MedianTarget(scale="polygon")
+
+        compute_recovery_targets(
+            timeseries=valid_array,
+            restoration_polygon=valid_frame,
+            reference_start="2010",
+            reference_end="2010",
+            func=windowed_method
+        )
+
+        assert tight_clip_mock.call_count == 1
+        _, _, call_kwargs = tight_clip_mock.mock_calls[0]
+        assert_equal(call_kwargs["timeseries"], valid_array)
+        pd.testing.assert_frame_equal(call_kwargs["restoration_polygon"], valid_frame)
+        assert call_kwargs["reference_start"] == "2010"
+        assert call_kwargs["reference_end"] == "2010"
+        assert call_kwargs["reference_polygons"] == None
+
 
 class TestComputeRecoveryTargetsWindowed:
 
