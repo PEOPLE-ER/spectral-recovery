@@ -1,4 +1,6 @@
 import pytest
+import dask.array as da
+
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -92,6 +94,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_timeseries(
             path_to_tifs=tif_paths,
+            array_type="numpy",
         )
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
@@ -146,6 +149,7 @@ class TestReadAndStackTifs:
         ):
             read_timeseries(
                 path_to_tifs=filenames,
+                array_type="numpy",
             )
 
     @patch(
@@ -162,7 +166,7 @@ class TestReadAndStackTifs:
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_timeseries(path_to_tifs=filenames)
+        stacked_tifs = read_timeseries(path_to_tifs=filenames, array_type="numpy",)
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
     @patch(
@@ -181,6 +185,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
+            array_type="numpy",
         )
 
         assert np.all(stacked_tifs["band"].data == expected_bands)
@@ -201,6 +206,7 @@ class TestReadAndStackTifs:
             stacked_tifs = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "not_a_band"},
+                array_type="numpy",
             )
 
     @patch(
@@ -220,6 +226,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
+            array_type="numpy",
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -239,6 +246,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={2: "blue", 1: "red", 3: "nir"},
+            array_type="numpy",
         )
         # assert
         print(stacked_tifs["band"].data, expected_bands)
@@ -262,6 +270,7 @@ class TestReadAndStackTifs:
             _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"},
+                array_type="numpy",
             )
 
     @patch(
@@ -282,6 +291,7 @@ class TestReadAndStackTifs:
             _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
+                array_type="numpy",
             )
 
     @patch(
@@ -301,6 +311,7 @@ class TestReadAndStackTifs:
         ):
             _ = read_timeseries(
                 path_to_tifs=filenames,
+                array_type="numpy",
             )
 
     @pytest.mark.parametrize(
@@ -336,8 +347,24 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
+            array_type="numpy",
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
+
+    def test_array_type_default_uses_dask_arrays(self):
+        stacked_tifs = read_timeseries(
+            path_to_tifs="src/tests/test_data/composites/",
+            band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"}
+        )
+        assert isinstance(stacked_tifs.data, da.Array)
+    
+    def test_array_type_numpy_returns_numpy_array(self):
+        stacked_tifs = read_timeseries(
+            path_to_tifs="src/tests/test_data/composites/",
+            band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"},
+            array_type="numpy",
+        )
+        assert isinstance(stacked_tifs.data, np.ndarray)
 
 
 class TestReadRestorationPolygons:
