@@ -512,3 +512,34 @@ class TestReadReferencePolygons:
         })
         with pytest.raises(ValueError):
             _ = read_reference_polygons(path="some_path.gpkg")
+    
+    @patch("geopandas.read_file")
+    def test_passed_dates_set_in_gdf(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "geometry": ["POINT (1 2)"],
+        })
+        
+        ref_dates = read_reference_polygons(
+            path="some_path.gpkg",
+            reference_start=2000,
+            reference_end=2000
+        )
+
+        assert "ref_start" in ref_dates
+        assert "ref_end" in ref_dates
+    
+    @patch("geopandas.read_file")
+    def test_passed_dates_overwrite_existing_dates(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "ref_start": 2013,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
+        
+        result = read_reference_polygons(
+            path="some_path.gpkg",
+            reference_start=2000,
+            reference_end=2000,
+        )
+        assert result.loc[0, "ref_start"] == 2000
+        assert result.loc[0, "ref_end"] == 2000

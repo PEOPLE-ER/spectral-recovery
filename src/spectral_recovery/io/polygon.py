@@ -93,7 +93,11 @@ def read_restoration_polygons(
     return restoration_polygons
 
 
-def read_reference_polygons(path: str):
+def read_reference_polygons(
+        path: str,
+        reference_start: str | int = None,
+        reference_end: str | int = None
+    ):
     """Read reference polygons
 
     A loose wrapper of the geopandas.read_file function. If
@@ -111,8 +115,20 @@ def read_reference_polygons(path: str):
 
     """
     reference_polygons = gpd.read_file(path)
+    
+    if reference_start and reference_end:
+        dates = {
+            "ref_start": reference_start,
+            "ref_end": reference_end,
+        }
+        reference_polygons = reference_polygons.assign(**dates)
+        # Dates must be in order: ref start, ref end. 
+        reference_polygons = reference_polygons[["ref_start", "ref_end", "geometry"]]
 
     dates_frame = pd.DataFrame(reference_polygons.drop(columns="geometry"))
+    if (reference_start and not reference_end) or (not reference_start and reference_end):
+        raise ValueError("Both reference_start and reference_end must be provided. Not one or the other.")
+
     types = dates_frame.dtypes
     for column_name, data_type in types.items():
         if data_type != "int64" and data_type != "object":
@@ -125,14 +141,6 @@ def read_reference_polygons(path: str):
             "Attribute table must contain 2 columns with reference start year and"
             f" reference end year ({len(dates_frame.columns)} column(s) given)"
         )
-    types = dates_frame.dtypes
-    for column_name, data_type in types.items():
-        if data_type != "int64":
-            raise ValueError(
-                f"Date fields must be type int (given {data_type} in field"
-                f" {column_name})"
-            )
-
     for column_name in dates_frame.columns:
         unique_values = dates_frame[column_name].nunique()
         if unique_values != 1:
@@ -141,7 +149,7 @@ def read_reference_polygons(path: str):
                 " polygon"
             )
 
-    if (dates_frame.iloc[:, 0] >= dates_frame.iloc[:, 1]).all():
+    if (dates_frame.iloc[:, 0] > dates_frame.iloc[:, 1]).all():
         raise ValueError(
             "Reference start year cannot be greater than reference end year"
             f" ({dates_frame.iloc[:,0][0]} >= {dates_frame.iloc[:,0][0]})"
