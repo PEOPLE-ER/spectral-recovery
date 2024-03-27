@@ -407,6 +407,56 @@ class TestReadRestorationPolygons:
         with pytest.raises(ValueError):
             _ = read_restoration_polygons(path="some_path.gpkg")
 
+    @patch("geopandas.read_file")
+    def test_passed_dates_set_in_gdf(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "geometry": ["POINT (1 2)"],
+        })
+        
+        all_dates = read_restoration_polygons(
+            path="some_path.gpkg",
+            disturbance_start="2001",
+            restoration_start="2002",
+            reference_start="2000",
+            reference_end="2000"
+        )
+        dist_rest_only_dates = read_restoration_polygons(
+            path="some_path.gpkg",
+            disturbance_start="2001",
+            restoration_start="2002",
+        )
+
+        assert "dist_start" in all_dates
+        assert "rest_start" in all_dates
+        assert "ref_start" in all_dates
+        assert "ref_end" in all_dates
+        assert "dist_start" in dist_rest_only_dates
+        assert "rest_start" in dist_rest_only_dates
+        assert "ref_start" not in dist_rest_only_dates
+        assert "ref_end" not in dist_rest_only_dates
+    
+    @patch("geopandas.read_file")
+    def test_passed_dates_overwrite_existing_dates(self, mock_read):
+        mock_read.return_value = gpd.GeoDataFrame({
+            "dist_start": 2017,
+            "rest_start": 2016,
+            "ref_start": 2013,
+            "ref_end": 2012,
+            "geometry": ["POINT (1 2)"],
+        })
+        
+        result = read_restoration_polygons(
+            path="some_path.gpkg",
+            disturbance_start="2001",
+            restoration_start="2002",
+            reference_start="2000",
+            reference_end="2000",
+        )
+        assert result.loc[0, "dist_start"] == "2001"
+        assert result.loc[0, "rest_start"] == "2002"
+        assert result.loc[0, "ref_start"] == "2000"
+        assert result.loc[0, "ref_end"] == "2000"
+
 
 class TestReadReferencePolygons:
     @patch("geopandas.read_file")
