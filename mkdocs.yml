@@ -3,11 +3,19 @@ site_url: https://PEOPLE-ER.github.io/Spectral-Recovery/
 
 nav:
 - Home: index.md
-- Documentation: 
+- Documentation:
+    - Theoretical Basis: 'about.md'
     - Getting Started:
-      - Quick Overview: 'overview_API.ipynb'
-      - Using the CLI: 'overview_CLI.ipynb'
-    - User Guide: 'about.md'
+      - Installation: 'installation.md'
+      - Quick Overview: 'overview.ipynb'
+    - User Guide:
+      - Terminology: 'terminology.md'
+      - Reading in Data: 'reading_in_data.md'
+      - Computing Indices: 'indices.md'
+      - Recovery Targets: 'recovery_targets.md'
+      - Plotting: 'plotting.md'
+      - Recovery Metrics: 'recovery_metrics.md'
+      - Computing with Dask: 'computing_with_dask.md'
     - API Reference: 'api.md'
 
 plugins:
