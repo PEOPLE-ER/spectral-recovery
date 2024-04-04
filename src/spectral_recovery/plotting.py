@@ -68,7 +68,7 @@ def plot_ra(ra: RestorationArea, path: str = None, legend: bool = True) -> None:
     path : str, optional
         The path to save the plot to.
     """
-    hist_ref_sys = ra.reference_polygons == None
+    hist_ref_sys = ra.reference_polygons is None
 
     stats = ra.restoration_image_stack.satts.stats()
     stats = stats.sel(
