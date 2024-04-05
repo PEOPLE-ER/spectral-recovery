@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [0.3.2] - 2024-04-04
+
+### Changed
+
+- Remove compute_indices from metric/plotting, add to public API (#102)
+- Update documtation to reflect compute_indices in API (#102)
+
+### Fixed
+
+- Fix incorrect reference_polygons is None check (#104) 
+
+
 ## [0.3.1] - 2024-03-19
 
 ### Added
@@ -26,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Metric methods from RestorationArea object (#78)
 
-## Fixed
+### Fixed
 
 - Fix non-zero GDF row error (#83)
 - Fix dask_exp import err (#82)
