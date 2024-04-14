@@ -19,7 +19,6 @@ from rasterio._err import CPLE_AppDefinedError
 from spectral_recovery._config import (
     VALID_YEAR,
     REQ_DIMS,
-    SUPPORTED_PLATFORMS,
     STANDARD_BANDS,
 )
 
