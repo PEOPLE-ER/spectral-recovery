@@ -11,12 +11,32 @@ from unittest.mock import patch, MagicMock
 from xarray.testing import assert_equal
 from numpy.testing import assert_array_equal
 
-from spectral_recovery.targets import MedianTarget, WindowedTarget, _buffered_clip_reference_stack, BufferError, compute_recovery_targets
 
+from spectral_recovery.targets import median_target, window_target, _buffered_clip_reference_stack, BufferError
 
 def test_invalid_scale_throws_value_error():
     with pytest.raises(ValueError):
-        MedianTarget(scale="not_a_scale")
+        valid_poly = Polygon([(3.5, 3.5), (3.5, 5.5), (5.5, 5.5), (5.5, 3.5)])
+        test_data = [
+            [
+                [[1.0]],  # Time 1, band 1
+                [[1.0]],  # Time 1, band 2
+            ],
+            [
+                [[3.0]],  # Time 2, band 1
+                [[5.0]],  # Time 2, band 2
+            ],
+        ]
+        test_stack = xr.DataArray(
+            test_data,
+            dims=["time", "band", "y", "x"],
+            coords={
+                "time": [0, 1],
+                "y": [0, 1],
+                "x": [0, 1]
+            },
+        )
+        median_target(site=valid_poly, timeseries_data=test_stack, reference_start="0", reference_end="1", scale="not_a_scale")
 
 class TestBufferedClip:
 
@@ -158,160 +178,6 @@ class TestBufferedClip:
     #     assert b_info.value.x_back == expected_x_back
     #     assert b_info.value.x_front == expected_x_front
 
-class TestComputeRecoveryTargetsMedian:
-
-    valid_poly = Polygon([(3.5, 3.5), (3.5, 5.5), (5.5, 5.5), (5.5, 3.5)])
-
-    @pytest.fixture()
-    def valid_array(self):
-        data = np.ones((1, 5, 10, 10))
-        latitudes = np.arange(0, 10)
-        longitudes = np.arange(0, 10)
-        time = pd.date_range("2010", "2014", freq="YS")
-        xarr = xr.DataArray(
-            data,
-            dims=["band", "time", "y", "x"],
-            coords={"band": ["NBR"], "time": time, "y": latitudes, "x": longitudes},
-        )
-        xarr = xarr.rio.write_crs("EPSG:3348", inplace=True)
-        return xarr
-
-    @pytest.fixture()
-    def valid_frame(self):
-
-        valid_frame = gpd.GeoDataFrame(
-            {
-                "dist_start": [2012],
-                "rest_start": [2013],
-                "reference_start": [2010],
-                "reference_end": [2010],
-                "geometry": [self.valid_poly],
-            },
-            crs="EPSG:3348",
-        )
-        return valid_frame
-
-    @patch("spectral_recovery.targets._tight_clip_reference_stack")
-    def test_recovery_targets_is_median_target_return(self, tight_clip_mock, valid_array, valid_frame):
-        median_polygon_mock = MagicMock(spec=MedianTarget)
-        median_polygon_mock.scale = "polygon"
-        median_polygon_mock.return_value = valid_array
-
-        median_pixel_mock = MagicMock(spec=MedianTarget)
-        median_pixel_mock.scale = "polygon"
-        median_pixel_mock.return_value = valid_array
-
-        result_polygon_median = compute_recovery_targets(
-            timeseries=valid_array,
-            restoration_polygon=valid_frame,
-            reference_start="2010",
-            reference_end="2010",
-            func=median_polygon_mock
-        )
-        result_pixel_median = compute_recovery_targets(
-            timeseries=valid_array,
-            restoration_polygon=valid_frame,
-            reference_start="2010",
-            reference_end="2010",
-            func=median_pixel_mock
-        )
-
-        xr.testing.assert_equal(result_pixel_median, valid_array)
-        xr.testing.assert_equal(result_polygon_median, valid_array)
-    
-    @patch("spectral_recovery.targets._tight_clip_reference_stack")
-    def test_calls_buffer_clip_once(self, tight_clip_mock, valid_array, valid_frame):
-        tight_clip_mock.side_effect = valid_array
-        windowed_method = MedianTarget(scale="polygon")
-
-        compute_recovery_targets(
-            timeseries=valid_array,
-            restoration_polygon=valid_frame,
-            reference_start="2010",
-            reference_end="2010",
-            func=windowed_method
-        )
-
-        assert tight_clip_mock.call_count == 1
-        _, _, call_kwargs = tight_clip_mock.mock_calls[0]
-        assert_equal(call_kwargs["timeseries"], valid_array)
-        pd.testing.assert_frame_equal(call_kwargs["restoration_polygon"], valid_frame)
-        assert call_kwargs["reference_start"] == "2010"
-        assert call_kwargs["reference_end"] == "2010"
-        assert call_kwargs["reference_polygons"] == None
-
-
-class TestComputeRecoveryTargetsWindowed:
-
-    valid_poly = Polygon([(3.5, 3.5), (3.5, 5.5), (5.5, 5.5), (5.5, 3.5)])
-
-    @pytest.fixture()
-    def valid_array(self):
-        data = np.ones((1, 5, 10, 10))
-        latitudes = np.arange(0, 10)
-        longitudes = np.arange(0, 10)
-        time = pd.date_range("2010", "2014", freq="YS")
-        xarr = xr.DataArray(
-            data,
-            dims=["band", "time", "y", "x"],
-            coords={"band": ["NBR"], "time": time, "y": latitudes, "x": longitudes},
-        )
-        xarr = xarr.rio.write_crs("EPSG:3348", inplace=True)
-        return xarr
-
-    @pytest.fixture()
-    def valid_frame(self):
-
-        valid_frame = gpd.GeoDataFrame(
-            {
-                "dist_start": [2012],
-                "rest_start": [2013],
-                "reference_start": [2010],
-                "reference_end": [2010],
-                "geometry": [self.valid_poly],
-            },
-            crs="EPSG:3348",
-        )
-        return valid_frame
-    
-    @patch("rioxarray.raster_array.RasterArray.clip")
-    @patch("spectral_recovery.targets._buffered_clip_reference_stack")
-    def test_windowed_recovery_targets_is_clipped_return(self, buffer_clip_mock, clip_mock, valid_array, valid_frame):
-        windowed_target_mock = MagicMock(spec=WindowedTarget)
-        windowed_target_mock.N = 3
-        windowed_target_mock.return_value = valid_array
-        clip_mock.return_value = "Mocked clip return"
-
-        result_windowed = compute_recovery_targets(
-            timeseries=valid_array,
-            restoration_polygon=valid_frame,
-            reference_start="2010",
-            reference_end="2010",
-            func=windowed_target_mock
-        )
-        assert result_windowed == "Mocked clip return"
-
-    @patch("spectral_recovery.targets._buffered_clip_reference_stack")
-    def test_calls_buffer_clip_once(self, buffer_clip_mock, valid_array, valid_frame):
-        buffer_clip_mock.side_effect = valid_array
-        windowed_method = WindowedTarget(N=13)
-
-        compute_recovery_targets(
-            timeseries=valid_array,
-            restoration_polygon=valid_frame,
-            reference_start="2010",
-            reference_end="2010",
-            func=windowed_method
-        )
-
-        assert buffer_clip_mock.call_count == 1
-        _, _, call_kwargs = buffer_clip_mock.mock_calls[0]
-        assert_equal(call_kwargs["timeseries"], valid_array)
-        pd.testing.assert_frame_equal(call_kwargs["restoration_polygon"], valid_frame)
-        assert call_kwargs["reference_start"] == "2010"
-        assert call_kwargs["reference_end"] == "2010"
-        assert call_kwargs["buffer"] == (windowed_method.N-1)/2
-
 
     # @patch("spectral_recovery.targets._buffered_clip_reference_stack")
     # @patch("xarray.DataArray.pad")
@@ -359,7 +225,14 @@ class TestComputeRecoveryTargetsWindowed:
     
 
 class TestMedianTargetPolygonScale:
-    def test_no_nan_returns_avg_over_time(self):
+
+    @pytest.fixture()
+    def valid_gpd(self):
+        polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+        valid_gpd = gpd.GeoDataFrame(geometry=[polygon]).set_crs("EPSG:4326")
+        return valid_gpd
+
+    def test_no_nan_returns_avg_over_time(self, valid_gpd):
         test_data = [
             [
                 [[1.0]],  # Time 1, band 1
@@ -375,23 +248,23 @@ class TestMedianTargetPolygonScale:
             dims=["time", "band", "y", "x"],
             coords={
                 "time": [0, 1],
+                "y": [1],
+                "x": [1]
             },
-        )
+        ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [2.0, 3.0]
         expected_stack = xr.DataArray(
             expected_data,
             dims=["band"],
             coords={
-                "band": [0, 1],
+                "band": [0, 1]
             },
-        )
+        ).rio.write_crs("EPSG:4326", inplace=True)
 
-        median_polygon_method = MedianTarget(scale="polygon")
-        out_stack = median_polygon_method(test_stack)
-
+        out_stack = median_target(site=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1", scale="polygon")
         assert_equal(out_stack, expected_stack)
 
-    def test_odd_time_dim_returns_median(self):
+    def test_odd_time_dim_returns_median(self, valid_gpd):
         test_data = [
             [
                 [[1.0]],  # Time 1, band 1
@@ -411,8 +284,10 @@ class TestMedianTargetPolygonScale:
             dims=["time", "band", "y", "x"],
             coords={
                 "time": [0, 1, 2],
+                "y": [1],
+                "x": [1]
             },
-        )
+        ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [3.0, 5.0]
         expected_stack = xr.DataArray(
             expected_data,
@@ -420,13 +295,13 @@ class TestMedianTargetPolygonScale:
             coords={
                 "band": [0, 1],
             },
-        )
-        median_polygon_method = MedianTarget(scale="polygon")
-        out_stack = median_polygon_method(test_stack)
+        ).rio.write_crs("EPSG:4326", inplace=True)
+
+        out_stack = median_target(site=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="2", scale="polygon")
 
         assert_equal(out_stack, expected_stack)
 
-    def test_nan_timeseries_is_nan(self):
+    def test_nan_timeseries_is_nan(self, valid_gpd):
         test_data = [
             [
                 [[np.nan]],
@@ -442,22 +317,23 @@ class TestMedianTargetPolygonScale:
             dims=["time", "band", "y", "x"],
             coords={
                 "time": [0, 1],
+                "y": [1],
+                "x": [1]
             },
-        )
+        ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [np.nan, 4.0]
         expected_stack = xr.DataArray(
             expected_data,
             dims=["band"],
             coords={
-                "band": [0, 1],
+                "band": [0, 1]
             },
-        )
-        median_polygon_method = MedianTarget(scale="polygon")
-        out_stack = median_polygon_method(test_stack)
+        ).rio.write_crs("EPSG:4326", inplace=True)
+        out_stack = median_target(site=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1", scale="polygon")
 
         assert_equal(out_stack, expected_stack)
 
-    def test_nan_in_timeseries_ignored(self):
+    def test_nan_in_timeseries_ignored(self, valid_gpd):
         test_data = [
             [
                 [[np.nan]],
@@ -473,8 +349,10 @@ class TestMedianTargetPolygonScale:
             dims=["time", "band", "y", "x"],
             coords={
                 "time": [0, 1],
+                "y": [1],
+                "x": [1]
             },
-        )
+        ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [9.0, 4.0]
         expected_stack = xr.DataArray(
             expected_data,
@@ -482,38 +360,31 @@ class TestMedianTargetPolygonScale:
             coords={
                 "band": [0, 1],
             },
-        )
-        median_polygon_method = MedianTarget(scale="polygon")
-        out_stack = median_polygon_method(test_stack)
+        ).rio.write_crs("EPSG:4326", inplace=True)
+        out_stack = median_target(site=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1", scale="polygon")
+
 
         assert_equal(out_stack, expected_stack)
 
-    def test_multi_poly_averages_individual_polygon(self):
+    def test_multi_poly_averages_individual_polygon(self, valid_gpd):
+        duplicate_row = valid_gpd.iloc[0:1].copy()
+        valid_gpd = gpd.GeoDataFrame(pd.concat([valid_gpd, duplicate_row], ignore_index=True))
+
         test_data = [
-            [  # Polygon 1
                 [  # Time 1
                     [[1.0, 2.0], [3.0, 4.0]],  # y1, x1  # y2, x1  # band 1
                 ],
                 [  # Time 2
                     [[5.0, 6.0], [8.0, 9.0]],  # y1, x2   # band 1
                 ],
-            ],
-            [  # Polygon 2
-                [
-                    [[1.0, 2.0], [3.0, 4.0]],  # y 1, x1  # y 2, x1  # band 1
-                ],
-                [
-                    [[5.0, 6.0], [8.0, 9.0]],  # y 1  # band 1
-                ],
-            ],
         ]
         test_stack = xr.DataArray(
             test_data,
-            dims=["poly_id", "time", "band", "y", "x"],
+            dims=["time", "band", "y", "x"],
             coords={
                 "time": [0, 1],
             },
-        )
+        ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [4.75]
         expected_stack = xr.DataArray(
             expected_data,
@@ -521,30 +392,36 @@ class TestMedianTargetPolygonScale:
             coords={
                 "band": [0],
             },
-        )
-        median_polygon_method = MedianTarget(scale="polygon")
-        out_stack = median_polygon_method(test_stack)
-
+        ).rio.write_crs("EPSG:4326", inplace=True)
+        out_stack = median_target(site=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1", scale="polygon")
+        print(out_stack, expected_stack)
         assert_equal(out_stack, expected_stack)
 
 
 class TestMedianTargetPixelScale:
-    def test_scale_pixel_returns_correct_dimensions(self):
+    @pytest.fixture()
+    def valid_gpd(self):
+        polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
+        valid_gpd = gpd.GeoDataFrame(geometry=[polygon]).set_crs("EPSG:4326")
+        return valid_gpd
+    
+    def test_scale_pixel_returns_correct_dimensions(self, valid_gpd):
         test_data = np.arange(8).reshape(1, 2, 2, 2)
         test_stack = xr.DataArray(
             test_data,
             dims=["band", "time", "y", "x"],
             coords={
-                "time": [0, 1],
+                "time": [0, 1], 
+                "y":[0, 1],
+                "x": [0, 1],
             },
-        )
-        median_pixel_method = MedianTarget(scale="pixel")
-        out_stack = median_pixel_method(test_stack)
+        ).rio.write_crs("EPSG:4326", inplace=True)
+        out_stack = median_target(site=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1", scale="pixel")
 
         assert out_stack.dims == ("band", "y", "x")
         assert out_stack.shape == (1, 2, 2)
 
-    def test_scale_pixel_returns_per_pixel_median(self):
+    def test_scale_pixel_returns_per_pixel_median(self, valid_gpd):
         test_data = [
             [
                 [[1.0, 2.0], [3.0, 4.0]],
@@ -555,9 +432,11 @@ class TestMedianTargetPixelScale:
             test_data,
             dims=["band", "time", "y", "x"],
             coords={
-                "time": [0, 1],
+                "time": [0, 1], 
+                "y":[0, 1],
+                "x": [0, 1],    
             },
-        )
+        ).rio.write_crs("EPSG:4326", inplace=True)
 
         expected_data = [[[3.0, 4.0], [5.5, 6.5]]]
         expected_stack = xr.DataArray(
@@ -565,21 +444,22 @@ class TestMedianTargetPixelScale:
             dims=["band", "y", "x"],
             coords={
                 "band": [0],
+                "y":[0, 1],
+                "x": [0, 1],  
             },
-        )
-        median_pixel_method = MedianTarget(scale="pixel")
-        out_stack = median_pixel_method(test_stack)
-
+        ).rio.write_crs("EPSG:4326", inplace=True)
+        out_stack = median_target(site=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1", scale="pixel")
+        print(out_stack, expected_stack)
         assert_equal(out_stack, expected_stack)
 
 
-class TestWindowedTarget:
+class TestWindowTarget:
 
     def test_neg_or_0_N_throws_value_err(self):
         with pytest.raises(
             ValueError, 
         ):
-            WindowedTarget(N=-1)
+            window_target(site=ANY, timeseries_data=ANY, N=-1)
 
     def test_even_N_throws_value_err(self):
         with pytest.raises(

@@ -10,7 +10,6 @@ from matplotlib.patches import Patch
 from matplotlib.legend_handler import HandlerPatch
 
 from spectral_recovery.restoration import RestorationArea
-from spectral_recovery.targets import MedianTarget
 from spectral_recovery.indices import compute_indices
 
 
@@ -18,8 +17,7 @@ from spectral_recovery.indices import compute_indices
 def plot_spectral_trajectory(
     timeseries_data: xr.DataArray,
     restoration_polygons: gpd.GeoDataFrame,
-    reference_polygons: gpd.GeoDataFrame = None,
-    recovery_target_method=MedianTarget(scale="polygon"),
+    recovery_target: xr.DataArray,
     path: str = None,
 ):
     """Plot the spectral trajectory of the restoration polygon
@@ -42,9 +40,8 @@ def plot_spectral_trajectory(
     """
     restoration_area = RestorationArea(
         restoration_polygon=restoration_polygons,
-        reference_polygons=reference_polygons,
         composite_stack=timeseries_data,
-        recovery_target_method=recovery_target_method,
+        recovery_target_method=recovery_target,
     )
     if path:
         plot_ra(ra=restoration_area, path=path)

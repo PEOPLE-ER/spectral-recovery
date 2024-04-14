@@ -18,8 +18,6 @@ from spectral_recovery.restoration import (
 )
 from spectral_recovery.enums import Metric
 from spectral_recovery._config import DATETIME_FREQ
-# Import this until patching of compute_recovery_targets in RestorationArea is solved
-from spectral_recovery.targets import compute_recovery_targets, MedianTarget
 
 # TODO: move test data into their own folders, create temp dirs so individual tests
 # don't conflict while reading the data
@@ -96,19 +94,20 @@ class TestRestorationAreaInit:
                 ref_end=ref_years[1],
             )
 
+            recovery_target = xr.DataArray(np.ones(stack.sizes["band"]), dims=["band"], coords={"band": [0]})
+
             resto_a = RestorationArea(
-                restoration_polygon=resto_poly,
+                restoration_site=resto_poly,
                 composite_stack=stack,
+                recovery_target=recovery_target
             )
 
             assert (
-                resto_a.restoration_polygon.geometry.geom_equals(resto_poly.geometry)
+                resto_a.restoration_site.geometry.geom_equals(resto_poly.geometry)
             ).all()
-            assert resto_a.reference_polygons == None
             assert resto_a.disturbance_start == dist_start
             assert resto_a.restoration_start == resto_start
             assert resto_a.disturbance_start == dist_start
-            assert resto_a.reference_years == ref_years
             assert resto_a.timeseries_start == time_range[0]
             assert resto_a.timeseries_end == time_range[-1]
 
@@ -127,19 +126,21 @@ class TestRestorationAreaComposite:
                     pd.to_datetime("2022"),
                 ])
             )
+            recovery_target = xr.DataArray(np.ones(bad_stack.sizes["bandz"]), dims=["bandz"], coords={"bandz": [0]})
 
             resto_poly = gpd.read_file(POLYGON_INBOUND)
             resto_poly = set_dates(
                 resto_poly, dist="2020", rest="2021", ref_start="2019", ref_end="2019"
             )
 
+
             with pytest.raises(
                 ValueError,
             ):
                 resto_a = RestorationArea(
-                    restoration_polygon=resto_poly,
-                    reference_polygons=resto_poly,
+                    restoration_site=resto_poly,
                     composite_stack=bad_stack,
+                    recovery_target=recovery_target,
                 )
 
     def test_composite_stack_missing_dims_throws_value_error(self):
@@ -154,7 +155,9 @@ class TestRestorationAreaComposite:
                     pd.to_datetime("2023"),
                 ])
             )
+            recovery_target = xr.DataArray(np.ones(1), dims=["band"], coords={"band": [0]})
 
+    
             resto_poly = gpd.read_file(POLYGON_INBOUND)
             resto_poly = set_dates(
                 resto_poly, dist="2020", rest="2021", ref_start="2019", ref_end="2019"
@@ -164,9 +167,9 @@ class TestRestorationAreaComposite:
                 ValueError,
             ):
                 resto_a = RestorationArea(
-                    restoration_polygon=resto_poly,
-                    reference_polygons=resto_poly,
+                    restoration_site=resto_poly,
                     composite_stack=bad_stack,
+                    recovery_target=recovery_target
                 )
 
     def test_composite_stack_missing_years_throws_value_error(self):
@@ -182,6 +185,8 @@ class TestRestorationAreaComposite:
                     pd.to_datetime("2023"),
                 ])
             )
+            recovery_target = xr.DataArray(np.ones(bad_stack.sizes["band"]), dims=["band"], coords={"band": [0]})
+
 
             resto_poly = gpd.read_file(POLYGON_INBOUND)
             resto_poly = set_dates(
@@ -192,8 +197,9 @@ class TestRestorationAreaComposite:
                 ValueError,
             ):
                 resto_a = RestorationArea(
-                    restoration_polygon=resto_poly,
+                    restoration_site=resto_poly,
                     composite_stack=bad_stack,
+                    recovery_target=recovery_target
                 )
 
 
@@ -221,13 +227,16 @@ class TestRestorationAreaPolygons:
         resto_poly = set_dates(
             resto_poly, dist="2020", rest="2021", ref_start="2019", ref_end="2019"
         )
+        recovery_target = xr.DataArray(np.ones(valid_timeseries.sizes["band"]), dims=["band"], coords={"band": 0})
+
 
         with pytest.raises(
             ValueError,
         ):
             RestorationArea(
-                restoration_polygon=resto_poly,
+                restoration_site=resto_poly,
                 composite_stack=valid_timeseries,
+                recovery_target=recovery_target,
             )
 
     def test_in_bounds_polygon_returns_same_polygon(self, valid_timeseries):
@@ -235,13 +244,16 @@ class TestRestorationAreaPolygons:
         resto_poly = set_dates(
             resto_poly, dist="2020", rest="2021", ref_start="2019", ref_end="2019"
         )
+        recovery_target = xr.DataArray(np.ones(valid_timeseries.sizes["band"]), dims=["band"], coords={"band": [0]})
+
 
         ra = RestorationArea(
-            restoration_polygon=resto_poly,
+            restoration_site=resto_poly,
             composite_stack=valid_timeseries,
+            recovery_target=recovery_target
         )
 
-        assert_geodataframe_equal(ra.restoration_polygon, resto_poly)
+        assert_geodataframe_equal(ra.restoration_site, resto_poly)
 
     def test_gdf_with_nonzero_row_index_does_not_fail(self, valid_timeseries):
         resto_poly = gpd.read_file(POLYGON_INBOUND)
@@ -249,87 +261,28 @@ class TestRestorationAreaPolygons:
         non_zero_row = set_dates(
             non_zero_row, dist="2020", rest="2021", ref_start="2019", ref_end="2019"
         )
+        recovery_target = xr.DataArray(np.ones(valid_timeseries.sizes["band"]), dims=["band"], coords={"band": [0]})
+
 
         RestorationArea(
-            restoration_polygon=non_zero_row,
+            restoration_site=non_zero_row,
             composite_stack=valid_timeseries,
+            recovery_target=recovery_target,
         )
-
-
-class TestValidateReferencePolygons:
-    @pytest.fixture()
-    def valid_timeseries(self):
-        with rioxarray.open_rasterio(TIMESERIES_LEN_17, chunks="auto") as data:
-            valid_timeseries = data.rename({"band": "time"}).expand_dims(
-                dim={"band": [0]}
-            )
-            valid_timeseries = valid_timeseries.assign_coords(
-                time=(pd.date_range("2010", "2026", freq=DATETIME_FREQ))
-            )
-        return valid_timeseries
-
-    @pytest.mark.parametrize(
-        ("polygon",),
-        [
-            (POLYGON_OUTBOUND,),  # bad spatial location (not contained at all)
-            (POLYGON_OVERLAP,),  # bad spatial location (not fully contained)
-        ],
-    )
-    def test_out_of_bounds_polygons_throw_value_err(self, polygon, valid_timeseries):
-        rest_poly = gpd.read_file(POLYGON_INBOUND)
-        rest_poly = set_dates(rest_poly, dist="2020", rest="2021")
-
-        ref_poly = gpd.read_file(polygon)
-        ref_poly = set_dates(ref_poly, ref_start="2019", ref_end="2019")
-
-        with pytest.raises(
-            ValueError,
-        ):
-            RestorationArea(
-                restoration_polygon=rest_poly,
-                reference_polygons=ref_poly,
-                composite_stack=valid_timeseries,
-            )
-
-    def test_in_bounds_polygon_returns_same_polygon(self, valid_timeseries):
-        rest_poly = gpd.read_file(POLYGON_INBOUND)
-        rest_poly = set_dates(rest_poly, dist="2020", rest="2021")
-
-        ref_poly = gpd.read_file(POLYGON_INBOUND)
-        ref_poly = set_dates(ref_poly, ref_start="2019", ref_end="2019")
-
-        ra = RestorationArea(
-            restoration_polygon=rest_poly,
-            reference_polygons=rest_poly,
-            composite_stack=valid_timeseries,
-        )
-        assert_geodataframe_equal(ra.reference_polygons, rest_poly)
-
-    def test_ref_not_geodataframe_polygon_throws_value_err(self, valid_timeseries):
-        rest_poly = gpd.read_file(POLYGON_INBOUND)
-        rest_poly = set_dates(rest_poly, dist="2020", rest="2021")
-
-        ref_poly = None
-
-        with pytest.raises(ValueError):
-            RestorationArea(
-                restoration_polygon=rest_poly,
-                reference_polygons=ref_poly,
-                composite_stack=valid_timeseries,
-            )
 
 
 class TestRestorationAreaDates:
     @pytest.fixture()
     def valid_array(self):
         data = np.ones((1, 5, 2, 2))
+        bands = [0]
         latitudes = [0, 1]
         longitudes = [0, 1]
         time = pd.date_range("2010", "2014", freq="YS")
         xarr = xr.DataArray(
             data,
             dims=["band", "time", "y", "x"],
-            coords={"time": time, "y": latitudes, "x": longitudes},
+            coords={"band": bands, "time": time, "y": latitudes, "x": longitudes},
         )
         xarr.rio.write_crs("EPSG:4326", inplace=True)
         return xarr
@@ -338,14 +291,17 @@ class TestRestorationAreaDates:
     def valid_poly(self):
         polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
         return polygon
+    
+    @pytest.fixture()
+    def valid_target(self, valid_array):
+        valid_target = xr.DataArray(np.ones(valid_array.sizes["band"]), dims=["band"], coords={"band": [0]})
+        return valid_target
 
-    def test_str_dates_from_int(self, valid_array, valid_poly):
+    def test_str_dates_from_int(self, valid_array, valid_poly, valid_target):
         poly_frame_int_dates = gpd.GeoDataFrame(
             {
                 "dist_start": [2012],
                 "rest_start": [2013],
-                "reference_start": [2010],
-                "reference_end": [2010],
                 "geometry": [valid_poly],
             },
             crs="EPSG:4326",
@@ -353,110 +309,35 @@ class TestRestorationAreaDates:
 
         ra = RestorationArea(
             composite_stack=valid_array,
-            restoration_polygon=poly_frame_int_dates,
+            restoration_site=poly_frame_int_dates,
+            recovery_target=valid_target,
         )
 
         assert isinstance(ra.disturbance_start, str)
         assert isinstance(ra.restoration_start, str)
-        assert isinstance(ra.reference_years[0], str)
-        assert isinstance(ra.reference_years[1], str)
 
-    def test_returns_str_dates_from_str(self, valid_array, valid_poly):
+    def test_returns_str_dates_from_str(self, valid_array, valid_poly, valid_target):
         poly_frame_str_dates = gpd.GeoDataFrame(
             {
                 "dist_start": ["2012"],
                 "rest_start": ["2013"],
-                "reference_start": ["2010"],
-                "reference_end": ["2010"],
                 "geometry": [valid_poly],
             },
             crs="EPSG:4326",
         )
         ra = RestorationArea(
             composite_stack=valid_array,
-            restoration_polygon=poly_frame_str_dates,
+            restoration_site=poly_frame_str_dates,
+            recovery_target=valid_target,
         )
 
         assert isinstance(ra.disturbance_start, str)
         assert isinstance(ra.restoration_start, str)
-        assert isinstance(ra.reference_years[0], str)
-        assert isinstance(ra.reference_years[1], str)
 
-    def test_ref_none_takes_all_dates_from_rest(self, valid_array, valid_poly):
-        full_rest_frame = gpd.GeoDataFrame(
-            {
-                "dist_start": [2012],
-                "rest_start": [2013],
-                "reference_start": [2010],
-                "reference_end": [2010],
-                "geometry": [valid_poly],
-            },
-            crs="EPSG:4326",
-        )
-
-        ra = RestorationArea(
-            composite_stack=valid_array,
-            restoration_polygon=full_rest_frame,
-        )
-
-        assert ra.disturbance_start == "2012"
-        assert ra.restoration_start == "2013"
-        assert ra.reference_years[0] == "2010"
-        assert ra.reference_years[1] == "2010"
-
-    def test_ref_dates_take_from_ref(self, valid_array, valid_poly):
-        rest_frame_no_ref = gpd.GeoDataFrame(
-            {"dist_start": [2012], "rest_start": [2013], "geometry": [valid_poly]},
-            crs="EPSG:4326",
-        )
-        full_ref_frame = gpd.GeoDataFrame(
-            {"ref_start": [2010], "ref_end": [2010], "geometry": [valid_poly]},
-            crs="EPSG:4326",
-        )
-        ra = RestorationArea(
-            composite_stack=valid_array,
-            restoration_polygon=rest_frame_no_ref,
-            reference_polygons=full_ref_frame,
-        )
-
-        assert ra.disturbance_start == "2012"
-        assert ra.restoration_start == "2013"
-        assert ra.reference_years[0] == "2010"
-        assert ra.reference_years[1] == "2010"
-
-    def test_ref_dates_override_rest_dates(self, valid_array, valid_poly):
-        full_rest_frame = gpd.GeoDataFrame(
-            {
-                "dist_start": [2012],
-                "rest_start": [2013],
-                "ref_start": [2011],
-                "ref_end": [2011],
-                "geometry": [valid_poly],
-            },
-            crs="EPSG:4326",
-        )
-        full_ref_frame = gpd.GeoDataFrame(
-            {"ref_start": [2010], "ref_end": [2010], "geometry": [valid_poly]},
-            crs="EPSG:4326",
-        )
-
-        ra = RestorationArea(
-            composite_stack=valid_array,
-            restoration_polygon=full_rest_frame,
-            reference_polygons=full_ref_frame,
-        )
-
-        assert ra.disturbance_start == "2012"
-        assert ra.restoration_start == "2013"
-        assert ra.reference_years[0] == "2010"
-        assert ra.reference_years[1] == "2010"
-
-    def test_missing_dates_throws_value_err(self, valid_array, valid_poly):
+    def test_missing_dates_throws_value_err(self, valid_array, valid_poly, valid_target):
         frame_missing_dates = gpd.GeoDataFrame(
             {
                 "rest_start": [2013],
-                "reference_start": [2010],
-                "reference_end": [2010],
                 "geometry": [valid_poly],
             },
             crs="EPSG:4326",
@@ -464,20 +345,18 @@ class TestRestorationAreaDates:
 
         with pytest.raises(ValueError):
             RestorationArea(
-                restoration_polygon=frame_missing_dates,
-                reference_polygons=None,
+                restoration_site=frame_missing_dates,
                 composite_stack=valid_array,
+                recovery_target=valid_target,
             )
 
     def test_dist_year_greater_than_rest_year_throws_value_error(
-        self, valid_array, valid_poly
+        self, valid_array, valid_poly, valid_target
     ):
         dist_greater_rest = gpd.GeoDataFrame(
             {
                 "dist_start": [2012],
                 "rest_start": [2011],
-                "reference_start": [2010],
-                "reference_end": [2010],
                 "geometry": [valid_poly],
             },
             crs="EPSG:4326",
@@ -485,20 +364,18 @@ class TestRestorationAreaDates:
 
         with pytest.raises(ValueError):
             RestorationArea(
-                restoration_polygon=dist_greater_rest,
-                reference_polygons=None,
+                restoration_site=dist_greater_rest,
                 composite_stack=valid_array,
+                recovery_target=valid_target,
             )
 
     def test_out_of_bounds_restoration_start_throws_value_error(
-        self, valid_array, valid_poly
+        self, valid_array, valid_poly, valid_target
     ):
         oob_rest = gpd.GeoDataFrame(
             {
                 "dist_start": [2011],
                 "rest_start": [2015],
-                "reference_start": [2010],
-                "reference_end": [2010],
                 "geometry": [valid_poly],
             },
             crs="EPSG:4326",
@@ -506,20 +383,18 @@ class TestRestorationAreaDates:
 
         with pytest.raises(ValueError):
             RestorationArea(
-                restoration_polygon=oob_rest,
-                reference_polygons=None,
+                restoration_site=oob_rest,
                 composite_stack=valid_array,
+                recovery_target=valid_target,
             )
 
     def test_out_of_bounds_disturbance_start_year_throws_value_error(
-        self, valid_array, valid_poly
+        self, valid_array, valid_poly, valid_target
     ):
         oob_dist = gpd.GeoDataFrame(
             {
                 "dist_start": [2008],
                 "rest_start": [2012],
-                "reference_start": [2010],
-                "reference_end": [2010],
                 "geometry": [valid_poly],
             },
             crs="EPSG:4326",
@@ -527,110 +402,7 @@ class TestRestorationAreaDates:
 
         with pytest.raises(ValueError):
             RestorationArea(
-                restoration_polygon=oob_dist,
-                reference_polygons=None,
+                restoration_site=oob_dist,
                 composite_stack=valid_array,
+                recovery_target=valid_target,
             )
-
-    @pytest.mark.parametrize(
-        ("ref_year_start", "ref_year_end"),
-        [
-            (2002, 2002),
-            (2025, 2028),
-            (2008, 2011),
-        ],
-    )
-    def test_out_of_bounds_reference_years_throw_value_error(
-        self, valid_array, valid_poly, ref_year_start, ref_year_end
-    ):
-        oob_ref = gpd.GeoDataFrame(
-            {
-                "dist_start": [2008],
-                "rest_start": [2015],
-                "reference_start": [ref_year_start],
-                "reference_end": [ref_year_end],
-                "geometry": [valid_poly],
-            },
-            crs="EPSG:4326",
-        )
-
-        with pytest.raises(ValueError):
-            RestorationArea(
-                restoration_polygon=oob_ref,
-                reference_polygons=None,
-                composite_stack=valid_array,
-            )
-
-
-class TestRestorationAreaRecoveryTarget:
-
-    @pytest.fixture()
-    def valid_ra_build(self):
-        # TODO: Simplify this to just use int coords and polygons that intersect. Shouldn't need to read the files.
-        resto_poly = gpd.read_file(POLYGON_INBOUND)
-        resto_poly["dist_start"] = "2015"
-        resto_poly["rest_start"] = "2016"
-        resto_poly["ref_start"] = "2010"
-        resto_poly["ref_end"] = "2010"
-
-        raster = TIMESERIES_LEN_17
-        time_range = [str(x) for x in np.arange(2010, 2027)]
-
-        with rioxarray.open_rasterio(raster, chunks="auto") as data:
-            stack = data
-            stack = stack.rename({"band": "time"})
-            stack = stack.expand_dims(dim={"band": [0]})
-            stack = stack.assign_coords(
-                time=(pd.date_range(time_range[0], time_range[-1], freq=DATETIME_FREQ))
-            )
-
-        return {
-            "restoration_polygon": resto_poly,
-            "composite_stack": stack,
-        }
-
-    def test_default_is_median_target_instance_w_scale_polygon(
-        self,
-        valid_ra_build,
-    ):
-        resto_a = RestorationArea(**valid_ra_build)
-
-        assert resto_a.recovery_target_method.scale == "polygon"
-
-    @patch("spectral_recovery.targets.compute_recovery_targets")
-    def test_recovery_target_should_call_compute_recovery_targets(
-        self,
-        crt_mock,
-        valid_ra_build,
-    ):
-        # NOTE: patching doesn't work here. Directly compute results for now
-        # as a round-about way to check that compute_recovery_targets is called
-        expected_result = compute_recovery_targets(
-            valid_ra_build["composite_stack"],
-            valid_ra_build["restoration_polygon"],
-            "2010",
-            "2010",
-            func=MedianTarget(scale="polygon")
-        )
-        resto_a = RestorationArea(**valid_ra_build)
-        # Trigger lazy computation of recovery target
-        result = resto_a.recovery_target
-        result.drop_vars("spatial_ref")
-
-        xr.testing.assert_equal(result, expected_result)
-
-    # @patch("spectral_recovery.targets.compute_recovery_targets", return_value="test")
-    # def test_recovery_target_is_result_from_compute_recovery_targets(
-    #     self,
-    #     rt_mock,
-    #     valid_ra_build,
-    # ):
-    #     # NOTE: patching doesn't work here. Directly compute results for now.
-    #     resto_a = RestorationArea(**valid_ra_build)
-
-    #     # Trigger lazy computation of recovery target
-    #     result = resto_a.recovery_target
-
-    #     rt_mock.assert_called_once()
-    #     assert result == "test"
-
