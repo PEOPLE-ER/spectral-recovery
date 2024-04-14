@@ -8,8 +8,6 @@ import geopandas as gpd
 from unittest.mock import patch, Mock
 from shapely import Polygon
 
-from spectral_recovery.targets import MedianTarget
-
 # from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.metrics import (
     y2r,
@@ -60,9 +58,15 @@ class TestComputeMetrics:
         )
         return valid_frame
 
+    @pytest.fixture()
+    def valid_rt(self, valid_array):
+
+        valid_rt = valid_array[:,0, :, :].drop_vars("time")
+        return valid_rt
+
     @patch("spectral_recovery.metrics.RestorationArea")
     def test_ra_built_with_given_polys(
-        self, ra_mock, valid_array, valid_frame
+        self, ra_mock, valid_array, valid_frame, valid_rt
     ):
         ra_mock.return_value = "ra_return"
         y2r_mock = Mock()
@@ -74,19 +78,18 @@ class TestComputeMetrics:
                 timeseries_data=valid_array,
                 restoration_polygons=valid_frame,
                 metrics=["Y2R"],
+                recovery_target=valid_rt
             )
 
             pd.testing.assert_frame_equal(
                 ra_mock.call_args.kwargs["restoration_polygon"], valid_frame
             )
-            assert ra_mock.call_args.kwargs["reference_polygons"] == None
             xr.testing.assert_equal(
                 ra_mock.call_args.kwargs["composite_stack"], valid_array
             )
-            assert isinstance(
-                ra_mock.call_args.kwargs["recovery_target_method"], MedianTarget
+            xr.testing.assert_equal(
+                ra_mock.call_args.kwargs["recovery_target"], valid_rt
             )
-            assert ra_mock.call_args.kwargs["recovery_target_method"].scale == "polygon"
 
     # @patch("spectral_recovery.metrics.compute_indices")
     # @patch("spectral_recovery.metrics.RestorationArea")
@@ -112,7 +115,7 @@ class TestComputeMetrics:
 
     @patch("spectral_recovery.metrics.RestorationArea")
     def test_correct_metrics_called_from_metric_func_dict(
-        self, ra_mock, valid_array, valid_frame
+        self, ra_mock, valid_array, valid_frame, valid_rt
     ):
         ra_mock.return_value = "ra_return"
 
@@ -129,6 +132,7 @@ class TestComputeMetrics:
             compute_metrics(
                 timeseries_data=valid_array,
                 restoration_polygons=valid_frame,
+                recovery_target=valid_rt,
                 metrics=multi_metrics,
             )
 
@@ -139,7 +143,7 @@ class TestComputeMetrics:
 
     @patch("spectral_recovery.metrics.RestorationArea")
     def test_output_data_stacked_along_metric_dim(
-        self, ra_mock, valid_array, valid_frame
+        self, ra_mock, valid_array, valid_frame, valid_rt
     ):
         ra_mock.return_value = "ra_return"
 
@@ -157,6 +161,7 @@ class TestComputeMetrics:
                 timeseries_data=valid_array,
                 restoration_polygons=valid_frame,
                 metrics=multi_metrics,
+                recovery_target=valid_rt,
             )
 
         assert result.dims == ("metric", "band", "y", "x")
@@ -168,7 +173,7 @@ class TestComputeMetrics:
 
     @patch("spectral_recovery.metrics.RestorationArea")
     def test_custom_params_passed_to_metric_funcs(
-        self, ra_mock, valid_array, valid_frame
+        self, ra_mock, valid_array, valid_frame, valid_rt
     ):
         ra_mock.return_value = "ra_return"
         metric = "Y2R"
@@ -182,6 +187,7 @@ class TestComputeMetrics:
             compute_metrics(
                 timeseries_data=valid_array,
                 restoration_polygons=valid_frame,
+                recovery_target=valid_rt, 
                 metrics=[metric],
                 timestep=2,
                 percent_of_target=60,

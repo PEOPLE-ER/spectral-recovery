@@ -10,7 +10,6 @@ import geopandas as gpd
 from spectral_recovery._utils import maintain_rio_attrs
 from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.indices import compute_indices
-from spectral_recovery.targets import MedianTarget
 
 
 NEG_TIMESTEP_MSG = "timestep cannot be negative."
@@ -29,16 +28,14 @@ def compute_metrics(
     timeseries_data: xr.DataArray,
     restoration_polygons: gpd.GeoDataFrame,
     metrics: List[str],
-    reference_polygons: gpd.GeoDataFrame = None,
+    recovery_target: xr.DataArray,
     timestep: int = 5,
     percent_of_target: int = 80,
-    recovery_target_method=MedianTarget(scale="polygon"),
 ):
     restoration_area = RestorationArea(
-        restoration_polygon=restoration_polygons,
-        reference_polygons=reference_polygons,
+        restoration_site=restoration_polygons,
         composite_stack=timeseries_data,
-        recovery_target_method=recovery_target_method,
+        recovery_target=recovery_target
     )
     m_results = []
     for m in metrics:

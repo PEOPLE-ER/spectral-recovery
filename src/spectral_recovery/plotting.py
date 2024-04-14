@@ -10,7 +10,6 @@ from matplotlib.patches import Patch
 from matplotlib.legend_handler import HandlerPatch
 
 from spectral_recovery.restoration import RestorationArea
-from spectral_recovery.targets import MedianTarget
 from spectral_recovery.indices import compute_indices
 
 
@@ -18,8 +17,9 @@ from spectral_recovery.indices import compute_indices
 def plot_spectral_trajectory(
     timeseries_data: xr.DataArray,
     restoration_polygons: gpd.GeoDataFrame,
-    reference_polygons: gpd.GeoDataFrame = None,
-    recovery_target_method=MedianTarget(scale="polygon"),
+    recovery_target: xr.DataArray,
+    reference_start: str = None, 
+    reference_end: str = None, 
     path: str = None,
 ):
     """Plot the spectral trajectory of the restoration polygon
@@ -32,8 +32,6 @@ def plot_spectral_trajectory(
         Restoration polygon and dates
     indices : list of str
         Indices to visualize trajectory for
-    reference_polygons : gpd.GeoDataFrame, optional
-        The refernce polygons to compute recovery target with
     indices_constants : dict
         Constant values for indices
     recovery_target_method : callable
@@ -41,18 +39,23 @@ def plot_spectral_trajectory(
 
     """
     restoration_area = RestorationArea(
-        restoration_polygon=restoration_polygons,
-        reference_polygons=reference_polygons,
+        restoration_site=restoration_polygons,
         composite_stack=timeseries_data,
-        recovery_target_method=recovery_target_method,
+        recovery_target=recovery_target,
     )
     if path:
-        plot_ra(ra=restoration_area, path=path)
+        plot_ra(ra=restoration_area, reference_start=reference_start, reference_end=reference_end, path=path)
     else:
-        plot_ra(ra=restoration_area)
+        plot_ra(ra=restoration_area, reference_start=reference_start, reference_end=reference_end,)
 
 
-def plot_ra(ra: RestorationArea, path: str = None, legend: bool = True) -> None:
+def plot_ra(
+        ra: RestorationArea,
+        reference_start: str, 
+        reference_end: str,
+        path: str = None,
+        legend: bool = True,
+        ) -> None:
     """Create spectral trajectory plot of the RestorationArea (ra)
 
     Parameters
@@ -62,7 +65,8 @@ def plot_ra(ra: RestorationArea, path: str = None, legend: bool = True) -> None:
     path : str, optional
         The path to save the plot to.
     """
-    hist_ref_sys = ra.reference_polygons is None
+
+    plot_ref_window = bool(reference_start and reference_end)
 
     stats = ra.restoration_image_stack.satts.stats()
     stats = stats.sel(
@@ -120,12 +124,12 @@ def plot_ra(ra: RestorationArea, path: str = None, legend: bool = True) -> None:
             linestyle=(0, (3, 5, 1, 5)),
             lw=1,
         )
-        _draw_trajectory_windows(ra, axi, palette, hist_ref_sys)
+        _draw_trajectory_windows(ra, reference_start, reference_end, axi, palette, plot_ref_window)
         _set_axis_labels(ra, axi, band, data["time"].unique().tolist())
     (
         labels,
         custom_handles,
-    ) = _custom_legend_labels_handles(ra, palette, hist_ref_sys)
+    ) = _custom_legend_labels_handles(ra, palette, plot_ref_window)
 
     if legend:
         plt.figlegend(
@@ -158,7 +162,7 @@ def _set_axis_labels(self, axi, title, xlabels):
     axi.set_ylabel(f"{title} Value")
 
 
-def _draw_trajectory_windows(ra, axi, palette, hist_ref_sys):
+def _draw_trajectory_windows(ra, refs, refe, axi, palette, plot_ref_window):
     """Draw the trajectory windows onto subplots.
 
     Uses two verticle dashed lines to delimit the start and
@@ -204,31 +208,31 @@ def _draw_trajectory_windows(ra, axi, palette, hist_ref_sys):
         color=palette[3],
     )
 
-    if hist_ref_sys:
+    if plot_ref_window:
         # if deriving target from recovery polygon, draw reference window
         axi.axvline(
-            x=ra.reference_years[0],
+            x=refs,
             color=palette[4],
             linestyle="dashed",
             lw=1,
         )
         axi.axvspan(
-            ra.reference_years[0],
-            ra.reference_years[1],
+            refs,
+            refe,
             alpha=0.2,
             color=palette[4],
         )
         # only draw line if reference ye
-        if ra.reference_years[1] != ra.disturbance_start:
+        if refe != refs:
             axi.axvline(
-                x=ra.reference_years[1],
+                x=refe,
                 color=palette[4],
                 linestyle="dashed",
                 lw=1,
             )
 
 
-def _custom_legend_labels_handles(ra, palette, hist_ref_sys) -> Tuple[List, List]:
+def _custom_legend_labels_handles(ra, palette, plot_ref_window) -> Tuple[List, List]:
     """Create a custom legend to match trajectory plots
 
     Returns
@@ -259,20 +263,7 @@ def _custom_legend_labels_handles(ra, palette, hist_ref_sys) -> Tuple[List, List
         "disturbance window",
         "recovery window",
     ]
-    if hist_ref_sys:
-        if isinstance(ra.recovery_target_method, MedianTarget):
-            if ra.recovery_target_method.scale == "pixel":
-                custom_handles.insert(
-                    2,
-                    (recovery_target_line),
-                )
-                labels.insert(2, "recovery target (estimated mean)")
-            else:
-                custom_handles.insert(
-                    2,
-                    recovery_target_line,
-                )
-                labels.insert(2, "recovery target")
+    if plot_ref_window:
 
         custom_handles.insert(3, reference_years_patch)
         labels.insert(3, "reference year(s)")
