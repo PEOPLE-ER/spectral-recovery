@@ -4,7 +4,6 @@ site_url: https://PEOPLE-ER.github.io/Spectral-Recovery/
 nav:
 - Home: index.md
 - Documentation:
-    - Theoretical Basis: 'about.md'
     - Getting Started:
       - Installation: 'installation.md'
       - Quick Overview: 'overview.ipynb'
@@ -17,6 +16,12 @@ nav:
       - Recovery Metrics: 'recovery_metrics.md'
       - Computing with Dask: 'computing_with_dask.md'
     - API Reference: 'api.md'
+- Theoretical Basis:
+  - Introduction: 'theoretical_basis.md'
+  - Spectral Recovery Tool: 'spectral_recovery_tool.md'
+- Tutorials:
+  - For Users:
+  - For Developers:
 
 plugins:
   - mkdocs-jupyter:
@@ -31,9 +36,12 @@ markdown_extensions:
   - attr_list
   - pymdownx.arithmatex:
       generic: true
-theme: flatly
+theme: material
 
 extra_javascript:
   - javascripts/mathjax.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra_css:
+  - stylesheets/extra.css
