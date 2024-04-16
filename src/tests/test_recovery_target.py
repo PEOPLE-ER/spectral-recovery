@@ -223,7 +223,6 @@ class TestBufferedClip:
     #             func=windowed_method
     #         )
     
-
 class TestMedianTargetPolygonScale:
 
     @pytest.fixture()
@@ -231,6 +230,34 @@ class TestMedianTargetPolygonScale:
         polygon = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
         valid_gpd = gpd.GeoDataFrame(geometry=[polygon]).set_crs("EPSG:4326")
         return valid_gpd
+
+    @patch("geopandas.read_file")
+    def test_str_polygon_reads_polygon(self, read_mock, valid_gpd):
+        read_mock.return_value = valid_gpd
+        test_data = [
+            [
+                [[1.0]],  # Time 1, band 1
+                [[1.0]],  # Time 1, band 2
+            ],
+            [
+                [[3.0]],  # Time 2, band 1
+                [[5.0]],  # Time 2, band 2
+            ],
+        ]
+        valid_stack = xr.DataArray(
+            test_data,
+            dims=["time", "band", "y", "x"],
+            coords={
+                "time": [0, 1],
+                "y": [1],
+                "x": [1]
+            },
+        ).rio.write_crs("EPSG:4326", inplace=True)
+        _ = median_target(polygon="pathy", timeseries_data=valid_stack, reference_start="0", reference_end="1", scale="polygon")
+
+        read_mock.assert_called_once()
+        assert read_mock.call_args.args[0] == "pathy"
+
 
     def test_no_nan_returns_avg_over_time(self, valid_gpd):
         test_data = [
@@ -477,6 +504,13 @@ class TestWindowTarget:
         xarr = xarr.rio.write_crs("EPSG:3348", inplace=True)
         return xarr
 
+    @patch("geopandas.read_file")
+    def test_str_polygon_reads_polygon(self, read_mock, valid_array, valid_gpd):
+        read_mock.return_value = valid_gpd
+        _ = window_target(polygon="pathy", timeseries_data=valid_array, reference_start="2010", reference_end="2011")
+
+        read_mock.assert_called_once()
+        assert read_mock.call_args.args[0] == "pathy"
 
     def test_neg_or_0_N_throws_value_err(self, valid_array, valid_gpd):
 
