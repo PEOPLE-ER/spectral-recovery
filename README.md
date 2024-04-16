@@ -1,6 +1,6 @@
 # (pre-release) spectral-recovery: spectral recovery analysis of forested ecosystems
 
-[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
 
 ---
 Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEOPLE-ER/Spectral-Recovery/)
