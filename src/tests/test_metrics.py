@@ -82,7 +82,7 @@ class TestComputeMetrics:
             )
 
             pd.testing.assert_frame_equal(
-                ra_mock.call_args.kwargs["restoration_polygon"], valid_frame
+                ra_mock.call_args.kwargs["restoration_site"], valid_frame
             )
             xr.testing.assert_equal(
                 ra_mock.call_args.kwargs["composite_stack"], valid_array
