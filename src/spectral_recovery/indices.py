@@ -9,17 +9,23 @@ spectral indices from a stack of images and str of index names.
 
 """
 
-import functools
-from typing import List
+import copy
+import json
 
 import xarray as xr
-from pandas import Index as pdIndex
-
+import importlib.resources as pkg_resources
 import spyndex as spx
 
-from spectral_recovery._utils import maintain_rio_attrs
-from spectral_recovery._config import SUPPORTED_DOMAINS
+from typing import List, Dict
 
+from spectral_recovery._utils import maintain_rio_attrs
+
+# Set up global index configurations:
+#    1. Only support vegetation and burn indices
+#    2. Init index-specific constant defaults 
+SUPPORTED_DOMAINS = ["vegetation", "burn"]
+with pkg_resources.open_text("spectral_recovery.resources", "constant_defaults.json") as f:
+    INDEX_CONSTANT_DEFAULTS = json.load(f)
 
 @maintain_rio_attrs
 def compute_indices(
@@ -47,7 +53,9 @@ def compute_indices(
     """
     if _supported_domain(indices):
         params_dict = _build_params_dict(image_stack)
-        params_dict = params_dict | constants | kwargs
+        constants_dict = _build_constants_dict(indices, constants)
+            
+        params_dict = params_dict | constants_dict | kwargs
         index_stack = spx.computeIndex(index=indices, params=params_dict)
         try:
             # rename 'index' dim to 'bands' to match tool's expected dims
@@ -112,3 +120,50 @@ def _build_params_dict(image_stack: xr.DataArray):
             continue
 
     return params_dict
+
+def _build_constants_dict(indices: List, constants: Dict) -> Dict:
+    """ Build dict of constants and values for the requested indices.
+
+    
+    Parameters
+    ----------
+    indices: list of str
+        The requested indices.
+    constants : dict
+        Given (i.e non-default) constants and constant values.
+    
+    Returns
+    -------
+    constants_dict : dict
+        Dict of required constants for requested indices. Default
+        values are used if a required constant is not in `constants`.
+
+    Raises
+    ------
+    ValueError
+        - If a required constant/value is not provided in `constants`
+        and the default value is null/None.
+        - If a required constant/value is not provided in `constants`
+        and more than one index uses a different default value. 
+
+    """
+    constants_dict = copy.deepcopy(constants)
+    given_constants = list(constants_dict.keys())
+    for i in indices:
+        try:
+            default_constants = INDEX_CONSTANT_DEFAULTS[i]
+        except KeyError:
+            continue
+        for c, v in default_constants["defaults"].items():
+            if v is None:
+                raise ValueError(f"No default value for {c} available (required by {i}). Please provide a value for {c} with the `constants` param.")
+            # If more than one index needs the same constant and the constant value wasn't given in `constants` dict
+            # (i.e must use defaults), check that the default values match o.w fail
+            if c not in given_constants:
+                if c in constants_dict:
+                        if constants_dict[c] != v:
+                            raise ValueError(f"Cannot use default values for constants because {c} has more than one default value between the set of indices. Please provide a value for {c} with the `constants` param.")
+                else:
+                    # Set constant value to the default value
+                    constants_dict[c] = v
+    return constants_dict
