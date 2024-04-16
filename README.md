@@ -9,7 +9,7 @@ Documentation: [https://people-er.github.io/Spectral-Recovery/](https://people-e
 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
-Interactive Notebooks: Coming soon!
+Interactive Notebooks (Binder): [https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
 
 ---
 ## Overview
@@ -29,7 +29,7 @@ pip install spectral-recovery
 ## Documentation
 
 - View background information, static tutorials, and API references in our [project documentation.](https://people-er.github.io/Spectral-Recovery/)
-- Try out an interactive notebook (Coming soon!)
+- Try out an interactive notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
 
 ## Contributing
 
