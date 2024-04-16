@@ -3,7 +3,11 @@ import pandas as pd
 
 
 # TODO: allow users to pass attribute col names for date cols
-def read_restoration_polygons(path: str):
+def read_restoration_polygons(
+        path: str,
+        disturbance_start: str | int= None,
+        restoration_start: str | int = None,
+    ):
     """Read restoration polygons
 
     A loose wrapper of the geopandas.read_file function. If
@@ -15,9 +19,6 @@ def read_restoration_polygons(path: str):
     ----------
     path : str
         path to restoration polygon vector file
-    ignore_dates : bool, optional
-        flag indicating whether function will
-        check for dates in vector file's attribute table
 
     """
     # Read the vector file and check there is only one polygon
@@ -27,6 +28,25 @@ def read_restoration_polygons(path: str):
             "Only one restoration polygon is currently supported"
             f" ({len(restoration_polygons.index)} provided)"
         )
+
+    if (disturbance_start and not restoration_start) or (not disturbance_start and restoration_start):
+        raise ValueError("Both disturbance_start and restoration_start must be provided. Not one or the other.")
+    
+    if disturbance_start and restoration_start:
+        # Check that dates make sense
+        print(disturbance_start, restoration_start)
+        if disturbance_start >= restoration_start:
+            raise ValueError(
+            "Disturbance year cannot be greater than or equal to the restoration year"
+            f" ({disturbance_start} >= {restoration_start})"
+        )
+        dates = {
+            "dist_start": disturbance_start,
+            "rest_start": restoration_start,
+        }
+        restoration_polygons = restoration_polygons.assign(**dates)
+        # Dates must be in order: dist, rest, ref start, ref end. 
+        restoration_polygons = restoration_polygons[["dist_start", "rest_start", "geometry"]]
 
     # Look at the dates within the geodataframe (data from attribute table)
     dates_frame = pd.DataFrame(restoration_polygons.drop(columns="geometry"))
@@ -39,86 +59,11 @@ def read_restoration_polygons(path: str):
     # Check that years are either str or int types
     types = dates_frame.dtypes
     for column_name, data_type in types.items():
-        if data_type != "int64":
+        if data_type != "int64" and data_type != "object" :
             raise ValueError(
-                f"Date fields must be type int (given {data_type} in field"
+                f"Date fields must be type int or str (given {data_type}) in field"
                 f" {column_name})"
             )
-    # Check that the dates make sense
-    if dates_frame.iloc[:, 0][0] >= dates_frame.iloc[:, 1][0]:
-        raise ValueError(
-            "Disturbance year cannot be greater than or equal to the restoration year"
-            f" ({dates_frame.iloc[:,0][0]} >= {dates_frame.iloc[:,0][0]})"
-        )
-    if len(dates_frame.columns) > 2:
-        try:
-            if dates_frame.iloc[:, 2][0] >= dates_frame.iloc[:, 3][0]:
-                raise ValueError(
-                    "Reference start year cannot be greater than or equal to the"
-                    f" reference end year ({dates_frame.iloc[:,0][0]} >="
-                    f" {dates_frame.iloc[:,0][0]})"
-                )
-        except IndexError:
-            raise ValueError(
-                "Attribute table must have exactly 2 or 4 columns for dates"
-                f" ({len(dates_frame.columns)} given)"
-            )
+        
 
     return restoration_polygons
-
-
-def read_reference_polygons(path: str):
-    """Read reference polygons
-
-    A loose wrapper of the geopandas.read_file function. If
-    check_dates=True then this function will check that the
-    vector file at path contains 2 or 4 columns containing
-    str or int values (the restoration site dates)
-
-    Parameters
-    ----------
-    path : str
-        path to restoration polygon vector file
-    ignore_dates : bool, optional
-        flag indicating whether function will
-        check for dates in vector file's attribute table
-
-    """
-    reference_polygons = gpd.read_file(path)
-
-    dates_frame = pd.DataFrame(reference_polygons.drop(columns="geometry"))
-    types = dates_frame.dtypes
-    for column_name, data_type in types.items():
-        if data_type != "int64" and data_type != "object":
-            raise ValueError(
-                f"Date fields must be type str or int (given {data_type} in field"
-                f" {column_name})"
-            )
-    if len(dates_frame.columns) != 2:
-        raise ValueError(
-            "Attribute table must contain 2 columns with reference start year and"
-            f" reference end year ({len(dates_frame.columns)} column(s) given)"
-        )
-    types = dates_frame.dtypes
-    for column_name, data_type in types.items():
-        if data_type != "int64":
-            raise ValueError(
-                f"Date fields must be type int (given {data_type} in field"
-                f" {column_name})"
-            )
-
-    for column_name in dates_frame.columns:
-        unique_values = dates_frame[column_name].nunique()
-        if unique_values != 1:
-            raise ValueError(
-                "All date fields (start and end years) must be the same for each"
-                " polygon"
-            )
-
-    if (dates_frame.iloc[:, 0] >= dates_frame.iloc[:, 1]).all():
-        raise ValueError(
-            "Reference start year cannot be greater than reference end year"
-            f" ({dates_frame.iloc[:,0][0]} >= {dates_frame.iloc[:,0][0]})"
-        )
-
-    return reference_polygons
