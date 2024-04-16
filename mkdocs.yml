@@ -7,7 +7,7 @@ nav:
 - Documentation:
     - Getting Started:
       - Installation: 'installation.md'
-      - Quick Overview: 'overview.ipynb'
+      - Quick Overview: 'overview.md'
     - User Guide:
       - Terminology: 'terminology.md'
       - Reading in Data: 'reading_in_data.md'
@@ -20,17 +20,17 @@ nav:
 - Theoretical Basis:
   - Introduction: 'theoretical_basis.md'
   - Spectral Recovery Tool: 'spectral_recovery_tool.md'
-- Tutorials:
-  - For Users:
-    - Getting Started:
-      - Installation: 'installation.md'
-      - Quick Overview: 'overview.md'
-    - User Guide:
-      - Terminology: 'terminology.md'
-      - Reading in Data: 'reading_in_data.md'
-      - Recovery Targets:
-        - Historic and Reference Targets: 'historic_reference_targets.md'
-        - Historic Recovery Methods: 'historic_recovery_methods.md'
+# - Tutorials:
+#   - For Users:
+#     - Getting Started:
+#       - Installation: 'installation.md'
+#       - Quick Overview: 'overview.md'
+#     - User Guide:
+#       - Terminology: 'terminology.md'
+#       - Reading in Data: 'reading_in_data.md'
+#       - Recovery Targets:
+#         - Historic and Reference Targets: 'historic_reference_targets.md'
+#         - Historic Recovery Methods: 'historic_recovery_methods.md'
   # - For Developers:
 
 plugins:
