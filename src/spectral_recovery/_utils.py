@@ -44,7 +44,6 @@ def maintain_rio_attrs(func: callable) -> callable:
         # Take the first xarray arg
         arg_da = [isinstance(arg, xr.DataArray) for arg in args]
         kwarg_da = [isinstance(kwv, xr.DataArray) for kwv in kwarg_vals]
-        print(arg_da, kwarg_da)
         if sum(arg_da + kwarg_da) > 1:
             epsgs = []
             for i, val in enumerate(arg_da):
@@ -55,7 +54,6 @@ def maintain_rio_attrs(func: callable) -> callable:
                 if val:
                     crs = kwarg_vals[i].rio.crs
                     epsgs.append(crs)
-            print(epsgs)
             if not epsgs.count(epsgs[0]) == len(epsgs):
                 raise ValueError(f"Ambiguous input for wrapper. CRS on xarray.DataArray inputs do not match.")
         for i, val in enumerate(arg_da):
