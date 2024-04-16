@@ -1,5 +1,6 @@
 site_name: PEOPLE-ER Spectral Recovery
 site_url: https://PEOPLE-ER.github.io/Spectral-Recovery/
+repo_url: https://github.com/PEOPLE-ER/Spectral-Recovery
 
 nav:
 - Home: index.md
@@ -41,9 +42,20 @@ markdown_extensions:
   - attr_list
   - pymdownx.arithmatex:
       generic: true
-theme: material
-  features:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+theme: 
+  name: material
+  features: 
     - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
 
 extra_javascript:
   - javascripts/mathjax.js
