@@ -1,6 +1,6 @@
 # Quick Overview
 
-Here is a simple workflow for computing recovery metrics which demonstrates the core functionalities of the spectral_recovery package. For more detailed examples and in-depth explanations, see the [User Guide]().
+Here is a simple workflow for computing recovery metrics which demonstrates the core functionalities of the spectral_recovery package. For more detailed examples and in-depth explanations, see the [User Guide](https://PEOPLE-ER.github.io/Spectral-Recovery/terminology).
 
 Begin by importing the spectral_recovery tool:
 
@@ -43,7 +43,7 @@ Select a set of indices. The indices you select should represent the characteris
 
 !!! info
 
-    spectral_recovery uses the modern spectral index catalogue [Awesome Spectral Indices](https://awesome-ee-spectral-indices.readthedocs.io/en/latest/) to support computation of 100+ vegetation and burn indices. See the full list of supported indices [here](). Since 100+ choices can be overwhelming, a smaller list of "core" indices, indices that have been proven effective in previous spectral recovery research, is also provided [here](). 
+    spectral_recovery uses the modern spectral index catalogue [Awesome Spectral Indices](https://awesome-ee-spectral-indices.readthedocs.io/en/latest/) to support computation of 100+ vegetation and burn indices. See the full list of supported indices [here](). Since 100+ choices can be overwhelming, a smaller list of "core" indices, indices that have been proven effective in previous spectral recovery research, is also provided [here](https://PEOPLE-ER.github.io/Spectral-Recovery/spectral_recovery_tool/#333-spectral-indices). 
 
 ``` py   
 indices = sr.compute_indices(ts, indices=["NBR", "GNDVI", "SAVI"])
