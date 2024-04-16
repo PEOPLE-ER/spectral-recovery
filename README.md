@@ -1,6 +1,6 @@
 # (pre-release) spectral-recovery: spectral recovery analysis of forested ecosystems
 
-[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
+[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ---
 Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEOPLE-ER/Spectral-Recovery/)
@@ -9,7 +9,7 @@ Documentation: [https://people-er.github.io/Spectral-Recovery/](https://people-e
 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
-Interactive Notebooks: Coming soon!
+Interactive Notebooks (Binder): [https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
 
 ---
 ## Overview
@@ -29,7 +29,7 @@ pip install spectral-recovery
 ## Documentation
 
 - View background information, static tutorials, and API references in our [project documentation.](https://people-er.github.io/Spectral-Recovery/)
-- Try out an interactive notebook (Coming soon!)
+- Try out an interactive notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
 
 ## Contributing
 
