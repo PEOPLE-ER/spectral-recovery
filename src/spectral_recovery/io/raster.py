@@ -19,7 +19,6 @@ from rasterio._err import CPLE_AppDefinedError
 from spectral_recovery._config import (
     VALID_YEAR,
     REQ_DIMS,
-    SUPPORTED_PLATFORMS,
     STANDARD_BANDS,
 )
 
@@ -31,7 +30,7 @@ def read_timeseries(
     path_to_tifs: List[str] | str,
     band_names: Dict[int, str] = None,
     path_to_mask: str = None,
-    array_type: str = "numpy",
+    array_type: str = "dask",
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
 

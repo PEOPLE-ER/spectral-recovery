@@ -2,7 +2,7 @@
 
 The RestorationArea class coordinates the spectral data, dates,
 polygons, and recovery target logic/computation, that is used
-to fully define a restoration area. The expectation is for 
+to fully define a restoration area. The expectation is for
 RestorationArea instances to be passed to recovery metric
 methods, so that each method can have encapsulated access to
 relevant restoration site information.
@@ -13,14 +13,12 @@ import operator
 
 from typing import Callable, Dict, List, Tuple
 from datetime import datetime
-from inspect import signature
 
 import xarray as xr
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-from spectral_recovery.targets import MedianTarget, compute_recovery_targets, expected_signature
 from spectral_recovery.timeseries import _SatelliteTimeSeries
 
 from spectral_recovery._config import VALID_YEAR
@@ -66,7 +64,7 @@ class RestorationArea:
         The first year of the timeseries.
     timeseries_end : datetime
         The last year of the timeseries.
-    restoration_polygon : GeoDataFrame
+    restoration_site : GeoDataFrame
         The spatial deliniation of the restoration event. There
         must only be one geometry in the GeoDataframe and it must be
         of type shapely.Polygon or shapely.MultiPolygon.
@@ -74,19 +72,10 @@ class RestorationArea:
         The start year of the disturbance window.
     restoration_start : str
         The start year of the restoration window.
-    reference_years : list of str
-        List of two strings: the start and end years of the reference
-        window, respectively.
     restoration_image_stack : xr.DataArray
         The image stack which fully contains the restoration site.
         Derived (clipped) from full_timeseries. This is the stack used
         by recovery metric methods when computing metrics.
-    reference_polygons : GeoDataFrame
-        The spatial delinitation of the reference system area(s).
-    recovery_target_method : callable
-        The method used for computing the recovery target. Default
-        is median target method with polygon scale (i.e
-        MedianTarget(scale="polygon"))
     recovery_target : xr.DataArray
         The recovery target values.
 
@@ -94,18 +83,15 @@ class RestorationArea:
 
     def __init__(
         self,
-        restoration_polygon: gpd.GeoDataFrame,
+        restoration_site: gpd.GeoDataFrame,
         composite_stack: xr.DataArray,
-        reference_polygons: gpd.GeoDataFrame = None,
-        recovery_target_method: Callable[
-            [xr.DataArray, Tuple[datetime]], xr.DataArray
-        ] = MedianTarget(scale="polygon"),
+        recovery_target: xr.DataArray,
     ) -> None:
         """RestorationArea constructor.
 
         Parameters
         ----------
-        restoration_polygon : geopandas.GeoDataFrame
+        restoration_site : geopandas.GeoDataFrame
             The polygon and associated dates of the restoration site,
             contained in a GeoDataFrame.
 
@@ -126,16 +112,15 @@ class RestorationArea:
             0th column must contain the reference start year while
             the 1st column must contain the reference end year. If
             reference start and end years are also provided in the
-            restoration_polygons DataFrame, the dates defined in
+            restoration_sites DataFrame, the dates defined in
             reference_polygons will supersede.
         recovery_target_method : Callable, optional
             The method to compute recovery target with.
 
         """
         self.full_timeseries = composite_stack
-        self.reference_polygons = reference_polygons
-        self.restoration_polygon = restoration_polygon
-        self.recovery_target_method = recovery_target_method
+        self.restoration_site = restoration_site
+        self.recovery_target = recovery_target
 
         # Eagerly compute the dates by called properties
         # This will force errors to throw early before init is complete
@@ -144,7 +129,6 @@ class RestorationArea:
         # refactors should consider keeping checks all in one property
         self.disturbance_start
         self.restoration_start
-        self.reference_years
 
     @property
     def full_timeseries(self) -> xr.DataArray:
@@ -182,7 +166,7 @@ class RestorationArea:
         return _npdt_to_year(np.min(self.full_timeseries["time"].data))
 
     @property
-    def restoration_polygon(self) -> gpd.GeoDataFrame:
+    def restoration_site(self) -> gpd.GeoDataFrame:
         """Restoration site GeoDataFrame
 
         GeoDataFrame contains a Shapely.Polygon and
@@ -192,11 +176,11 @@ class RestorationArea:
         end, and reference start years respectively.
 
         """
-        return self._restoration_polygon
+        return self._restoration_site
 
-    @restoration_polygon.setter
-    def restoration_polygon(self, rp) -> None:
-        """restoration_polygon setter.
+    @restoration_site.setter
+    def restoration_site(self, rp) -> None:
+        """restoration_site setter.
 
         Checks that input is a GeoDataFrame, contains
         only one row/geometry and that the given geom is
@@ -208,135 +192,57 @@ class RestorationArea:
         """
         self._restoration_image_stack = None
         self._recovery_target = None
-        # NOTE: this is messy because restoration_polygon now takes
+        # NOTE: this is messy because restoration_site now takes
         # the whole DF with the dates (not just poly), which makes
         # the date attributes dependant on it. This attr should
         # be refactored for clarity.
         self._disturbance_start = None
         self._restoration_start = None
-        if self._reference_polygons is None:
-            self._reference_years = None
 
         if not isinstance(rp, gpd.GeoDataFrame):
             raise ValueError(
-                f"restoration_polygon must be a GeoDataFrame (recieved type {type(rp)})"
+                f"restoration_site must be a GeoDataFrame (recieved type {type(rp)})"
             )
         if rp.shape[0] != 1:
             raise ValueError(
-                "restoration_polygon instance can only contain one Polygon."
+                "restoration_site instance can only contain one Polygon."
             ) from None
         if not self.full_timeseries.satts.contains_spatial(rp):
             raise ValueError(
-                "restoration_polygon is not within the bounds of images"
+                "restoration_site is not within the bounds of images"
             ) from None
 
-        self._restoration_polygon = rp
-
-    @property
-    def reference_polygons(self) -> gpd.GeoDataFrame:
-        """Reference system GeoDataFrame
-
-        GeoDataFrame contains a Shapely.Polygon and
-        2 str columns. Polygon defines the areas used in
-        the reference system while columns define
-        the reference end and start year, respectively.
-
-        """
-        return self._reference_polygons
-
-    @reference_polygons.setter
-    def reference_polygons(self, refp) -> None:
-        """reference_polygons setter.
-
-        If refp is not None, checks that refp is a GeoDataFrame
-        and that all geoms are within the bounds of full_timeseries
-        property. Immediately recomputes reference_years property.
-
-        Raises
-        ------
-        TypeError
-            - If refp not None and not geopandas.GeoDataFrame.
-        ValueError
-            - If refp not within spatial bounds of full_timeseries prop.
-
-        """
-        self._reference_years = None
-        if refp is not None:
-            if not isinstance(refp, gpd.GeoDataFrame):
-                raise TypeError(
-                    "reference_polygons must be a GeoDataFrame (recieved type"
-                    f" {type(refp)})"
-                )
-            if not self.full_timeseries.satts.contains_spatial(refp):
-                raise ValueError(
-                    "not all reference_polygons within the bounds of images"
-                ) from None
-        self._reference_polygons = refp
-
-    @property
-    def recovery_target_method(self) -> Callable:
-        """Method used to compute recovery targets for the RestorationArea"""
-        return self._recovery_target_method
-
-    @recovery_target_method.setter
-    def recovery_target_method(self, rtm) -> None:
-        """recovery_target_method setter.
-
-        Checks that signature of method matches required signature.
-        Then checks method type is compatible with the current
-        restoration site and reference system (i.e historic or
-        reference recovery target set-up). Forces lazy (re-)computation
-        of the recovery_target property.
-
-        Raises
-        ------
-        ValueError
-            - If rtm does not have required call signature.
-            - If rtm is not compatible with current polygons.
-
-        """
-        self._recovery_target = None
-        if signature(rtm) != expected_signature:
-            raise ValueError(
-                "The provided recovery target method must have the expected call"
-                f" signature: {expected_signature} (given {signature(rtm)})"
-            )
-        if self.reference_polygons is not None:
-            if isinstance(rtm, MedianTarget):
-                if rtm.scale == "pixel":
-                    raise TypeError(
-                        "Pixel scale median recovery target cannot be used with"
-                        " reference polygons, only polygon scale."
-                    )
-        self._recovery_target_method = rtm
+        self._restoration_site = rp
 
     @property
     def recovery_target(self) -> xr.DataArray:
-        """Recovery target of the RestorationArea.
-
-        The recovery targets of the RestorationArray provided in
-        an xarray.DataArray. The targets are computed using the
-        recovery_target_method and based on either historic conditions
-        or a reference system, if provided. See targets module for
-        more information.
-
-        """
-        if self._recovery_target is None:
-            self._recovery_target = compute_recovery_targets(
-                timeseries=self.full_timeseries,
-                restoration_polygon=self.restoration_polygon,
-                reference_start=self.reference_years[0],
-                reference_end=self.reference_years[1],
-                reference_polygons=self.reference_polygons, 
-                func=self.recovery_target_method
-            )
+        """Recovery target of the RestorationArea."""
         return self._recovery_target
+
+    @recovery_target.setter
+    def recovery_target(self, rt: xr.DataArray) -> xr.DataArray:
+        if set(rt.dims) != {"band", "y", "x"} and set(rt.dims) != {"band"}:
+            raise ValueError(
+                "recovery_target must contain the dimension 'band' and optionally the dimensions 'y', and 'x'"
+            )
+        if rt.sizes["band"] != self.restoration_image_stack.sizes["band"]:
+            raise ValueError(
+                f"recovery_target must contain the same number of bands as composite_stack ({rt.sizes['band']} vs. {self.restoration_image_stack.sizes['band']})"
+            )
+        for band_name in rt["band"].values:
+            try:
+                self.restoration_image_stack.sel(band=band_name)
+            except KeyError:
+                raise ValueError(
+                    "recovery_target must contain the same band coordinates as composite_stack"
+                )
+        self._recovery_target = rt
 
     @property
     def disturbance_start(self) -> str:
         """Start year of the disturbance window.
 
-        A str taken from first column of the restoration_polygon
+        A str taken from first column of the restoration_site
         geopandas.GeoDataFrame. Represents the start year of the
         disturbance window. Must be within the temporal range of
         the full_timeseries property.
@@ -371,7 +277,7 @@ class RestorationArea:
     def restoration_start(self) -> str:
         """Start year of the restoration window.
 
-        A str taken from second column of the restoration_polygon
+        A str taken from second column of the restoration_site
         geopandas.GeoDataFrame. Represents the start year of the
         restoration window. Must be within the temporal range of
         the full_timeseries property.
@@ -403,42 +309,6 @@ class RestorationArea:
         return self._restoration_start
 
     @property
-    def reference_years(self) -> str:
-        """Start and end year of the reference window.
-
-        List of 2 str taken from third and fourth column of the
-        restoration_polygon geopandas.GeoDataFrame or, if
-        reference_polygons is not None, the first and second column
-        of the reference_polygons GeoDataFrame. Represents the start
-        and end year of the reference window. Must be within temporal
-        range of the full_timeseries property.
-
-        Raises
-        ------
-        ValueError
-            - If reference start year greater than reference end year.
-            - If range of years between reference start and end year are
-              not within temporal range of full_timeseries.
-
-        """
-        if self._reference_years is None:
-            self._recovery_target = None
-            self._reference_years = self._get_ref_from_frame()
-            if self._reference_years[0] > self._reference_years[1]:
-                raise ValueError(
-                    "Reference start year must be less than or equal to end year (but"
-                    f" {self._reference_years[0]} > {self._reference_years[1]})"
-                )
-            if not self.full_timeseries.satts.contains_temporal(
-                _str_to_dt(self._reference_years)
-            ):
-                raise ValueError(
-                    f"Reference years { self._reference_years} not within timeseries"
-                    f" range of {self.timeseries_start}-{self.timeseries_end}."
-                )
-        return self._reference_years
-
-    @property
     def restoration_image_stack(self) -> xr.DataArray:
         """Restoration image stack.
 
@@ -448,13 +318,13 @@ class RestorationArea:
         """
         if self._restoration_image_stack is None:
             self._restoration_image_stack = self.full_timeseries.rio.clip(
-                self.restoration_polygon.geometry.values
+                self.restoration_site.geometry.values
             )
         return self._restoration_image_stack
 
     def _get_dist_from_frame(self):
-        """Get and validate disturbance start year from restoration_polygon."""
-        rest_dates = pd.DataFrame(self.restoration_polygon.drop(columns="geometry"))
+        """Get and validate disturbance start year from restoration_site."""
+        rest_dates = pd.DataFrame(self.restoration_site.drop(columns="geometry"))
         try:
             disturbance_start = rest_dates.iloc[0, 0]
         except IndexError:
@@ -468,8 +338,8 @@ class RestorationArea:
         return disturbance_start_str
 
     def _get_rest_from_frame(self):
-        """Get and validate restoration start year from restoration_polygon."""
-        rest_dates = pd.DataFrame(self.restoration_polygon.drop(columns="geometry"))
+        """Get and validate restoration start year from restoration_site."""
+        rest_dates = pd.DataFrame(self.restoration_site.drop(columns="geometry"))
         try:
             restoration_start = rest_dates.iloc[0, 1]
         except IndexError:
@@ -481,36 +351,3 @@ class RestorationArea:
         rest_start_str = str(restoration_start)
         rest_start_str = _valid_year_format(rest_start_str)
         return rest_start_str
-
-    def _get_ref_from_frame(self):
-        """Get and validate reference years from either restoration_polygon
-        or reference_polygons."""
-        if self.reference_polygons is not None:
-            ref_dates = pd.DataFrame(self.reference_polygons.drop(columns="geometry"))
-            try:
-                ref_start = ref_dates.iloc[0, 0]
-                ref_end = ref_dates.iloc[0, 1]
-            except:
-                ValueError(
-                    "Missing reference years. Reference start and end years must be"
-                    " provided in the 1st and 2nd columns of the reference polygon's"
-                    " attribute table."
-                )
-        else:
-            ref_dates = pd.DataFrame(self.restoration_polygon.drop(columns="geometry"))
-            try:
-                ref_start = ref_dates.iloc[0, 2]
-                ref_end = ref_dates.iloc[0, 3]
-            except IndexError:
-                raise ValueError(
-                    "Missing reference years. If reference_polygons is None then "
-                    " reference years (start and end) must be provided in 3rd and 4th "
-                    "columns of the restoration polygon's attribute table."
-                )
-
-        ref_start_str = str(ref_start)
-        ref_end_str = str(ref_end)
-        ref_start_str = _valid_year_format(ref_start_str)
-        ref_end_str = _valid_year_format(ref_end_str)
-
-        return [ref_start_str, ref_end_str]

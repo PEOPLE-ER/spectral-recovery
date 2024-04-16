@@ -1,4 +1,6 @@
 import pytest
+import dask.array as da
+
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -12,10 +14,8 @@ from spectral_recovery.io.raster import (
     _metrics_to_tifs,
 )
 
-from spectral_recovery.io.polygon import (
-    read_restoration_polygons,
-    read_reference_polygons,
-)
+from spectral_recovery.io.polygon import read_restoration_polygons
+
 
 
 class TestReadAndStackTifs:
@@ -92,6 +92,7 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_timeseries(
             path_to_tifs=tif_paths,
+            array_type="numpy",
         )
 
         assert stacked_tifs.sizes["time"] == len(tif_paths)
@@ -146,6 +147,7 @@ class TestReadAndStackTifs:
         ):
             read_timeseries(
                 path_to_tifs=filenames,
+                array_type="numpy",
             )
 
     @patch(
@@ -162,7 +164,7 @@ class TestReadAndStackTifs:
         )
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_timeseries(path_to_tifs=filenames)
+        stacked_tifs = read_timeseries(path_to_tifs=filenames, array_type="numpy",)
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
     @patch(
@@ -181,6 +183,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
+            array_type="numpy",
         )
 
         assert np.all(stacked_tifs["band"].data == expected_bands)
@@ -201,6 +204,7 @@ class TestReadAndStackTifs:
             stacked_tifs = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "not_a_band"},
+                array_type="numpy",
             )
 
     @patch(
@@ -220,6 +224,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={1: "blue", 2: "red", 3: "nir"},
+            array_type="numpy",
         )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
@@ -239,6 +244,7 @@ class TestReadAndStackTifs:
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
             band_names={2: "blue", 1: "red", 3: "nir"},
+            array_type="numpy",
         )
         # assert
         print(stacked_tifs["band"].data, expected_bands)
@@ -262,6 +268,7 @@ class TestReadAndStackTifs:
             _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "red", 2: "nir"},
+                array_type="numpy",
             )
 
     @patch(
@@ -282,6 +289,7 @@ class TestReadAndStackTifs:
             _ = read_timeseries(
                 path_to_tifs=filenames,
                 band_names={0: "blue", 1: "red", 2: "nir", 3: "swir"},
+                array_type="numpy",
             )
 
     @patch(
@@ -301,6 +309,7 @@ class TestReadAndStackTifs:
         ):
             _ = read_timeseries(
                 path_to_tifs=filenames,
+                array_type="numpy",
             )
 
     @pytest.mark.parametrize(
@@ -336,8 +345,24 @@ class TestReadAndStackTifs:
         mocked_rasterio_open.return_value = rasterio_return
         stacked_tifs = read_timeseries(
             path_to_tifs=filenames,
+            array_type="numpy",
         )
         assert np.all(stacked_tifs["time"].data == sorted_years)
+
+    def test_array_type_default_uses_dask_arrays(self):
+        stacked_tifs = read_timeseries(
+            path_to_tifs="src/tests/test_data/composites/",
+            band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"}
+        )
+        assert isinstance(stacked_tifs.data, da.Array)
+    
+    def test_array_type_numpy_returns_numpy_array(self):
+        stacked_tifs = read_timeseries(
+            path_to_tifs="src/tests/test_data/composites/",
+            band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"},
+            array_type="numpy",
+        )
+        assert isinstance(stacked_tifs.data, np.ndarray)
 
 
 class TestReadRestorationPolygons:
@@ -376,8 +401,6 @@ class TestReadRestorationPolygons:
         mock_read.return_value = gpd.GeoDataFrame({
             "dist_start": pd.to_datetime("2015"),
             "rest_start": 2016,
-            "ref_start": 2012,
-            "ref_end": 2012,
             "geometry": ["POINT (1 2)"],
         })
         with pytest.raises(ValueError):
@@ -388,77 +411,45 @@ class TestReadRestorationPolygons:
         mock_read.return_value = gpd.GeoDataFrame({
             "dist_start": 2017,
             "rest_start": 2016,
-            "ref_start": 2012,
-            "ref_end": 2012,
             "geometry": ["POINT (1 2)"],
         })
         with pytest.raises(ValueError):
-            _ = read_restoration_polygons(path="some_path.gpkg")
+            _ = read_restoration_polygons(path="some_path.gpkg", disturbance_start="2003", restoration_start="2002")
 
     @patch("geopandas.read_file")
-    def test_dist_ref_start_greater_than_ref_end_throws_value_err(self, mock_read):
+    def test_passed_dates_set_in_gdf(self, mock_read):
         mock_read.return_value = gpd.GeoDataFrame({
-            "dist_start": 2017,
-            "rest_start": 2016,
-            "ref_start": 2013,
-            "ref_end": 2012,
             "geometry": ["POINT (1 2)"],
         })
-        with pytest.raises(ValueError):
-            _ = read_restoration_polygons(path="some_path.gpkg")
-
-
-class TestReadReferencePolygons:
-    @patch("geopandas.read_file")
-    def test_more_than_one_restoration_polygon_accepted(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame({
-            "dist_start": [2015, 2015],
-            "rest_start": [2016, 2016],
-            "ref_start": [2012, 2012],
-            "ref_end": [2012, 2012],
-            "geometry": ["POINT (1 2)", "POINT (2 1)"],
-        })
-        with pytest.raises(ValueError):
-            _ = read_reference_polygons(path="some_path.gpkg")
-
-    @patch("geopandas.read_file")
-    def test_different_dates_between_polygons_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame({
-            "ref_start": [2012, 2011],
-            "ref_end": [2013, 2012],
-            "geometry": ["POINT (1 2)", "POINT (2 1)"],
-        })
-        with pytest.raises(ValueError):
-            _ = read_reference_polygons(path="some_path.gpkg")
-
-    @patch("geopandas.read_file")
-    def test_not_2_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame(
-            {"ref_start": [2015], "geometry": ["POINT (1 2)"]}
+        
+        all_dates = read_restoration_polygons(
+            path="some_path.gpkg",
+            disturbance_start="2001",
+            restoration_start="2002",
         )
-        with pytest.raises(ValueError):
-            _ = read_reference_polygons(path="some_path.gpkg")
-        with pytest.raises(ValueError):
-            _ = read_reference_polygons(path="some_path.gpkg")
+        dist_rest_only_dates = read_restoration_polygons(
+            path="some_path.gpkg",
+            disturbance_start="2001",
+            restoration_start="2002",
+        )
 
+        assert "dist_start" in all_dates
+        assert "rest_start" in all_dates
+        assert "dist_start" in dist_rest_only_dates
+        assert "rest_start" in dist_rest_only_dates
+    
     @patch("geopandas.read_file")
-    def test_not_int_throws_value_err(self, mock_read):
-        mock_read.return_value = gpd.GeoDataFrame({
-            "ref_start": pd.to_datetime(2012),
-            "ref_end": 2012,
-            "geometry": ["POINT (1 2)"],
-        })
-        with pytest.raises(ValueError):
-            _ = read_reference_polygons(path="some_path.gpkg")
-
-    @patch("geopandas.read_file")
-    def test_dist_ref_start_greater_than_ref_end_throws_value_err(self, mock_read):
+    def test_passed_dates_overwrite_existing_dates(self, mock_read):
         mock_read.return_value = gpd.GeoDataFrame({
             "dist_start": 2017,
             "rest_start": 2016,
-            "ref_start": 2013,
-            "ref_end": 2012,
             "geometry": ["POINT (1 2)"],
         })
-        with pytest.raises(ValueError):
-            _ = read_reference_polygons(path="some_path.gpkg")
+        
+        result = read_restoration_polygons(
+            path="some_path.gpkg",
+            disturbance_start="2001",
+            restoration_start="2002",
+        )
+        assert result.loc[0, "dist_start"] == "2001"
+        assert result.loc[0, "rest_start"] == "2002"
