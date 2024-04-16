@@ -51,13 +51,13 @@ indices = sr.compute_indices(ts, indices=["NBR", "GNDVI", "SAVI"])
 
 ## Compute Recovery Targets
 
-Some recovery metrics require a recovery target which represents the desired spectral characteristics of your resoration site. Recovery targets can be defined in many ways,  The spectral_recovery tool provides 2 built-in functions that work across 
+Some recovery metrics require a recovery target which represents the desired spectral characteristics of your resoration site. A novel feature of the `spectral_recovery` package is that it allows users to choose between using a [historic recovery target](https://people-er.github.io/Spectral-Recovery/about/#14-recovery-targets) or a [reference recovery target](https://people-er.github.io/Spectral-Recovery/about/#14-recovery-targets) when computing recovery metrics. Be sure to consult the user guide and current literature when deciding which type of target works best for computing your recovery metrics.
 
 !!! tip
 
     Only Y2R and R80P require recovery targets. If you are not computing these metrics, you can skip computing a recovery target and not pass anything to the `recovery_target` parameter in `compute_metrics` (default is None).
 
-For more information on the recovery target methods that are available with the tool, see [Recovery Target Methods]().
+The spectral_recovery tool provides 2 methods to faciliate recovery target computation. For more information on the recovery target methods that are available with the tool, see [Recovery Target Methods]().
 
 ### Historic Recovery Targets
 
