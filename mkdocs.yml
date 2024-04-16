@@ -21,7 +21,12 @@ nav:
   - Spectral Recovery Tool: 'spectral_recovery_tool.md'
 - Tutorials:
   - For Users:
-  - For Developers:
+    - Getting Started:
+      - Installation: 'installation.md'
+      - Quick Overview: 'overview.md'
+    - User Guide:
+      - Terminology: 'terminology.md'
+  # - For Developers:
 
 plugins:
   - mkdocs-jupyter:
@@ -37,6 +42,8 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
 theme: material
+  features:
+    - content.code.copy
 
 extra_javascript:
   - javascripts/mathjax.js

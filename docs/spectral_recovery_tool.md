@@ -21,9 +21,9 @@ _Figure 2. Tool conceptual workflow diagram._
 
 Necessary inputs for the tool include an annual time series, covering one or more restoration sites, a choice of which spectral indices the tool should use to assess recovery, and a selection of recovery metrics. An optional input to the tool is one or more reference sites. These inputs are explained below.
 
-### 3.3.1 TIME SERIES COMPOSITE
+### 3.3.1 TIME SERIES DATA
 
-A time series composite must be:
+Time series data must be:
 
 - Satellite-derived annual raster images (we recommend compositing) – The spectral index calculation currently supports Landsat imagery post 1984. It is recommended that the time series composite be derived using Landsat Collection 2, Level 2, Tier 1 data, as this data is pre-processed prior with necessary corrections and represents the highest quality data available. See ([https://www.usgs.gov/landsat-missions/landsat-collection-2](https://www.usgs.gov/landsat-missions/landsat-collection-2) or Crawford et al., 2023) for further information. Updates to the tool will include the incorporation of Sentinel-2 imagery.
 
@@ -41,7 +41,7 @@ Recommendations:
 
 The tool accepts one restoration site, as a vector file (see technical documentation for further information). Restoration site polygons delineate the areas that are intended to be assessed for recovery or health (i.e., areas of disturbance). Each restoration site polygon will have the spectral indices calculated, and recovery metrics will be returned.
 
-In addition, if no reference sites are provided (see 2.8 below), the restoration site will determine the recovery target via the historical approach (see 1.4 above). The default recovery target method in the tool uses the average value of the two years prior to the disturbance, however this default method can be customized to fit each application. Custom options include the ability to manually set the timeframe (when and how many years) before the disturbance that is used to calculate the average historic condition. This could be useful to parameterize if the disturbance was gradual instead of sudden and so no exact disturbance dates exist, or if it is known due to historical, traditional, or local knowledge when the forest was in a desirable state. 
+In addition, if no reference sites are provided (see 2.8 below), the restoration site will determine the recovery target via the historical approach (see Section 1.4 of the Theoretical Basis). The default recovery target method in the tool uses the average value of the two years prior to the disturbance, however this default method can be customized to fit each application. Custom options include the ability to manually set the timeframe (when and how many years) before the disturbance that is used to calculate the average historic condition. This could be useful to parameterize if the disturbance was gradual instead of sudden and so no exact disturbance dates exist, or if it is known due to historical, traditional, or local knowledge when the forest was in a desirable state.
 
  Recommendations:
 
@@ -50,6 +50,8 @@ In addition, if no reference sites are provided (see 2.8 below), the restoration
 - When stratifying a larger polygon into multiple polygons, consider using factors that are expected to influence recovery, e.g., disturbance severity, climate, and pre-disturbance land cover or conditions (Atkinson et al., 2022), it may be useful to stratify the polygons according to one or more of these factors.
 
 - If using the tool for restoration planning a large landscape-scale polygon may be recommended as it may provide information on areas to prioritize for restoration.
+
+We are currently working on enabling the use of multiple polygons into the tool's functioning. We hope to have it published soon!
 
 ### 3.3.3 SPECTRAL INDICES
 
@@ -74,7 +76,7 @@ The tool requires a list of spectral indices that should be calculated. The tool
 
 The tool calculates the selected recovery metrics as identified in an input list. Recovery metrics are calculated for each pixel in the restoration polygons, for each spectral index chosen.
 
-The tool also provides per-polygon recovery metrics, which summarize the progress of the restoration site as a whole. This informs on how well the recovery is progressing generally and includes measures such as percent recovered. Percent of a restoration site recovered could be a valuable measure of success by itself, as restoration practitioners may simply require a certain percentage (e.g., 80%) of a restoration site to reach recovery target values to determine that no further management efforts are necessary. 
+The tool also provides per-polygon recovery metrics, which summarize the progress of the restoration site as a whole. This informs on how well the recovery is progressing generally and includes measures such as percent recovered. Percent of a restoration site recovered could be a valuable measure of success by itself, as restoration practitioners may simply require a certain percentage (e.g., 80%) of a restoration site to reach recovery target values to determine that no further management efforts are necessary.
 
 | Variable  | Description  |
 | --- | --- |
