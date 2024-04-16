@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [0.4.0] - 2024-04-16
+
+### Added
+
+- Add restoration site year/date parameters (#98)
+- Add notebooks for Binder (#111)
+- Add/use default index values where applicable (#99)
+
+### Changed
+
+- Change documentation theme to Mkdocs material (#111)
+- Remove recovery target computation from metric and plotting functions (#112)
+- Make Dask default array (#96)
+- Refactor MedianTarget into median_target function (#112)
+- Refactor WindowedTarget into window_target function (#112)
+
+### Fixed
+
+- Fix argument order bug from maintain_rio_attrs wrapper (#114)
+
 ## [0.3.3] - 2024-04-05
 
 ### Fixed
