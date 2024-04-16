@@ -1,5 +1,6 @@
 site_name: PEOPLE-ER Spectral Recovery
 site_url: https://PEOPLE-ER.github.io/Spectral-Recovery/
+repo_name: Spectral-Recovery
 repo_url: https://github.com/PEOPLE-ER/Spectral-Recovery
 
 nav:
@@ -61,6 +62,8 @@ theme:
   name: material
   features: 
     - content.code.copy
+    - navigation.tabs
+    - navigation.tabs.sticky
   icon:
     repo: fontawesome/brands/github
 

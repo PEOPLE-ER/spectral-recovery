@@ -16,8 +16,9 @@ pip install "spectral_recovery[cli]"
 
 ## From Source
 
-> [!WARNING]
-> Unreleased source code is not considered stable and might even contain undetected bugs. Proceed with caution if using source code in your workflows.
+!!! warning
+
+    Unreleased source code is not considered stable and might even contain undetected bugs. Proceed with caution if using source code in your workflows.
 
 spectral_recovery can be installed from source code directly from the project repository:
 

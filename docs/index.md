@@ -1,20 +1,10 @@
-# Welcome to the PEOPLE-ER Spectral Recovery Docs!
+# PEOPLE-ER Spectral Recovery
 
 ![image](asset/pEOple_KV-Ecosystem_Restorarion.jpg){align=center}
 
-**Authors:**
+**Authors:** Sarah Zwiep, Melissa Birch, Marcos Kavlin
 
-Sarah Zwiep
-
-Melissa Birch
-
-Marcos Kavlin
-
-**Reviewed/Edited by:**
-
-Dr. Andy Dean
-
-Dr. Nicholas Coops
+**Reviewed/Edited by:** Dr. Andy Dean, Dr. Nicholas Coops
 
 ## Problem Statement:
 
@@ -63,23 +53,6 @@ PEOPLE-ER aims to provide the tool such that monitoring of ER is more accessible
 enabling computation of indices and metrics by users that do not necessarily have a background in
 remote sensing or computer science. In providing a singular solution, spectral time series analysis becomes
 more approachable, increasing the opportunity to apply remote sensing techniques to ER monitoring.
-
-## Table of Contents:
-
-This documentation contains:
-
-- 1) Inspect S1 Time-Series for an Area of Interest
-- 2) Segment Landscape based on S2 Composites
-- 3) Compile Time Series by Units of Analysis
-- 4) Clustering and Reference Extraction
-- 5) Comparing similarities between Time Series
-
-## Workflow Diagram
-![Alt text](asset/workflow.png "Graph of Workflow")
-
-## Demonstration Area
-
-The area used for the tutorial of this tool is a disturbance polygon in Northern British Columbia.
 
 ## Acknowledgements
 
