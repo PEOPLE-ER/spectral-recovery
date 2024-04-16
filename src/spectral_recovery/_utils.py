@@ -2,6 +2,7 @@
 
 import functools
 import spyndex as spx
+import xarray as xr
 
 from rioxarray.exceptions import MissingCRS
 from prettytable import PrettyTable, ALL
@@ -39,12 +40,31 @@ def maintain_rio_attrs(func: callable) -> callable:
         is to be maintained.
 
         """
-        # Take the first argument
-        if args:
-            xarray_obj = args[0]
-        else:
-            # NOTE: this only works for Python 3.6+ where dicts keep insertion order by default
-            xarray_obj = next(iter(kwargs.values()))
+        kwarg_vals = list(kwargs.values())
+        # Take the first xarray arg
+        arg_da = [isinstance(arg, xr.DataArray) for arg in args]
+        kwarg_da = [isinstance(kwv, xr.DataArray) for kwv in kwarg_vals]
+        print(arg_da, kwarg_da)
+        if sum(arg_da + kwarg_da) > 1:
+            epsgs = []
+            for i, val in enumerate(arg_da):
+                if val:
+                    crs = args[i].rio.crs
+                    epsgs.append(crs)
+            for i, val in enumerate(kwarg_da):
+                if val:
+                    crs = kwarg_vals[i].rio.crs
+                    epsgs.append(crs)
+            print(epsgs)
+            if not epsgs.count(epsgs[0]) == len(epsgs):
+                raise ValueError(f"Ambiguous input for wrapper. CRS on xarray.DataArray inputs do not match.")
+        for i, val in enumerate(arg_da):
+            if val:
+                xarray_obj = args[i]
+        for i, val in enumerate(kwarg_da):
+            if val:
+                xarray_obj = kwarg_vals[i]
+
         result = func(*args, **kwargs)
         try:
             result.rio.write_crs(xarray_obj.rio.crs, inplace=True)
