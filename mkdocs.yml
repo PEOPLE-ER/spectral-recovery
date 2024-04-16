@@ -17,10 +17,10 @@ nav:
       - Plotting: 'plotting.md'
       - Recovery Metrics: 'recovery_metrics.md'
       - Computing with Dask: 'computing_with_dask.md'
-    - API Reference: 'api.md'
 - Theoretical Basis:
   - Introduction: 'theoretical_basis.md'
   - Spectral Recovery Tool: 'spectral_recovery_tool.md'
+- API Reference: 'api.md'
 # - Tutorials:
 #   - For Users:
 #     - Getting Started:
