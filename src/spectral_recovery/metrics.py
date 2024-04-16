@@ -28,7 +28,7 @@ def compute_metrics(
     timeseries_data: xr.DataArray,
     restoration_polygons: gpd.GeoDataFrame,
     metrics: List[str],
-    recovery_target: xr.DataArray,
+    recovery_target: xr.DataArray = None,
     timestep: int = 5,
     percent_of_target: int = 80,
 ):
@@ -37,6 +37,12 @@ def compute_metrics(
         composite_stack=timeseries_data,
         recovery_target=recovery_target,
     )
+
+    if recovery_target is None:
+        for tmetric in ["Y2R", "R80P"]:
+            if tmetric in metrics:
+                raise ValueError(f"{tmetric} requires a recovery target but recovery_target is None")
+            
     m_results = []
     for m in metrics:
         try:
