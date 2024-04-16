@@ -35,7 +35,7 @@ def compute_metrics(
     restoration_area = RestorationArea(
         restoration_site=restoration_polygons,
         composite_stack=timeseries_data,
-        recovery_target=recovery_target
+        recovery_target=recovery_target,
     )
     m_results = []
     for m in metrics:
@@ -240,10 +240,9 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
         pass
     return y2r_v
 
+
 @register_metric
-def rri(
-    ra: RestorationArea, params: Dict = {"timestep": 5}
-) -> xr.DataArray:
+def rri(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
     """Per-pixel RRI.
 
     A modified version of the commonly used RI, the RRI accounts for
@@ -277,13 +276,21 @@ def rri(
     rest_post_t = str(int(ra.restoration_start) + params["timestep"])
 
     if pd.to_datetime(rest_post_tm1) not in ra.restoration_image_stack.time.values:
-        raise ValueError(f"{rest_post_tm1} (year of timestep - 1) not found in time dim.")
-    if  pd.to_datetime(rest_post_t) not in ra.restoration_image_stack.time.values:
+        raise ValueError(
+            f"{rest_post_tm1} (year of timestep - 1) not found in time dim."
+        )
+    if pd.to_datetime(rest_post_t) not in ra.restoration_image_stack.time.values:
         raise ValueError(f"{rest_post_t} (year of timestep) not found in time dim.")
 
-    max_rest_t_tm1 = ra.restoration_image_stack.sel(time=slice(rest_post_tm1, rest_post_t)).max(dim=["time"])
-    rest_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
-    dist_start = ra.restoration_image_stack.sel(time=ra.disturbance_start).drop_vars("time")
+    max_rest_t_tm1 = ra.restoration_image_stack.sel(
+        time=slice(rest_post_tm1, rest_post_t)
+    ).max(dim=["time"])
+    rest_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
+        "time"
+    )
+    dist_start = ra.restoration_image_stack.sel(time=ra.disturbance_start).drop_vars(
+        "time"
+    )
     dist_end = rest_start
 
     rri_v = (max_rest_t_tm1 - rest_start) / (dist_start - dist_end)

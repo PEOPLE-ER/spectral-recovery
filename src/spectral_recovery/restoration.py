@@ -2,7 +2,7 @@
 
 The RestorationArea class coordinates the spectral data, dates,
 polygons, and recovery target logic/computation, that is used
-to fully define a restoration area. The expectation is for 
+to fully define a restoration area. The expectation is for
 RestorationArea instances to be passed to recovery metric
 methods, so that each method can have encapsulated access to
 relevant restoration site information.
@@ -218,18 +218,24 @@ class RestorationArea:
     def recovery_target(self) -> xr.DataArray:
         """Recovery target of the RestorationArea."""
         return self._recovery_target
-    
+
     @recovery_target.setter
     def recovery_target(self, rt: xr.DataArray) -> xr.DataArray:
         if set(rt.dims) != {"band", "y", "x"} and set(rt.dims) != {"band"}:
-            raise ValueError("recovery_target must contain the dimension 'band' and optionally the dimensions 'y', and 'x'")
+            raise ValueError(
+                "recovery_target must contain the dimension 'band' and optionally the dimensions 'y', and 'x'"
+            )
         if rt.sizes["band"] != self.restoration_image_stack.sizes["band"]:
-            raise ValueError(f"recovery_target must contain the same number of bands as composite_stack ({rt.sizes['band']} vs. {self.restoration_image_stack.sizes['band']})")
+            raise ValueError(
+                f"recovery_target must contain the same number of bands as composite_stack ({rt.sizes['band']} vs. {self.restoration_image_stack.sizes['band']})"
+            )
         for band_name in rt["band"].values:
             try:
                 self.restoration_image_stack.sel(band=band_name)
             except KeyError:
-                raise ValueError("recovery_target must contain the same band coordinates as composite_stack")
+                raise ValueError(
+                    "recovery_target must contain the same band coordinates as composite_stack"
+                )
         self._recovery_target = rt
 
     @property
