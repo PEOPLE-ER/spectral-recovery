@@ -1,1 +1,1 @@
-This doc is under construction.
+This doc is under construction.  Check back soon!
