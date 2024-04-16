@@ -77,7 +77,7 @@ def _buffered_window_time_clip(
 
 
 def median_target(
-    polygon: gpd.GeoDataFrame,
+    polygon: gpd.GeoDataFrame | str,
     timeseries_data: xr.DataArray,
     reference_start: str,
     reference_end: str,
@@ -123,6 +123,9 @@ def median_target(
         dimensions "band", "y" and "x" and optionally, "poly_id".
 
     """
+    if isinstance(polygon, str):
+        polygon = gpd.read_file(polygon)
+
     # Clip timeseries data to polygon(s) and time dim
     target_data = _tight_window_time_clip(
         timeseries_data=timeseries_data,
@@ -148,7 +151,12 @@ def median_target(
 
 
 def window_target(
-    polygon, timeseries_data, reference_start, reference_end, N: int = 3, na_rm=False
+    polygon: gpd.GeoDataFrame | str,
+    timeseries_data: xr.DataArray,
+    reference_start: str,
+    reference_end: str,
+    N: int = 3,
+    na_rm: bool = False
 ):
     """Windowed recovery target method, parameterized on window size.
 
@@ -185,6 +193,9 @@ def window_target(
         raise ValueError("N must be an odd int.")
     if not isinstance(na_rm, bool):
         raise TypeError("na_rm must be boolean.")
+
+    if isinstance(polygon, str):
+        polygon = gpd.read_file(polygon)
 
     target_data = _buffered_window_time_clip(
         site=polygon,
