@@ -17,7 +17,7 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
     "geopandas >= 0.13.2",
     "rioxarray >= 0.14.1",
@@ -50,6 +50,9 @@ lint = [
 where = ["src"]
 include = ["spectral_recovery*", "scripts*"]
 exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+spectral_recovery = ["resources/*.json"]
 
 [project.scripts]
 specrec = "scripts.cli:cli"
