@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [0.4.1] - 2024-04-16
+
+### Fixed
+
+- Triage bad package data import (#123)
+
 ## [0.4.0] - 2024-04-16
 
 ### Added
