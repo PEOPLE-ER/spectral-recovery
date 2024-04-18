@@ -35,8 +35,6 @@ nav:
   # - For Developers:
 
 plugins:
-  - mkdocs-jupyter:
-      include_source: True
   - mkdocstrings:
       handlers:
         python:
