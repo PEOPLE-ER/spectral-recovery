@@ -1,7 +1,13 @@
-# (pre-release) spectral-recovery: spectral recovery analysis of forested ecosystems
+<h1 align="center">(pre-release) spectral-recovery</h1>
+<p align="center">:artificial_satellite::evergreen_tree::chart_with_upwards_trend: supporting spectral recovery analysis for forested ecosystems :chart_with_upwards_trend::evergreen_tree::artificial_satellite:</p>
 
-[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
+<div align="center">
+  
+  <a href="">[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery)</a>
+  <a href="">[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)</a>
+  <a href="">[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)</a>
 
+</div>
 
 ---
 Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEOPLE-ER/Spectral-Recovery/)
@@ -9,8 +15,6 @@ Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEO
 Documentation: [https://people-er.github.io/Spectral-Recovery/](https://people-er.github.io/Spectral-Recovery/)
 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
-
-Interactive Notebooks (Binder): [https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
 
 ---
 ## Overview
@@ -26,6 +30,10 @@ The package aims, through both software and supplementary documentation, to make
 ```{bash}
 pip install spectral-recovery
 ```
+
+## Quick Start
+
+TBD. 
 
 ## Documentation
 
