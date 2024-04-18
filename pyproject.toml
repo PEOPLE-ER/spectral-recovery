@@ -45,6 +45,11 @@ lint = [
     "black == 23.12.0",
     "flake8",
 ]
+docs = [
+  "mkdocs ~= 1.5.3", 
+  "mkdocs-material ~= 9.5.18", 
+  "mkdocstrings-python ~= 1.9.2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

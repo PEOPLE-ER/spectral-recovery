@@ -35,13 +35,18 @@ nav:
   # - For Developers:
 
 plugins:
-  - mkdocs-jupyter:
-      include_source: True
   - mkdocstrings:
       handlers:
         python:
           options:
             docstring_style: numpy
+            # # paths: [src]
+            # show_submodules: true
+            docstring_options:
+              ignore_init_summary: true
+            # docstring_section_style: list
+            # filters: ["!^_", "!_"]
+  - search
 
 markdown_extensions:
   - attr_list
