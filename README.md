@@ -10,11 +10,15 @@
 </div>
 
 ---
+
 Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEOPLE-ER/Spectral-Recovery/)
 
 Documentation: [https://people-er.github.io/Spectral-Recovery/](https://people-er.github.io/Spectral-Recovery/)
 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
+
+---
+:bangbang: The first stable release (1.0.0) of spectral-recovery is scheduled for 2024.04.30!
 
 ---
 ## Overview
@@ -31,10 +35,6 @@ The package aims, through both software and supplementary documentation, to make
 pip install spectral-recovery
 ```
 
-## Quick Start
-
-TBD. 
-
 ## Documentation
 
 - View background information, static tutorials, and API references in our [project documentation.](https://people-er.github.io/Spectral-Recovery/)
@@ -48,9 +48,9 @@ TBD.
 
 ## How to Cite
 
-When using this tool in your work we ask that you please cite the Spectral_Recovery tool as follows:
+Publication in progress. For now, when using this tool in your work we ask that you acknowledge as follows:
 
-"Spectral Recovery method developed in the PEOPLE-ER Project, managed by Hatfield Consultants, and financed by the European Space Agency."
+"spectral-recovery method developed in the PEOPLE-ER Project, managed by Hatfield Consultants, and financed by the European Space Agency."
 
 ## License
 
@@ -67,7 +67,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
-## Acknowledgments
-
-TBD.
