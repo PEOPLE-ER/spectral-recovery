@@ -1,16 +1,24 @@
-# (pre-release) spectral-recovery: spectral recovery analysis of forested ecosystems
+<h1 align="center">(pre-release) spectral-recovery</h1>
+<p align="center">:artificial_satellite::evergreen_tree::chart_with_upwards_trend: supporting spectral recovery analysis for forested ecosystems :chart_with_upwards_trend::evergreen_tree::artificial_satellite:</p>
 
-[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
+<div align="center">
+  
+  <a href="">[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery)</a>
+  <a href="">[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)</a>
+  <a href="">[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)</a>
 
+</div>
 
 ---
+
 Github: [https://github.com/PEOPLE-ER/Spectral-Recovery/](https://github.com/PEOPLE-ER/Spectral-Recovery/)
 
 Documentation: [https://people-er.github.io/Spectral-Recovery/](https://people-er.github.io/Spectral-Recovery/)
 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
-Interactive Notebooks (Binder): [https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F](https://mybinder.org/v2/gh/PEOPLE-ER/Spectral-Recovery/HEAD?labpath=docs%2Fnotebooks%2F)
+---
+:bangbang: The first stable release (1.0.0) of spectral-recovery is scheduled for 2024.04.30!
 
 ---
 ## Overview
@@ -40,9 +48,9 @@ pip install spectral-recovery
 
 ## How to Cite
 
-When using this tool in your work we ask that you please cite the Spectral_Recovery tool as follows:
+Publication in progress. For now, when using this tool in your work we ask that you acknowledge as follows:
 
-"Spectral Recovery method developed in the PEOPLE-ER Project, managed by Hatfield Consultants, and financed by the European Space Agency."
+"spectral-recovery method developed in the PEOPLE-ER Project, managed by Hatfield Consultants, and financed by the European Space Agency."
 
 ## License
 
