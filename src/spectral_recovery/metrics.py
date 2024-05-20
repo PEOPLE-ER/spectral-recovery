@@ -22,7 +22,6 @@ def register_metric(f):
     METRIC_FUNCS[f.__name__] = f
     return f
 
-
 @maintain_rio_attrs
 def compute_metrics(
     timeseries_data: xr.DataArray,
@@ -222,6 +221,7 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
     recovery_window = ra.restoration_image_stack.sel(
         time=slice(ra.restoration_start, None)
     )
+
 
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be:
