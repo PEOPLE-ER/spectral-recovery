@@ -221,21 +221,22 @@ class RestorationArea:
 
     @recovery_target.setter
     def recovery_target(self, rt: xr.DataArray) -> xr.DataArray:
-        if set(rt.dims) != {"band", "y", "x"} and set(rt.dims) != {"band"}:
-            raise ValueError(
-                "recovery_target must contain the dimension 'band' and optionally the dimensions 'y', and 'x'"
-            )
-        if rt.sizes["band"] != self.restoration_image_stack.sizes["band"]:
-            raise ValueError(
-                f"recovery_target must contain the same number of bands as composite_stack ({rt.sizes['band']} vs. {self.restoration_image_stack.sizes['band']})"
-            )
-        for band_name in rt["band"].values:
-            try:
-                self.restoration_image_stack.sel(band=band_name)
-            except KeyError:
+        if rt != None: # allow None sets
+            if set(rt.dims) != {"band", "y", "x"} and set(rt.dims) != {"band"}:
                 raise ValueError(
-                    "recovery_target must contain the same band coordinates as composite_stack"
+                    "recovery_target must contain the dimension 'band' and optionally the dimensions 'y', and 'x'"
                 )
+            if rt.sizes["band"] != self.restoration_image_stack.sizes["band"]:
+                raise ValueError(
+                    f"recovery_target must contain the same number of bands as composite_stack ({rt.sizes['band']} vs. {self.restoration_image_stack.sizes['band']})"
+                )
+            for band_name in rt["band"].values:
+                try:
+                    self.restoration_image_stack.sel(band=band_name)
+                except KeyError:
+                    raise ValueError(
+                        "recovery_target must contain the same band coordinates as composite_stack"
+                    )
         self._recovery_target = rt
 
     @property
