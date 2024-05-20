@@ -91,6 +91,54 @@ class TestComputeMetrics:
                 ra_mock.call_args.kwargs["recovery_target"], valid_rt
             )
 
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_none_rt_passes(
+        self, ra_mock, valid_array, valid_frame
+    ):
+
+        ra_mock.return_value = "ra_return"
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+        none_rt = None
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"yryr": y2r_mock}):
+
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=valid_frame,
+                metrics=["YrYr"],
+                recovery_target=none_rt
+            )
+
+            assert ra_mock.call_args.kwargs["recovery_target"] is None
+    
+    @patch("spectral_recovery.metrics.RestorationArea")
+    def test_none_rt_with_metric_that_requires_rt_throws_value_err(
+        self, ra_mock, valid_array, valid_frame
+    ):
+        ra_mock.return_value = "ra_return"
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+        none_rt = None
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"yryr": y2r_mock}):
+
+            with pytest.raises(ValueError):
+                compute_metrics(
+                    timeseries_data=valid_array,
+                    restoration_polygons=valid_frame,
+                    metrics=["Y2R"],
+                    recovery_target=none_rt
+                )
+            
+            with pytest.raises(ValueError):
+                compute_metrics(
+                        timeseries_data=valid_array,
+                        restoration_polygons=valid_frame,
+                        metrics=["YrYr", "Y2R"],
+                        recovery_target=none_rt
+                    )
+
     # @patch("spectral_recovery.metrics.compute_indices")
     # @patch("spectral_recovery.metrics.RestorationArea")
     # def test_ra_built_with_reference_polys(self, ra_mock, indices_mock, valid_array, valid_frame):
@@ -195,6 +243,7 @@ class TestComputeMetrics:
 
             metric_mock.call_args.kwargs["params"]["timestep"] == 2
             metric_mock.call_args.kwargs["params"]["percent_of_target"] == 60
+        
 
 
 class TestY2R:
