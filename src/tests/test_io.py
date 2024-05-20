@@ -19,6 +19,20 @@ from spectral_recovery.io.polygon import read_restoration_polygons
 
 
 class TestReadAndStackTifs:
+
+    @pytest.fixture
+    def filenames(self):
+        filenames = ["path/to/2019.tif", "path/to/2020.tif", "path/to/2021.tif"]
+        return filenames
+
+    @pytest.fixture
+    def rasterio_return(self):
+        return xr.DataArray(
+                    [[[[0]]]],
+                    dims=["band", "time", "y", "x"],
+                    attrs={"long_name": ["red"]},
+                )
+    
     @pytest.mark.parametrize(
         ("tif_paths", "rasterio_return"),
         [
@@ -153,8 +167,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_correct_bands_from_tifs_with_long_name(self, mocked_rasterio_open):
-        filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
+    def test_correct_bands_from_tifs_with_long_name(self, mocked_rasterio_open, filenames):
         expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -170,8 +183,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_correct_bands_from_tifs_w_band_dict(self, mocked_rasterio_open):
-        filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
+    def test_correct_bands_from_tifs_w_band_dict(self, mocked_rasterio_open, filenames):
         expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -191,8 +203,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_invalid_band_name_throws_error(self, mocked_rasterio_open):
-        filenames = ["test_file"]
+    def test_invalid_band_name_throws_error(self, mocked_rasterio_open, filenames):
         rasterio_return = xr.DataArray(
             [[[[0]]]], dims=["band", "time", "y", "x"], coords={"band": [1]}
         )
@@ -210,8 +221,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_band_dict_supersedes_band_desc(self, mocked_rasterio_open):
-        filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
+    def test_band_dict_supersedes_band_desc(self, mocked_rasterio_open, filenames):
         expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -231,8 +241,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_band_dict_assigns_name_by_key_not_order(self, mocked_rasterio_open):
-        filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
+    def test_band_dict_assigns_name_by_key_not_order(self, mocked_rasterio_open, filenames):
         expected_bands = ["R", "B", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -253,8 +262,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_band_dict_missing_mapping_throws_value_err(self, mocked_rasterio_open):
-        filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
+    def test_band_dict_missing_mapping_throws_value_err(self, mocked_rasterio_open, filenames):
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
@@ -274,8 +282,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_band_dict_invalid_mapping_throws_value_err(self, mocked_rasterio_open):
-        filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
+    def test_band_dict_invalid_mapping_throws_value_err(self, mocked_rasterio_open, filenames):
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
@@ -295,8 +302,7 @@ class TestReadAndStackTifs:
     @patch(
         "rioxarray.open_rasterio",
     )
-    def test_no_band_desc_or_band_names_throws_value_err(self, mocked_rasterio_open):
-        filenames = [f"path/to/2019.tif", f"path/to/2020.tif", f"path/to/2021.tif"]
+    def test_no_band_desc_or_band_names_throws_value_err(self, mocked_rasterio_open, filenames):
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
@@ -363,6 +369,52 @@ class TestReadAndStackTifs:
             array_type="numpy",
         )
         assert isinstance(stacked_tifs.data, np.ndarray)
+
+    @patch(
+        "rioxarray.open_rasterio",
+    )
+    def test_int_raster_input_converted_to_float64(
+        self,
+        mocked_rasterio_open,
+        filenames,
+        rasterio_return,
+    ):
+        int_raster = rasterio_return.astype(int)
+        mocked_rasterio_open.return_value = int_raster
+
+        stacked_tifs = read_timeseries(
+            path_to_tifs=filenames,
+            array_type="numpy",
+        )
+
+        assert np.issubdtype(stacked_tifs.dtype, np.float64)
+    
+    @patch(
+        "rioxarray.open_rasterio",
+    )
+    def test_float_raster_input_unconverted(
+        self,
+        mocked_rasterio_open,
+        filenames,
+        rasterio_return,
+    ):
+        
+        f32_raster = rasterio_return.astype(np.float32)
+        mocked_rasterio_open.return_value = f32_raster
+        stacked_tifs = read_timeseries(
+            path_to_tifs=filenames,
+            array_type="numpy",
+        )
+        assert np.issubdtype(stacked_tifs.dtype, np.float32)
+
+        f64_raster = rasterio_return
+        mocked_rasterio_open.return_value = f64_raster
+        stacked_tifs = read_timeseries(
+            path_to_tifs=filenames,
+            array_type="numpy",
+        )
+        assert np.issubdtype(stacked_tifs.dtype, np.float64)
+
 
 
 class TestReadRestorationPolygons:
