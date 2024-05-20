@@ -26,6 +26,13 @@ COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
 BANDS_TABLE = bands_pretty_table()
 
 
+def _floating(data: xr.DataArray):
+    """Convert int to float64 dtype"""
+    if not np.issubdtype(data.dtype, np.floating):
+        print("Not float")
+        data = data.astype(np.float64)
+    return data
+
 def read_timeseries(
     path_to_tifs: List[str] | str,
     band_names: Dict[int, str] = None,
@@ -66,17 +73,18 @@ def read_timeseries(
     if isinstance(path_to_tifs, str):
         # check if path is a directory
         if Path(path_to_tifs).is_dir():
-            # Grab all TIFs in directory
+            # Grab all TIFs in the directory
             path_to_tifs = list(Path(path_to_tifs).glob("*.tif"))
     for file in path_to_tifs:
         if array_type == "numpy":
             with rioxarray.open_rasterio(Path(file)) as data:
-                image_dict[Path(file).stem] = data
+                image_dict[Path(file).stem] = _floating(data)
         else:
             # Using open_rasterio with chunks="auto" will load the data as a dask array
             with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
-                image_dict[Path(file).stem] = data
-
+                image_dict[Path(file).stem] = _floating(data)
+    
+    print(image_dict)
     # Parse the year of the raster/composite from it's filename and use the year
     # as the DataArray's time dimension coordinate.
     time_keys = []
