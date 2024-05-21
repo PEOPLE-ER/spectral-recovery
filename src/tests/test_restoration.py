@@ -172,37 +172,6 @@ class TestRestorationAreaComposite:
                     recovery_target=recovery_target
                 )
 
-    def test_composite_stack_missing_years_throws_value_error(self):
-        with rioxarray.open_rasterio(TIMESERIES_LEN_3) as data:
-            # Set coordinates to 2020, 2021, and 2023, missing 2022
-            bad_stack = data
-            bad_stack = bad_stack.rename({"band": "time"})
-            bad_stack = bad_stack.expand_dims(dim={"band": [0]})
-            bad_stack = bad_stack.assign_coords(
-                time=([
-                    pd.to_datetime("2020"),
-                    pd.to_datetime("2021"),
-                    pd.to_datetime("2023"),
-                ])
-            )
-            recovery_target = xr.DataArray(np.ones(bad_stack.sizes["band"]), dims=["band"], coords={"band": [0]})
-
-
-            resto_poly = gpd.read_file(POLYGON_INBOUND)
-            resto_poly = set_dates(
-                resto_poly, dist="2020", rest="2021", ref_start="2019", ref_end="2019"
-            )
-
-            with pytest.raises(
-                ValueError,
-            ):
-                resto_a = RestorationArea(
-                    restoration_site=resto_poly,
-                    composite_stack=bad_stack,
-                    recovery_target=recovery_target
-                )
-
-
 class TestRestorationAreaPolygons:
     @pytest.fixture()
     def valid_timeseries(self):

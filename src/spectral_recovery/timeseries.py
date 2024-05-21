@@ -57,32 +57,30 @@ class _SatelliteTimeSeries:
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self._valid = None
-
-    # TODO: change this method to "is_continuous" or something and only check
-    # for continuity of years. Move the check for valid dim names to new method.
+    
     @property
-    def is_annual_composite(self) -> bool:
-        """Check if DataArray is contains valid annual composites.
+    def has_req_dims(self) -> bool:
+        """Check if DataArray has the required dims.
 
-        Checks whether the object has the required dimension labels (as
-        defined by/for project) and continuous years in the time dimension.
+        Checks if the object has the required band, time,
+        y, and x coordinate dimensions.
 
         Returns
         -------
         bool
             True if the DataArray is a valid annual composite, False otherwise.
         """
-        if self._valid is None:
-            years = self._obj.coords["time"].dt.year.values
-            # TODO: catch value error ("not broadcastable") here, indicates missing years
-            if not set(self._obj.dims) == set(REQ_DIMS):
-                self._valid = False
-            elif not np.all((years == list(range(min(years), max(years) + 1)))):
-                self._valid = False
-            else:
-                self._valid = True
-        return self._valid
+        if not set(self._obj.dims) == set(REQ_DIMS):
+            return False
+        return True
+    
+    @property
+    def has_no_year_breaks(self, start_year: int, end_year: int):
+        """Check all years between start_year-end_year exist"""
+        years = self._obj.coords["time"].dt.year.values
+        if not np.all((years == list(range(start_year, end_year + 1)))):
+            return False
+        return True
 
     def contains_spatial(self, polygons: gpd.GeoDataFrame) -> bool:
         """Check if DataArray spatially contains polygons.

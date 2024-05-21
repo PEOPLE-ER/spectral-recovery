@@ -22,7 +22,6 @@ def register_metric(f):
     METRIC_FUNCS[f.__name__] = f
     return f
 
-
 @maintain_rio_attrs
 def compute_metrics(
     timeseries_data: xr.DataArray,
@@ -63,6 +62,12 @@ def compute_metrics(
 
     return metrics
 
+def has_no_missing_years(images: xr.DataArray):
+    """Check for continous set of years in DataArray"""
+    years = images.coords["time"].dt.year.values
+    if not np.all((years == list(range(years[0], years[-1] + 1)))):
+        return False
+    return True
 
 @register_metric
 def dnbr(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
@@ -218,10 +223,15 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
     """
     if params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
-    y2r_target = ra.recovery_target * (params["percent_of_target"] / 100)
+    
     recovery_window = ra.restoration_image_stack.sel(
         time=slice(ra.restoration_start, None)
     )
+    if not has_no_missing_years(recovery_window):
+        raise ValueError(f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}.")
+    
+    print(ra.recovery_target, params["percent_of_target"] )
+    y2r_target = ra.recovery_target * (params["percent_of_target"] / 100)
 
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be:

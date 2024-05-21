@@ -146,11 +146,10 @@ class RestorationArea:
         """
         self._restoration_image_stack = None
 
-        if not t.satts.is_annual_composite:
+        if not t.satts.has_req_dims:
             raise ValueError(
-                "composite_stack is not a valid set of annual composites. Please"
-                " ensure there are no missing years and that the DataArray object"
-                " contains 'band', 'time', 'y' and 'x' dimensions."
+                "composite_stack missing required coordinate dimensions. Please"
+                " ensure the DataArray object contains 'band', 'time', 'y' and 'x' dimensions."
             ) from None
         self._full_timeseries = t
 
