@@ -517,6 +517,37 @@ class TestY2R:
             ra=ra_mock,
             params={"percent_of_target": percent},
         ).equals(expected)
+    
+    @patch("spectral_recovery.restoration.RestorationArea")
+    def test_missing_years_in_recovery_window_throws_value_err(self, ra_mock):
+        ra_mock.restoration_image_stac = xr.DataArray(
+            [[[[10]], [[19]], [[20]]]],
+            coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021"), pd.to_datetime("2023")]},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        ra_mock.recovery_target = xr.DataArray([[[20]]], dims=["band", "y", "x"]).rio.write_crs("4326")
+        ra_mock.restoration_start = "2020"
+        percent = 100
+
+        with pytest.raises(ValueError):
+            y2r(ra=ra_mock, params={"percent_of_target": percent})
+    
+    @patch("spectral_recovery.restoration.RestorationArea")
+    def test_missing_years_outside_recovery_window_does_now_throw_value_err(self, ra_mock):
+        ra_mock.restoration_image_stack = xr.DataArray(
+            [[[[10]], [[19]], [[20]]]],
+            coords={"time": [pd.to_datetime("2018"), pd.to_datetime("2020"), pd.to_datetime("2021")]},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        ra_mock.recovery_target = xr.DataArray([[[20.0]]], dims=["band", "y", "x"]).rio.write_crs("4326")
+        ra_mock.restoration_start = "2020"
+        percent = 100
+        expected = xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326")
+
+        assert y2r(
+            ra=ra_mock,
+            params={"percent_of_target": percent},
+        ).equals(expected)
 
 
 class TestDNBR:
