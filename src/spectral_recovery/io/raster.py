@@ -5,7 +5,7 @@ band names and attributes are consistent. Also handles writing.
 """
 
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import rioxarray
 
@@ -25,16 +25,8 @@ from spectral_recovery._config import (
 COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
 BANDS_TABLE = bands_pretty_table()
 
-
-def _floating(data: xr.DataArray):
-    """Convert int to float64 dtype"""
-    if not np.issubdtype(data.dtype, np.floating):
-        print("Not float")
-        data = data.astype(np.float64)
-    return data
-
 def read_timeseries(
-    path_to_tifs: List[str] | str,
+    path_to_tifs: str | Dict[str, str],
     band_names: Dict[int, str] = None,
     path_to_mask: str = None,
     array_type: str = "dask",
@@ -71,58 +63,28 @@ def read_timeseries(
     """
     image_dict = {}
     if isinstance(path_to_tifs, str):
-        # check if path is a directory
-        if Path(path_to_tifs).is_dir():
-            # Grab all TIFs in the directory
-            path_to_tifs = list(Path(path_to_tifs).glob("*.tif"))
-    for file in path_to_tifs:
-        if array_type == "numpy":
-            with rioxarray.open_rasterio(Path(file)) as data:
-                image_dict[Path(file).stem] = _floating(data)
-        else:
-            # Using open_rasterio with chunks="auto" will load the data as a dask array
-            with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
-                image_dict[Path(file).stem] = _floating(data)
-    
-    print(image_dict)
-    # Parse the year of the raster/composite from it's filename and use the year
-    # as the DataArray's time dimension coordinate.
-    time_keys = []
-    for filename in image_dict:
-        if _str_is_year(filename):
-            time_keys.append(pd.to_datetime(filename))
-        else:
-            raise ValueError(
-                f"TIF filenames must be in format 'YYYY' but recieved: '{filename}'"
-            ) from None
+        directory_of_tifs = _get_tifs_from_dir(path_to_tifs)
+        for file in directory_of_tifs:
+            filename_year = Path(file).stem
+            if _valid_year_str(filename_year):
+                image_dict[pd.to_datetime(filename_year)] = _read_from_path(file=file, array_type=array_type)
+    elif isinstance(path_to_tifs, dict):
+        for key_year, file in path_to_tifs.items():
+            if _valid_year_str(str(key_year)):
+                image_dict[pd.to_datetime(key_year)] = _read_from_path(file=file, array_type=array_type)
+    else:
+        raise TypeError(f"Invalid path input. path_to_tifs can be a str path to a directory of TIFs or a dictionary mapping str years to str paths of individual TIF files. Recieved {type(path_to_tifs)}")
+        
     # Stack images along the time dimension
-    stacked_data = xr.concat(image_dict.values(), dim=pd.Index(time_keys, name="time"))
+    stacked_data = xr.concat(image_dict.values(), dim=pd.Index(image_dict.keys(), name="time"))
 
     band_nums = stacked_data.band.values
     if band_names is None:
-        # If band descriptions are present in the rasters, then rioxarray
-        # sets those descriptions as 'long_name' attributes on the DataArray.
-        #
-        # T/f check if the "long_name" attribue exists, if it doesn't then
-        # there were no band descriptions.
-        try:
-            long_names = stacked_data.attrs["long_name"]
-            band_names = dict(zip(band_nums, long_names))
-
-        except KeyError:
-            raise ValueError(
-                "Band descriptions not found in TIFs. Please provide band "
-                " names using the band_names argument."
-            ) from None
+        band_names = _names_from_desc(raster_data=stacked_data, band_nums=band_nums)
 
     if _valid_band_name_mapping(band_names, band_nums):
         band_names = {num: band_names[num] for num in band_nums}
         standard_names, attr_names = _to_standard_band_names(band_names.values())
-    else:
-        raise ValueError(
-            "Invalid band to name mapping. Rasters have bands"
-            f" {list(stacked_data.band.values)} but {list(band_names.keys())} provided."
-        )
 
     stacked_data = stacked_data.assign_coords(band=standard_names)
     # TODO: catch missing dimension error here
@@ -135,15 +97,61 @@ def read_timeseries(
 
     return stacked_data
 
-
-def _str_is_year(year_str) -> bool:
-    """Check if a string is a valid year (YYYY)"""
-    if VALID_YEAR.match(year_str) is None:
-        return False
+def _valid_year_str(str_year):
+    """Check if str is a valid year"""
+    if VALID_YEAR.match(str_year) is None:
+        raise ValueError(f"Cannot interpret {str_year} as year (YYYY).") from None
     return True
 
+def _read_from_path(file, array_type):
+    """Read TIF file into Xarray DataArray"""
+    if array_type == "numpy":
+        with rioxarray.open_rasterio(Path(file)) as data:
+            xarray_tif = _floating(data)
+    else:
+        # Using open_rasterio with chunks="auto" will load the data as a dask array
+        with rioxarray.open_rasterio(Path(file), chunks="auto") as data:
+            xarray_tif = _floating(data)
+    return xarray_tif
 
-def _valid_band_name_mapping(band_names, band_nums):
+def _names_from_desc(raster_data: xr.DataArray, band_nums: List) -> Dict[int, str]:
+        """Get band names from the raster band descriptions
+
+        If band descriptions are present in the rasters,
+        then rioxarray sets those descriptions as 'long_name'
+        attributes on the DataArray object. T/f check if the
+        "long_name" attribue exists, if it doesn't then there
+        are no band descriptions on the raster.
+        
+        """
+        try:
+            long_names = raster_data.attrs["long_name"]
+            band_names = dict(zip(band_nums, long_names))
+        except KeyError:
+            raise ValueError(
+                "Band descriptions not found in TIFs. Please provide band "
+                " names using the band_names argument."
+            ) from None
+        return band_names
+
+def _get_tifs_from_dir(path: str) -> List[str]:
+    """Return all tif files inside directory as list"""
+    if Path(path).is_dir():
+        # Grab all TIFs in the directory
+        directory_of_tifs = list(Path(path).glob("*.tif"))
+        if len(directory_of_tifs) == 0:
+            raise ValueError(f"No TIFs found in directory {path}")
+    else:
+        raise ValueError("path_to_tifs is not a directory.")
+    return directory_of_tifs
+
+def _floating(data: xr.DataArray) -> np.float64:
+    """Convert int to float64 dtype"""
+    if not np.issubdtype(data.dtype, np.floating):
+        data = data.astype(np.float64)
+    return data
+
+def _valid_band_name_mapping(band_names: Dict[int, str], band_nums: List[int]) -> bool:
     """Check if band_names dict maps each band to a name and vice versa.
 
     Parameters
@@ -156,23 +164,32 @@ def _valid_band_name_mapping(band_names, band_nums):
     Returns
     ------
     bool
-        - False if band number provided that is not in band_nums.
-        - False if band number missing from band_names.
-        - True otherwise.
+        - True if all bands numbers in band_nums have a band_name mapping.
+    
+    Raises
+    ------
+    ValueError
+        - If a band number is mapped that is not in band_nums
+        - If a band number is missing a mapping in band_names
 
     """
     for b in band_names.keys():
         if b not in band_nums:
-            return False
+            raise ValueError(
+               f"Invalid band to name mapping. {b} is not in raster bands of {band_nums} "
+            )
 
     for num in band_nums:
         if num not in band_names.keys():
-            False
+            raise ValueError(
+                "Missing band mapping. Rasters have band numbers"
+                f" {list(band_nums)} but names for only {band_names.keys()} provided."
+            )
 
     return True
 
 
-def _to_standard_band_names(in_names):
+def _to_standard_band_names(in_names: List[str]) -> Tuple[List[str], List[str]]:
     """Map given names to standard names.
 
     Parameters
