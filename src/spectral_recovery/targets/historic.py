@@ -18,9 +18,9 @@ def _check_reference_years(reference_years, restoration_sites, timeseries_data):
      """Check that reference years are in timeseries coordinates and map to a polygon"""
      for polyid, years in reference_years.items():
         try:
-            if years["reference_start"] not in timeseries_data.time.dt.year:
+            if int(years["reference_start"]) not in timeseries_data.time.dt.year:
                 raise ValueError(f"Invalid reference years for polygon {polyid}. {years['reference_start']} not in timeseries_data time coordinates.")
-            if years["reference_end"] not in timeseries_data.time.dt.year:
+            if int(years["reference_end"]) not in timeseries_data.time.dt.year:
                 raise ValueError(f"Invalid reference years for polygon {polyid}. {years['reference_end']} not in timeseries_data time coordinates.")
         except KeyError:
             raise TypeError("Invalid reference_years format. Must be dict mapping polygon id's to nested dict of reference start and end years, e.g {0: {'reference_start': 2010, 'reference_end': 2011}, 1: {...}, ...}")

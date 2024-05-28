@@ -18,11 +18,17 @@ def _window_time_clip(timeseries_data, site, reference_start, reference_end):
     )
     return reference_image_stack.sel(time=slice(reference_start, reference_end))
 
+def _check_reference_years(reference_start, reference_end, timeseries_data):
+        print(reference_start, timeseries_data.time.dt.year)
+        if int(reference_start) not in timeseries_data.time.dt.year:
+            raise ValueError(f"Invalid reference start. {reference_start} not in timeseries_data time coordinates.")
+        if int(reference_end) not in timeseries_data.time.dt.year:
+            raise ValueError(f"Invalid reference end. {reference_end} not in timeseries_data time coordinates.")
 def median(
     reference_sites: gpd.GeoDataFrame | str,
     timeseries_data: xr.DataArray,
-    reference_start: str,
-    reference_end: str,
+    reference_start: str | int,
+    reference_end: str | int,
 ):
     """Median target method for reference sites.
 
@@ -53,13 +59,15 @@ def median(
     Notes
     ------
     Differs from spectral_recovery.targets.historic.median because 1) no scale 
-    parameter is given because a reference site can only be of scale "polygon",
+    parameter because a reference site can only be of scale "polygon",
     and 2) because multiple polygons are reduced to a single value.
 
     """
+    reference_start = str(reference_start)
+    reference_end = str(reference_end)
+    _check_reference_years(reference_start, reference_end, timeseries_data)
     if isinstance(reference_sites, str):
         reference_sites = gpd.read_file(reference_sites)
-
     # Clip timeseries data to polygon(s) and time dim
     clipped_data = _window_time_clip(
         timeseries_data=timeseries_data,
