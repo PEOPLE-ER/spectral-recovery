@@ -1,7 +1,6 @@
 """Methods for computing historic recovery targets"""
 
 import geopandas as gpd
-import numpy as np
 import xarray as xr
 
 
@@ -15,6 +14,19 @@ def _clip_to_dict(timeseries_data, sites, reference_years) -> dict:
             clipped_sites[index] = clipped_data.sel(time=slice(ref_s, ref_e))
     return clipped_sites
 
+def _check_reference_years(reference_years, restoration_sites, timeseries_data):
+     """Check that reference years are in timeseries coordinates and map to a polygon"""
+     for polyid, years in reference_years.items():
+        try:
+            if years["reference_start"] not in timeseries_data.time.dt.year:
+                raise ValueError(f"Invalid reference years for polygon {polyid}. {years['reference_start']} not in timeseries_data time coordinates.")
+            if years["reference_end"] not in timeseries_data.time.dt.year:
+                raise ValueError(f"Invalid reference years for polygon {polyid}. {years['reference_end']} not in timeseries_data time coordinates.")
+        except KeyError:
+            raise TypeError("Invalid reference_years format. Must be dict mapping polygon id's to nested dict of reference start and end years, e.g {0: {'reference_start': 2010, 'reference_end': 2011}, 1: {...}, ...}")
+        for polyid in restoration_sites.index.tolist():
+            if polyid not in list(reference_years.keys()):
+                raise ValueError(f"Missing reference_years for polygon {polyid}")
 
 def median(
     restoration_sites: gpd.GeoDataFrame | str,
@@ -64,9 +76,9 @@ def median(
     """
     if not ((scale == "polygon") or (scale == "pixel")):
             raise ValueError(f"scale must be 'polygon' or 'pixel' ('{scale}' provided)")
-    
     if isinstance(restoration_sites, str):
         restoration_sites = gpd.read_file(restoration_sites)
+    _check_reference_years(reference_years, restoration_sites, timeseries_data)
     # Get dictionary of a time/space data clip for each polygon 
     clipped_site_data = _clip_to_dict(
         timeseries_data=timeseries_data,
@@ -133,6 +145,7 @@ def window(
 
     if isinstance(restoration_sites, str):
         restoration_sites = gpd.read_file(restoration_sites)
+    _check_reference_years(reference_years, restoration_sites, timeseries_data)
 
     window_targets = {}
     for poly_id, site_data in restoration_sites.iterrows():
