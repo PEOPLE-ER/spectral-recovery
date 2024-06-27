@@ -8,8 +8,7 @@ message: >-
   metadata from this file.
 type: software
 authors:
-  - given-names: Sarah
-    name-particle: Vaughan
+  - given-names: Sarah Vaughan
     family-names: Zwiep
     email: sara.zwiep@ubc.ca
     affiliation: University of British Columbia
