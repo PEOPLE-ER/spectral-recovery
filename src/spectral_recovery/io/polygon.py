@@ -1,12 +1,13 @@
 import geopandas as gpd
 import pandas as pd
 
+from typing import Dict, List
+
 
 # TODO: allow users to pass attribute col names for date cols
 def read_restoration_polygons(
         path: str,
-        disturbance_start: str | int= None,
-        restoration_start: str | int = None,
+        dist_rest_years: Dict[int:, List[int]] = None,
     ):
     """Read restoration polygons
 
@@ -23,31 +24,27 @@ def read_restoration_polygons(
     """
     # Read the vector file and check there is only one polygon
     restoration_polygons = gpd.read_file(path)
-    if len(restoration_polygons.index) > 1:
-        raise ValueError(
-            "Only one restoration polygon is currently supported"
-            f" ({len(restoration_polygons.index)} provided)"
-        )
-
-    if (disturbance_start and not restoration_start) or (not disturbance_start and restoration_start):
-        raise ValueError("Both disturbance_start and restoration_start must be provided. Not one or the other.")
-    
-    if disturbance_start and restoration_start:
-        # Check that dates make sense
-        print(disturbance_start, restoration_start)
-        if disturbance_start >= restoration_start:
-            raise ValueError(
-            "Disturbance year cannot be greater than or equal to the restoration year"
-            f" ({disturbance_start} >= {restoration_start})"
-        )
+    if dist_rest_years:
+        # Add the passed dates into gpd cols
         dates = {
-            "dist_start": disturbance_start,
-            "rest_start": restoration_start,
+                "dist_start": [],
+                "rest_start": [],
         }
+        # Check that dates make sense
+        for polyid, years in dist_rest_years.items():
+            disturbance_start, restoration_start = years
+            if disturbance_start >= restoration_start:
+                raise ValueError(
+                "Disturbance start year cannot be greater than or equal to the restoration start year"
+                f" ({disturbance_start} >= {restoration_start})"
+            )
+            dates["dist_start"].append(disturbance_start)
+            dates["rest_start"].append(restoration_start)
+        
         restoration_polygons = restoration_polygons.assign(**dates)
-        # Dates must be in order: dist, rest, ref start, ref end. 
-        restoration_polygons = restoration_polygons[["dist_start", "rest_start", "geometry"]]
-
+    
+    # Dates must be in order: dist, rest then geom 
+    restoration_polygons = restoration_polygons[["dist_start", "rest_start", "geometry"]]
     # Look at the dates within the geodataframe (data from attribute table)
     dates_frame = pd.DataFrame(restoration_polygons.drop(columns="geometry"))
     if len(dates_frame.columns) < 2:

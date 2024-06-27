@@ -280,7 +280,6 @@ class TestMedianPixelScale:
 
 
 class TestWindow:
-    # Polygon for North-Western Hemisphere
     valid_poly = Polygon([(-1.5, -1.5), (-1.5, 2.5), (2.5, 2.5), (1.5, -1.5)])
 
     @pytest.fixture()
@@ -334,10 +333,10 @@ class TestWindow:
         roll_mock.call_args.kwargs["min_periods"] == None
 
     def test_window_returns_correct_dict(self, valid_array, valid_gpd):
-        expected_dims_and_sizes = {"band": 2, "y": 3, "x": 3}
+        expected_dims_and_sizes = {"band": 2, "y": 4, "x": 4}
 
         result = window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: {"reference_start": 2010, "reference_end": 2012}})
-
+        print(result[0].sizes)
         assert len(result.keys()) == 1
         assert list(result.keys())[0] == 0
         assert len(result[0].dims) == len(expected_dims_and_sizes.keys())

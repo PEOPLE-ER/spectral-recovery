@@ -31,36 +31,46 @@ def compute_metrics(
     timestep: int = 5,
     percent_of_target: int = 80,
 ):
-    restoration_area = RestorationArea(
-        restoration_site=restoration_polygons,
-        composite_stack=timeseries_data,
-        recovery_target=recovery_target,
-    )
+    """
+    TODO: Add docstring.
 
+    """
     if recovery_target is None:
         for tmetric in ["Y2R", "R80P"]:
             if tmetric in metrics:
                 raise ValueError(f"{tmetric} requires a recovery target but recovery_target is None")
-            
-    m_results = []
-    for m in metrics:
-        try:
-            m_func = METRIC_FUNCS[m.lower()]
-        except KeyError:
-            raise ValueError(f"{m} is not a valid metric choice!")
-        m_results.append(
-            m_func(
-                ra=restoration_area,
-                params={
-                    "timestep": timestep,
-                    "percent_of_target": percent_of_target,
-                },
-            ).assign_coords({"metric": m})
+    
+    per_polygon_metrics = {}
+    for index, row in restoration_polygons.iterrows():
+        # Prepare arguments being passed to the metric functions
+        clipped_ts = timeseries_data.rio.clip([row.geometry])
+        m_kwargs = dict(
+            site=row,
+            timeseries_data=clipped_ts,
+            params={
+                "timestep": timestep,
+                "percent_of_target": percent_of_target,
+            }
         )
+        if isinstance(recovery_target, dict):
+            m_kwargs["recovery_target"] = recovery_target[index]
+        else: 
+            # if a DataArray or None, just pass as-is
+            m_kwargs["recovery_target"] = recovery_target
 
-    metrics = xr.concat(m_results, "metric")
-
-    return metrics
+        m_results = []
+        for m in metrics:
+            try:
+                m_func = METRIC_FUNCS[m.lower()]
+            except KeyError:
+                raise ValueError(f"{m} is not a valid metric choice!")
+            m_results.append(
+                m_func(**m_kwargs).assign_coords({"metric": m})
+            )
+        per_polygon_metrics[index] = xr.concat(m_results, "metric")
+    metric_da = xr.concat(per_polygon_metrics.values(), pd.Index(per_polygon_metrics.keys(), name="site"))
+    metric_ds = metric_da.to_dataset(dim="site")
+    return metric_ds
 
 def has_no_missing_years(images: xr.DataArray):
     """Check for continous set of years in DataArray"""
@@ -70,7 +80,7 @@ def has_no_missing_years(images: xr.DataArray):
     return True
 
 @register_metric
-def dnbr(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
+def dnbr(site: gpd.GeoDataFrame, timeseries_data: xr.DataArray, recovery_target: xr.DataArray = None, params: Dict = {"timestep": 5}) -> xr.DataArray:
     """Per-pixel dNBR.
 
     The absolute change in a spectral index’s value at a point in the
@@ -95,24 +105,25 @@ def dnbr(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
     if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
-    if rest_post_t > ra.timeseries_end:
+    rest_post_t = str(site["rest_start"] + params["timestep"])
+    timesries_end = np.max(timeseries_data.time.values)
+    if int(rest_post_t) > int(timesries_end):
         raise ValueError(
             f"timestep={params['timestep']}, but"
-            f" {ra.restoration_start}+{params['timestep']}={rest_post_t} not within"
-            f" time coordinates: {ra.restoration_image_stack.coords['time'].values}. "
+            f" {site['restoration_start']}+{params['timestep']}={rest_post_t} not within"
+            f" time coordinates: {timeseries_data.coords['time'].values}. "
         ) from None
 
     dnbr_v = (
-        ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
-        - ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars("time")
+        timeseries_data.sel(time=rest_post_t).drop_vars("time")
+        - timeseries_data.sel(time=str(site["rest_start"])).drop_vars("time")
     ).squeeze("time")
 
     return dnbr_v
 
 
 @register_metric
-def yryr(ra: RestorationArea, params: Dict = {"timestep": 5}):
+def yryr(site: gpd.GeoDataFrame, timeseries_data: xr.DataArray, recovery_target: xr.DataArray = None, params: Dict = {"timestep": 5}):
     """Per-pixel YrYr.
 
     The average annual recovery rate relative to a fixed time interval
@@ -137,9 +148,9 @@ def yryr(ra: RestorationArea, params: Dict = {"timestep": 5}):
     if params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
-    obs_post_t = ra.restoration_image_stack.sel(time=rest_post_t).drop_vars("time")
-    obs_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
+    rest_post_t = str(site["rest_start"] + params["timestep"])
+    obs_post_t = timeseries_data.sel(time=rest_post_t).drop_vars("time")
+    obs_start = timeseries_data.sel(time=str(site["rest_start"])).drop_vars(
         "time"
     )
     yryr_v = ((obs_post_t - obs_start) / params["timestep"]).squeeze("time")
@@ -149,7 +160,10 @@ def yryr(ra: RestorationArea, params: Dict = {"timestep": 5}):
 
 @register_metric
 def r80p(
-    ra: RestorationArea, params: Dict = {"percent_of_target": 80, "timestep": 5}
+    site: gpd.GeoDataFrame, 
+    timeseries_data: xr.DataArray,
+    recovery_target: xr.DataArray,
+    params: Dict = {"percent_of_target": 80, "timestep": 5}
 ) -> xr.DataArray:
     """Per-pixel R80P.
 
@@ -178,15 +192,15 @@ def r80p(
 
     """
     if params["timestep"] is None:
-        rest_post_t = ra.restoration_image_stack["time"].data[-1]
+        rest_post_t = timeseries_data["time"].data[-1]
     elif params["timestep"] < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
     elif params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
     else:
-        rest_post_t = str(int(ra.restoration_start) + params["timestep"])
-    r80p_v = (ra.restoration_image_stack.sel(time=rest_post_t)).drop_vars("time") / (
-        (params["percent_of_target"] / 100) * ra.recovery_target
+        rest_post_t = str(site["rest_start"] + params["timestep"])
+    r80p_v = (timeseries_data.sel(time=rest_post_t)).drop_vars("time") / (
+        (params["percent_of_target"] / 100) * recovery_target
     )
     try:
         # if using the default timestep (the max/most recent),
@@ -198,7 +212,7 @@ def r80p(
 
 
 @register_metric
-def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.DataArray:
+def y2r(site: gpd.GeoDataFrame, timeseries_data: xr.DataArray, recovery_target: xr.DataArray, params: Dict = {"percent_of_target": 80}) -> xr.DataArray:
     """Per-pixel Y2R.
 
     The length of time taken (in time steps/years) for a given pixel to
@@ -224,14 +238,14 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
     if params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
     
-    recovery_window = ra.restoration_image_stack.sel(
-        time=slice(ra.restoration_start, None)
+    recovery_window = timeseries_data.sel(
+        time=slice(site["rest_start"], None)
     )
     if not has_no_missing_years(recovery_window):
         raise ValueError(f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}.")
     
-    print(ra.recovery_target, params["percent_of_target"] )
-    y2r_target = ra.recovery_target * (params["percent_of_target"] / 100)
+    print(recovery_target, params["percent_of_target"] )
+    y2r_target = recovery_target * (params["percent_of_target"] / 100)
 
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be:
@@ -242,7 +256,7 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
     # Only 1. is a valid 0, so set pixels that never recovered to -9999,
     # and pixels that were NaN for the entire recovery window back to NaN.
     not_zero = years_to_recovery != 0
-    recovered_at_zero = recovery_window.sel(time=ra.restoration_start) >= y2r_target
+    recovered_at_zero = recovery_window.sel(time=str(site["rest_start"])) >= y2r_target
     is_nan = recovery_window.isnull().all("time")
     valid_output = not_zero | recovered_at_zero | is_nan
 
@@ -258,7 +272,7 @@ def y2r(ra: RestorationArea, params: Dict = {"percent_of_target": 80}) -> xr.Dat
 
 
 @register_metric
-def rri(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
+def rri(site: gpd.GeoDataFrame, timeseries_data: xr.DataArray, recovery_target: xr.DataArray = None, params: Dict = {"timestep": 5}) -> xr.DataArray:
     """Per-pixel RRI.
 
     A modified version of the commonly used RI, the RRI accounts for
@@ -288,23 +302,23 @@ def rri(ra: RestorationArea, params: Dict = {"timestep": 5}) -> xr.DataArray:
     if params["timestep"] == 0:
         raise ValueError("timestep for RRI must be greater than 0.")
 
-    rest_post_tm1 = str(int(ra.restoration_start) + (params["timestep"] - 1))
-    rest_post_t = str(int(ra.restoration_start) + params["timestep"])
+    rest_post_tm1 = str(site["rest_start"] + (params["timestep"] - 1))
+    rest_post_t = str(site["rest_start"] + params["timestep"])
 
-    if pd.to_datetime(rest_post_tm1) not in ra.restoration_image_stack.time.values:
+    if pd.to_datetime(rest_post_tm1) not in timeseries_data.time.values:
         raise ValueError(
             f"{rest_post_tm1} (year of timestep - 1) not found in time dim."
         )
-    if pd.to_datetime(rest_post_t) not in ra.restoration_image_stack.time.values:
+    if pd.to_datetime(rest_post_t) not in timeseries_data.time.values:
         raise ValueError(f"{rest_post_t} (year of timestep) not found in time dim.")
 
-    max_rest_t_tm1 = ra.restoration_image_stack.sel(
+    max_rest_t_tm1 = timeseries_data.sel(
         time=slice(rest_post_tm1, rest_post_t)
     ).max(dim=["time"])
-    rest_start = ra.restoration_image_stack.sel(time=ra.restoration_start).drop_vars(
+    rest_start = timeseries_data.sel(time=str(site["rest_start"])).drop_vars(
         "time"
     )
-    dist_start = ra.restoration_image_stack.sel(time=ra.disturbance_start).drop_vars(
+    dist_start = timeseries_data.sel(time=str(site["disturbance_start"])).drop_vars(
         "time"
     )
     dist_end = rest_start

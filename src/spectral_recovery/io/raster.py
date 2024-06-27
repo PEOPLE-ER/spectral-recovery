@@ -71,7 +71,7 @@ def read_timeseries(
     elif isinstance(path_to_tifs, dict):
         for key_year, file in path_to_tifs.items():
             if _valid_year_str(str(key_year)):
-                image_dict[pd.to_datetime(key_year)] = _read_from_path(file=file, array_type=array_type)
+                image_dict[pd.to_datetime(str(key_year))] = _read_from_path(file=file, array_type=array_type)
     else:
         raise TypeError(f"Invalid path input. path_to_tifs can be a str path to a directory of TIFs or a dictionary mapping str years to str paths of individual TIF files. Recieved {type(path_to_tifs)}")
         

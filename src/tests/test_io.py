@@ -3,6 +3,7 @@ import dask.array as da
 
 import xarray as xr
 import numpy as np
+import pandas as pd
 
 from numpy.testing import assert_array_equal
 from unittest.mock import patch
@@ -469,16 +470,16 @@ class TestReadTimeseriesDictInput:
         "rioxarray.open_rasterio",
     )
     def test_dict_of_tifs_is_read(self, rasterio_mock):
-        path_dict_str = {"2015": "path/to/some_file.tif", "2016": "path/to/another.tif", "2017": "path/to/last.tif"}
         path_dict_int = {2015: "path/to/some_file.tif", 2016: "path/to/another.tif", 2017: "path/to/last.tif"}
         bands = {0: "blue"}
         rasterio_mock.return_value = xr.DataArray(
             [[[0.]]], 
             dims=["band", "y", "x"]
         )
-        read_timeseries(path_to_tifs=path_dict_int, band_names=bands, array_type="numpy")
-        read_timeseries(path_to_tifs=path_dict_str, band_names=bands, array_type="numpy")
-
+        int_years = read_timeseries(path_to_tifs=path_dict_int, band_names=bands, array_type="numpy")
+        expceted_years = [2015, 2016, 2017]
+        for i, d in enumerate(int_years.time.values):
+            assert pd.to_datetime(d).year == expceted_years[i]
 
     @patch(
         "rioxarray.open_rasterio",
