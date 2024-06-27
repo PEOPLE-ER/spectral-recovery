@@ -26,12 +26,11 @@ authors:
 repository-code: 'https://github.com/PEOPLE-ER/Spectral-Recovery'
 url: 'https://people-er.github.io/Spectral-Recovery/'
 abstract: >-
-  A Python package for spectral recovery analysis over
-  forest ecosystems. Aimed at supporting Ecosystem
-  Restoration (ER) efforts, spectral-recovery provides
-  simple and repeatable methods for using spectral recovery
-  analysis to derive clear recovery metrics for each of your
-  restoration sites.
+  Aimed at supporting Ecosystem Restoration (ER) efforts
+  in forested ecosystems, spectral-recovery provides simple
+  and repeatable methods for using spectral recovery analysis
+  to derive recovery metrics for each of your restoration
+  sites.
 keywords:
   - Remote Sensing
   - Ecosystem Restoration
