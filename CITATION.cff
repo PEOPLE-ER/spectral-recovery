@@ -1,0 +1,45 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: spectral-recovery
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Sarah
+    name-particle: Vaughan
+    family-names: Zwiep
+    email: sara.zwiep@ubc.ca
+    affiliation: University of British Columbia
+    orcid: 'https://orcid.org/0000-0002-0812-9509'
+  - given-names: Marcos
+    family-names: Kavlin-Castaneda
+    orcid: 'https://orcid.org/0009-0009-2239-2360'
+    email: mkavlin@hatfieldgroup.com
+    affiliation: Hatfield Consultants
+  - given-names: Melissa
+    family-names: Birch
+    affiliation: University of British Columbia
+    email: melissa.birch@ubc.ca
+repository-code: 'https://github.com/PEOPLE-ER/Spectral-Recovery'
+url: 'https://people-er.github.io/Spectral-Recovery/'
+abstract: >-
+  A Python package for spectral recovery analysis over
+  forest ecosystems. Aimed at supporting Ecosystem
+  Restoration (ER) efforts, spectral-recovery provides
+  simple and repeatable methods for using spectral recovery
+  analysis to derive clear recovery metrics for each of your
+  restoration sites.
+keywords:
+  - Remote Sensing
+  - Ecosystem Restoration
+  - Earth Observation
+  - Ecology
+  - Conservation
+  - Biodiversity
+license: Apache-2.0
+commit: edd540c0a4527c135963011f202feead2882b92f
+version: 0.4.1
+date-released: '2024-04-05'
