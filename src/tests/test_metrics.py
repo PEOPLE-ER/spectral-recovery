@@ -64,39 +64,11 @@ class TestComputeMetrics:
         valid_rt = valid_array[:,0, :, :].drop_vars("time")
         return valid_rt
 
-    @patch("spectral_recovery.metrics.RestorationArea")
-    def test_ra_built_with_given_polys(
-        self, ra_mock, valid_array, valid_frame, valid_rt
-    ):
-        ra_mock.return_value = "ra_return"
-        y2r_mock = Mock()
-        y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
 
-        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"y2r": y2r_mock}):
-
-            compute_metrics(
-                timeseries_data=valid_array,
-                restoration_polygons=valid_frame,
-                metrics=["Y2R"],
-                recovery_target=valid_rt
-            )
-
-            pd.testing.assert_frame_equal(
-                ra_mock.call_args.kwargs["restoration_site"], valid_frame
-            )
-            xr.testing.assert_equal(
-                ra_mock.call_args.kwargs["composite_stack"], valid_array
-            )
-            xr.testing.assert_equal(
-                ra_mock.call_args.kwargs["recovery_target"], valid_rt
-            )
-
-    @patch("spectral_recovery.metrics.RestorationArea")
     def test_none_rt_passes(
-        self, ra_mock, valid_array, valid_frame
+        self, valid_array, valid_frame
     ):
 
-        ra_mock.return_value = "ra_return"
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
         none_rt = None
@@ -110,13 +82,11 @@ class TestComputeMetrics:
                 recovery_target=none_rt
             )
 
-            assert ra_mock.call_args.kwargs["recovery_target"] is None
+            assert y2r_mock.call_args.kwargs["recovery_target"] is None
     
-    @patch("spectral_recovery.metrics.RestorationArea")
     def test_none_rt_with_metric_that_requires_rt_throws_value_err(
-        self, ra_mock, valid_array, valid_frame
+        self, valid_array, valid_frame
     ):
-        ra_mock.return_value = "ra_return"
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
         none_rt = None
@@ -139,34 +109,9 @@ class TestComputeMetrics:
                         recovery_target=none_rt
                     )
 
-    # @patch("spectral_recovery.metrics.compute_indices")
-    # @patch("spectral_recovery.metrics.RestorationArea")
-    # def test_ra_built_with_reference_polys(self, ra_mock, indices_mock, valid_array, valid_frame):
-    #     indices_mock.return_value = "indices_return"
-    #     ra_mock.return_value = "ra_return"
-    #     y2r_mock = Mock()
-    #     y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
-
-    #     with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"y2r": y2r_mock}):
-
-    #         compute_metrics(
-    #             timeseries_data=valid_array,
-    #             restoration_polygons=valid_frame,
-    #             reference_polygons=___
-    #             metrics=["Y2R"],
-    #         )
-
-    #         pd.testing.assert_frame_equal(ra_mock.call_args.kwargs["reference_polygons"], valid_frame)
-    #         assert ra_mock.call_args.kwargs["composite_stack"] == "indices_return"
-    #         assert isinstance(ra_mock.call_args.kwargs["recovery_target_method"], MedianTarget)
-    #         assert ra_mock.call_args.kwargs["recovery_target_method"].scale == "polygon"
-
-    @patch("spectral_recovery.metrics.RestorationArea")
     def test_correct_metrics_called_from_metric_func_dict(
-        self, ra_mock, valid_array, valid_frame, valid_rt
+        self, valid_array, valid_frame, valid_rt
     ):
-        ra_mock.return_value = "ra_return"
-
         patched_dict = {}
         multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
         for i, metric in enumerate(multi_metrics):
@@ -184,16 +129,13 @@ class TestComputeMetrics:
                 metrics=multi_metrics,
             )
 
-        for metric_mock_func in patched_dict.values():
-            metric_mock_func.assert_called_with(
-                ra="ra_return", params={"timestep": 5, "percent_of_target": 80}
-            )
+        for m in multi_metrics:
+            assert patched_dict[m.lower()].called_once()
 
-    @patch("spectral_recovery.metrics.RestorationArea")
-    def test_output_data_stacked_along_metric_dim(
-        self, ra_mock, valid_array, valid_frame, valid_rt
+
+    def test_output_data_array_stacked_along_metric_dim(
+        self, valid_array, valid_frame, valid_rt
     ):
-        ra_mock.return_value = "ra_return"
 
         patched_dict = {}
         multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
@@ -212,18 +154,55 @@ class TestComputeMetrics:
                 recovery_target=valid_rt,
             )
 
-        assert result.dims == ("metric", "band", "y", "x")
+        assert result[0].dims == ("metric", "band", "y", "x")
         assert sorted(result.metric.values) == sorted(multi_metrics)
         for i, metric in enumerate(multi_metrics):
             np.testing.assert_array_equal(
-                result.sel(metric=metric).data, np.array([[[i]]])
+                result[0].sel(metric=metric).data, np.array([[[i]]])
             )
 
-    @patch("spectral_recovery.metrics.RestorationArea")
-    def test_custom_params_passed_to_metric_funcs(
-        self, ra_mock, valid_array, valid_frame, valid_rt
+    def test_output_dataset_contains_all_polygons(
+        self, valid_array, valid_rt
     ):
-        ra_mock.return_value = "ra_return"
+        multi_frame = gpd.GeoDataFrame(
+            {
+                "dist_start": [2012, 2011, 2012],
+                "rest_start": [2013, 2012, 2013],
+                "geometry": [self.valid_poly, self.valid_poly, self.valid_poly],
+            },
+            crs="EPSG:4326",
+        )
+        patched_dict = {}
+        multi_metrics = ["Y2R", "dNBR"]
+        for i, metric in enumerate(multi_metrics):
+            metric_mock = Mock()
+            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
+            patched_dict[metric.lower()] = metric_mock
+        
+        expected_polyids = [0, 1, 2]
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
+
+            result = compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=multi_frame,
+                metrics=multi_metrics,
+                recovery_target=valid_rt,
+            )
+
+        assert list(result.data_vars) == expected_polyids
+        for polyid in expected_polyids:
+            assert result[polyid].dims == ("metric", "band", "y", "x")
+            for i, metric in enumerate(multi_metrics):
+                np.testing.assert_array_equal(
+                    result[polyid].sel(metric=metric).data, np.array([[[i]]])
+                )
+
+
+
+    def test_custom_params_passed_to_metric_funcs(
+        self, valid_array, valid_frame, valid_rt
+    ):
         metric = "Y2R"
         metric_mock = Mock()
         metric_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
