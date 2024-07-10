@@ -220,7 +220,7 @@ class RestorationArea:
 
     @recovery_target.setter
     def recovery_target(self, rt: xr.DataArray) -> xr.DataArray:
-        if rt != None: # allow None sets
+        if rt is not None: # allow None sets
             if set(rt.dims) != {"band", "y", "x"} and set(rt.dims) != {"band"}:
                 raise ValueError(
                     "recovery_target must contain the dimension 'band' and optionally the dimensions 'y', and 'x'"

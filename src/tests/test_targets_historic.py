@@ -12,7 +12,7 @@ from xarray.testing import assert_equal
 from numpy.testing import assert_array_equal
 
 
-from spectral_recovery.targets.historic import median, window
+from spectral_recovery.targets.historic import median, window, _check_reference_years
 
 def test_invalid_scale_throws_value_error():
     with pytest.raises(ValueError):
@@ -31,12 +31,12 @@ def test_invalid_scale_throws_value_error():
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": [0, 1],
+                "time": pd.date_range("2010", "2011", freq="YS"),
                 "y": [0, 1],
                 "x": [0, 1]
             },
         )
-        median(polygon=valid_poly, timeseries_data=test_stack, reference_years={0: {"reference_start": 0, "reference_end": 1}}, scale="not_a_scale")
+        median(polygon=valid_poly, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="not_a_scale")
     
 class TestMedianPolygonScale:
 
@@ -63,12 +63,12 @@ class TestMedianPolygonScale:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": [0, 1],
+                "time": pd.date_range("2010", "2011", freq="YS"),
                 "y": [1],
                 "x": [1]
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        _ = median(restoration_sites="pathy", timeseries_data=valid_stack, reference_years={0: {"reference_start": 0, "reference_end": 1}}, scale="polygon")
+        _ = median(restoration_sites="pathy", timeseries_data=valid_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
 
         read_mock.assert_called_once()
         assert read_mock.call_args.args[0] == "pathy"
@@ -89,7 +89,7 @@ class TestMedianPolygonScale:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": [0, 1],
+                "time": pd.date_range("2010", "2011", freq="YS"),
                 "y": [1],
                 "x": [1]
             },
@@ -104,7 +104,7 @@ class TestMedianPolygonScale:
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
 
-        out_targets = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 0, "reference_end": 1}}, scale="polygon")
+        out_targets = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
 
         assert len(out_targets.keys()) == 1
         assert list(out_targets.keys())[0] == 0
@@ -129,7 +129,7 @@ class TestMedianPolygonScale:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": [0, 1, 2],
+                "time": pd.date_range("2010", "2012", freq="YS"),
                 "y": [1],
                 "x": [1]
             },
@@ -144,7 +144,7 @@ class TestMedianPolygonScale:
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
 
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 0, "reference_end": 2}}, scale="polygon")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2012}}, scale="polygon")
 
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
@@ -165,7 +165,7 @@ class TestMedianPolygonScale:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": [0, 1],
+                "time": pd.date_range("2010", "2011", freq="YS"),
                 "y": [1],
                 "x": [1]
             },
@@ -179,7 +179,7 @@ class TestMedianPolygonScale:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 0, "reference_end": 1}}, scale="polygon")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
 
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
@@ -200,7 +200,7 @@ class TestMedianPolygonScale:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": [0, 1],
+                "time": pd.date_range("2010", "2011", freq="YS"),
                 "y": [1],
                 "x": [1]
             },
@@ -214,7 +214,7 @@ class TestMedianPolygonScale:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 0, "reference_end": 1}}, scale="polygon")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
         assert_equal(expected_dict[0], out_dict[0])
@@ -233,12 +233,12 @@ class TestMedianPixelScale:
             test_data,
             dims=["band", "time", "y", "x"],
             coords={
-                "time": [0, 1], 
+                "time": pd.date_range("2010", "2011", freq="YS"), 
                 "y":[0, 1],
                 "x": [0, 1],
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 0, "reference_end": 1}}, scale="pixel")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="pixel")
 
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
@@ -256,7 +256,7 @@ class TestMedianPixelScale:
             test_data,
             dims=["band", "time", "y", "x"],
             coords={
-                "time": [0, 1], 
+                "time": pd.date_range("2010", "2011", freq="YS"), 
                 "y":[0, 1],
                 "x": [0, 1],    
             },
@@ -273,10 +273,367 @@ class TestMedianPixelScale:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 0, "reference_end": 1}}, scale="pixel")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="pixel")
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
         assert_equal(expected_dict[0], out_dict[0])
+
+
+class TestMedianMultipleSites:
+
+    def test_multiple_restoration_sites_returns_pixel_target(self):
+        test_data = [
+            [
+                [
+                    [1., 2., 3.],
+                    [4., 5., 6.],
+                    [7., 8., 9.]
+                ]
+            ],
+
+            [
+                [
+                    [10., 11., 12.],
+                    [13., 14., 15.],
+                    [16., 17., 18.]
+                ]
+            ]
+        ]
+        test_stack = xr.DataArray(
+                test_data,
+                dims=["time", "band", "y", "x"],
+                coords={
+                    "time": pd.date_range("2010", "2011", freq="YS"),
+                    "y": [1, 0, -1],
+                    "x": [-1, 0, 1]
+                },
+        ).rio.write_crs("EPSG:3348", inplace=True)
+        polygon1 = Polygon([(-2, 2), (-0.25, 1), (-0.25, -2), (-2, -2), (-2, 2)])
+        polygon2 = Polygon([(-1, 1), (0.75, 1), (0.75, -1), (-1, -1), (-1, 1)])
+        polygon3 = Polygon([(0.75, 2), (0, 2), (2, 2), (0.75, -1.75), (0.75, 2)])
+        valid_gpd = gpd.GeoDataFrame(geometry=[polygon1, polygon2, polygon3]).set_crs("EPSG:3348")
+
+        expected_dict = {
+            0: xr.DataArray(
+                    [[[5.5], [8.5], [11.5]]],
+                    dims=["band", "y", "x"],
+                    coords={
+                        "band" : [0],   
+                        "y": [1, 0, -1],
+                        "x": [-1]
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            1: xr.DataArray(
+                    [[[6.5], [9.5], [12.5]]],
+                    dims=["band", "y", "x"],
+                    coords={
+                        "band" : [0],
+                        "y": [1, 0, -1],
+                        "x": [0]
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            2: xr.DataArray(
+                    [[[7.5], [10.5], [13.5]]],
+                    dims=["band", "y", "x"],
+                    coords={
+                        "band" : [0],
+                        "y": [1, 0, -1],
+                        "x": [1]
+                    },  
+                ).rio.write_crs("EPSG:3348", inplace=True)
+        }
+
+        out_dict = median(
+            restoration_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_years={
+                    0: {"reference_start": 2010, "reference_end": 2011},
+                    1: {"reference_start": 2010, "reference_end": 2011},
+                    2: {"reference_start": 2010, "reference_end": 2011}
+                },
+            scale="pixel"
+        )
+        assert len(out_dict) == 3
+        assert list(out_dict.keys()) == [0, 1, 2]
+        assert_equal(out_dict[0], expected_dict[0])
+        assert_equal(out_dict[1], expected_dict[1])
+        assert_equal(out_dict[2], expected_dict[2])
+    
+    def test_multiple_restoration_sites_returns_polygon_target(self):
+        test_data = [
+            [
+                [
+                    [1., 2., 3.],
+                    [4., 5., 6.],
+                    [7., 8., 9.]
+                ]
+            ],
+
+            [
+                [
+                    [10., 11., 12.],
+                    [13., 14., 15.],
+                    [16., 17., 18.]
+                ]
+            ]
+        ]
+        test_stack = xr.DataArray(
+                test_data,
+                dims=["time", "band", "y", "x"],
+                coords={
+                    "time": pd.date_range("2010", "2011", freq="YS"),
+                    "y": [1, 0, -1],
+                    "x": [-1, 0, 1]
+                },
+        ).rio.write_crs("EPSG:3348", inplace=True)
+        polygon1 = Polygon([(-2, 2), (-0.25, 1), (-0.25, -2), (-2, -2), (-2, 2)])
+        polygon2 = Polygon([(-1, 1), (0.75, 1), (0.75, -1), (-1, -1), (-1, 1)])
+        polygon3 = Polygon([(0.75, 2), (0, 2), (2, 2), (0.75, -1.75), (0.75, 2)])
+        valid_gpd = gpd.GeoDataFrame(geometry=[polygon1, polygon2, polygon3]).set_crs("EPSG:3348")
+
+        expected_dict = {
+            0: xr.DataArray(
+                    [8.5],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],   
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            1: xr.DataArray(
+                    [9.5],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            2: xr.DataArray(
+                    [10.5],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],
+                    },  
+                ).rio.write_crs("EPSG:3348", inplace=True)
+        }
+
+        out_dict = median(
+            restoration_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_years={
+                    0: {"reference_start": 2010, "reference_end": 2011},
+                    1: {"reference_start": 2010, "reference_end": 2011},
+                    2: {"reference_start": 2010, "reference_end": 2011}
+                },
+            scale="polygon"
+        )
+        assert len(out_dict) == 3
+        assert list(out_dict.keys()) == [0, 1, 2]
+        assert_equal(out_dict[0], expected_dict[0])
+        assert_equal(out_dict[1], expected_dict[1])
+        assert_equal(out_dict[2], expected_dict[2])
+
+    def test_unique_reference_years_per_poly_returns_correct_targets(self):
+        test_data = [
+            [
+                [
+                    [1., 2., 3.],
+                    [4., 5., 6.],
+                    [7., 8., 9.]
+                ]
+            ],
+
+            [
+                [
+                    [10., 11., 12.],
+                    [13., 14., 15.],
+                    [16., 17., 18.]
+                ]
+            ],
+
+            [
+                [
+                    [19., 20., 21.],
+                    [22., 23., 24.],
+                    [25., 26., 27.]
+                ]
+            ]
+
+        ]
+        test_stack = xr.DataArray(
+                test_data,
+                dims=["time", "band", "y", "x"],
+                coords={
+                    "time": pd.date_range("2010", "2012", freq="YS"),
+                    "y": [1, 0, -1],
+                    "x": [-1, 0, 1]
+                },
+        ).rio.write_crs("EPSG:3348", inplace=True)
+        polygon1 = Polygon([(-2, 2), (-0.25, 1), (-0.25, -2), (-2, -2), (-2, 2)])
+        polygon2 = Polygon([(-1, 1), (0.75, 1), (0.75, -1), (-1, -1), (-1, 1)])
+        polygon3 = Polygon([(0.75, 2), (0, 2), (2, 2), (0.75, -1.75), (0.75, 2)])
+        valid_gpd = gpd.GeoDataFrame(geometry=[polygon1, polygon2, polygon3]).set_crs("EPSG:3348")
+
+        expected_dict = {
+            0: xr.DataArray(
+                    [8.5],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],   
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            1: xr.DataArray(
+                    [18.5],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            2: xr.DataArray(
+                    [15],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],
+                    },  
+                ).rio.write_crs("EPSG:3348", inplace=True)
+        }
+
+        out_dict = median(
+            restoration_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_years={
+                    0: {"reference_start": 2010, "reference_end": 2011},
+                    1: {"reference_start": 2011, "reference_end": 2012},
+                    2: {"reference_start": 2010, "reference_end": 2012}
+                },
+            scale="polygon"
+        )
+        assert len(out_dict) == 3
+        assert list(out_dict.keys()) == [0, 1, 2]
+        assert_equal(out_dict[0], expected_dict[0])
+        assert_equal(out_dict[1], expected_dict[1])
+        assert_equal(out_dict[2], expected_dict[2])
+        
+    def test_polygon_ids_maintained(self):
+        test_data = [
+            [
+                [
+                    [1., 2., 3.],
+                    [4., 5., 6.],
+                    [7., 8., 9.]
+                ]
+            ],
+        ]
+        test_stack = xr.DataArray(
+                test_data,
+                dims=["time", "band", "y", "x"],
+                coords={
+                    "time": pd.date_range("2010", "2010", freq="YS"),
+                    "y": [1, 0, -1],
+                    "x": [-1, 0, 1]
+                },
+        ).rio.write_crs("EPSG:3348", inplace=True)
+        polygon1 = Polygon([(-2, 2), (-0.25, 1), (-0.25, -2), (-2, -2), (-2, 2)])
+        polygon2 = Polygon([(-1, 1), (0.75, 1), (0.75, -1), (-1, -1), (-1, 1)])
+        polygon3 = Polygon([(0.75, 2), (0, 2), (2, 2), (0.75, -1.75), (0.75, 2)])
+        valid_gpd = gpd.GeoDataFrame(geometry=[polygon1, polygon2, polygon3]).set_crs("EPSG:3348")
+        new_indices = [12, 8, 33]
+        valid_gpd.index = new_indices
+
+        expected_keys = [12, 8, 33]
+        expected_dict = {
+            12: xr.DataArray(
+                    [4.0],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],   
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            8: xr.DataArray(
+                    [5.0],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],
+                    },
+                ).rio.write_crs("EPSG:3348", inplace=True),
+            33: xr.DataArray(
+                    [6.0],
+                    dims=["band"],
+                    coords={
+                        "band" : [0],
+                    },  
+                ).rio.write_crs("EPSG:3348", inplace=True)
+        }
+
+        out_dict = median(
+            restoration_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_years={
+                    12: {"reference_start": 2010, "reference_end": 2010},
+                    8: {"reference_start": 2010, "reference_end": 2010},
+                    33: {"reference_start": 2010, "reference_end": 2010}
+                },
+            scale="polygon"
+        )
+        print(out_dict)
+        assert len(out_dict) == 3
+        assert list(out_dict.keys()) == expected_keys
+        assert_equal(out_dict[12], expected_dict[12])
+        assert_equal(out_dict[8], expected_dict[8])
+        assert_equal(out_dict[33], expected_dict[33])
+
+class TestCheckReferenceYears:
+
+    test_stack = xr.DataArray(
+                [[[[1.],[4.],[7.]]]],
+                dims=["time", "band", "y", "x"],
+                coords={
+                    "time": pd.date_range("2010", "2010", freq="YS"),
+                    "y": [-1, 0, 1],
+                    "x": [0]
+                },
+        ).rio.write_crs("EPSG:3348", inplace=True)
+    valid_gpd = gpd.GeoDataFrame(geometry=[Polygon([(-1, 1), (0.75, 1), (0.75, -1), (-1, -1), (-1, 1)]), Polygon([(-1, 1), (0.75, 1), (0.75, -1), (-1, -1), (-1, 1)])]).set_crs("EPSG:3348")
+
+    def test_valid_reference_years_successful(self):
+        _check_reference_years(
+            restoration_sites=self.valid_gpd,
+            timeseries_data=self.test_stack,
+            reference_years={
+                0: {"reference_start": 2010, "reference_end": 2010},
+                1: {"reference_start": 2010, "reference_end": 2010}
+            },
+        )
+
+    def test_invalid_ref_years_throws_value_err(self):
+        with pytest.raises(ValueError):
+            _check_reference_years(
+                restoration_sites=self.valid_gpd,
+                timeseries_data=self.test_stack,
+                reference_years={
+                    0: {"reference_start": 0, "reference_end": 2010},
+                    1: {"reference_start": 2010, "reference_end": 0}
+                },
+            )
+    
+    def test_oob_ref_years_throws_value_err(self):
+        with pytest.raises(ValueError):
+            _check_reference_years(
+                restoration_sites=self.valid_gpd,
+                timeseries_data=self.test_stack,
+                reference_years={
+                    0: {"reference_start": 2009, "reference_end": 2010},
+                    1: {"reference_start": 2010, "reference_end": 2011}
+                },
+            )
+
+    def test_missing_ref_years_throws_value_err(self):
+        with pytest.raises(ValueError):
+            _check_reference_years(
+                restoration_sites=self.valid_gpd,
+                timeseries_data=self.test_stack,
+                reference_years={
+                    0: {"reference_start": 2010, "reference_end": 2010},
+                },
+            )
 
 
 class TestWindow:
