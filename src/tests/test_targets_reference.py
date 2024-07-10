@@ -2,14 +2,13 @@ import pytest
 
 import xarray as xr
 import numpy as np
-import pandas as pd
 import geopandas as gpd
 
 from shapely import Polygon
 from xarray.testing import assert_equal
 from unittest.mock import patch
 
-from spectral_recovery.targets.reference import median, _check_reference_years
+from spectral_recovery.targets.reference import median
 
 class TestMedian:
 
@@ -36,12 +35,12 @@ class TestMedian:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": pd.date_range("2010", "2011", freq="YS"),
+                "time": [0, 1],
                 "y": [1],
                 "x": [1]
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        _ = median(reference_sites="pathy", timeseries_data=valid_stack, reference_start=2010, reference_end=2011)
+        _ = median(reference_sites="pathy", timeseries_data=valid_stack, reference_start=0, reference_end=1)
 
         read_mock.assert_called_once()
         assert read_mock.call_args.args[0] == "pathy"
@@ -61,7 +60,7 @@ class TestMedian:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": pd.date_range("2010", "2011", freq="YS"),
+                "time": [0, 1],
                 "y": [1],
                 "x": [1]
             },
@@ -75,7 +74,7 @@ class TestMedian:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
 
-        out_targets = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=2010, reference_end=2011)
+        out_targets = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
 
         assert_equal(expected_stack, out_targets)
 
@@ -98,7 +97,7 @@ class TestMedian:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": pd.date_range("2010", "2012", freq="YS"),
+                "time": [0, 1, 2],
                 "y": [1],
                 "x": [1]
             },
@@ -112,7 +111,7 @@ class TestMedian:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
 
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=2010, reference_end=2012)
+        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=2)
         assert_equal(expected_stack, out_stack)
 
 
@@ -131,7 +130,7 @@ class TestMedian:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": pd.date_range("2010", "2011", freq="YS"),
+                "time": [0, 1],
                 "y": [1],
                 "x": [1]
             },
@@ -144,7 +143,7 @@ class TestMedian:
                 "band": [0, 1]
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=2010, reference_end=2011)
+        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
 
         assert_equal(expected_stack, out_stack)
 
@@ -163,7 +162,7 @@ class TestMedian:
             test_data,
             dims=["time", "band", "y", "x"],
             coords={
-                "time": pd.date_range("2010", "2011", freq="YS"),
+                "time": [0, 1],
                 "y": [1],
                 "x": [1]
             },
@@ -176,7 +175,7 @@ class TestMedian:
                 "band": [0, 1],
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=2010, reference_end=2011)
+        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
         assert_equal(expected_stack, out_stack)
     
     def test_one_value_per_band_returned(self):
@@ -187,7 +186,7 @@ class TestMedian:
             test_data,
             dims=["band", "time", "y", "x"],
             coords={
-                "time": pd.date_range("2010", "2011", freq="YS"),
+                "time": [0, 1],
                 "y": np.arange(5),
                 "x": np.arange(5)
             },
@@ -200,54 +199,13 @@ class TestMedian:
                 "band": [0, 1, 2],
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=2010, reference_end=2011)
+        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
         
         assert out_stack.dims == ("band",)
         assert len(out_stack.band) == 3
         assert_equal(expected_stack, out_stack)
 
-class TestCheckReferenceYears:
-
-    test_stack = xr.DataArray(
-                [[[[1.],[4.],[7.]]]],
-                dims=["time", "band", "y", "x"],
-                coords={
-                    "time": pd.date_range("2010", "2010", freq="YS"),
-                    "y": [-1, 0, 1],
-                    "x": [0]
-                },
-        ).rio.write_crs("EPSG:3348", inplace=True)
-
-    def test_valid_reference_years_successful(self):
-        _check_reference_years(
-            timeseries_data=self.test_stack,
-            reference_start=2010,
-            reference_end=2010
-        )
-
-    def test_invalid_ref_years_throws_value_err(self):
-        with pytest.raises(ValueError):
-            _check_reference_years(
-                timeseries_data=self.test_stack,
-                reference_start=10,
-                reference_end=20112
-            )
-    
-    def test_oob_start_year_throws_value_err(self):
-        with pytest.raises(ValueError):
-            _check_reference_years(
-                timeseries_data=self.test_stack,
-                reference_start=2009,
-                reference_end=2010
-            )
-    
-    def test_oob_end_year_throws_value_err(self):
-        with pytest.raises(ValueError):
-            _check_reference_years(
-                timeseries_data=self.test_stack,
-                reference_start=2010,
-                reference_end=2011
-            )
+   
 
 class TestMedianMultipleSites:
 
@@ -275,7 +233,7 @@ class TestMedianMultipleSites:
                 test_data,
                 dims=["time", "band", "y", "x"],
                 coords={
-                    "time": pd.date_range("2010", "2011", freq="YS"),
+                    "time": [0, 1],
                     "y": [1, 0, -1],
                     "x": [-1, 0, 1]
                 },
@@ -289,5 +247,5 @@ class TestMedianMultipleSites:
                 },
             ).rio.write_crs("EPSG:4326", inplace=True)
 
-            out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start="2010", reference_end="2011")
+            out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1")
             assert_equal(out_stack, expected_stack)
