@@ -24,7 +24,11 @@ def read_restoration_polygons(
     """
     # Read the vector file and check there is only one polygon
     restoration_polygons = gpd.read_file(path)
-    if dist_rest_years:
+    print(restoration_polygons)
+    if not dist_rest_years:
+        if "rest_start" not in list(restoration_polygons) or "dist_start" not in list(restoration_polygons):
+            raise ValueError("Missing disturbance and restoration years. Must pass  years to `dist_rest_years` or as polygon attributes in the vector file.")
+    else:
         # Add the passed dates into gpd cols
         dates = {
                 "dist_start": [],
@@ -42,7 +46,7 @@ def read_restoration_polygons(
             dates["rest_start"].append(restoration_start)
         
         restoration_polygons = restoration_polygons.assign(**dates)
-    
+
     # Dates must be in order: dist, rest then geom 
     restoration_polygons = restoration_polygons[["dist_start", "rest_start", "geometry"]]
     # Look at the dates within the geodataframe (data from attribute table)
