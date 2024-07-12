@@ -9,14 +9,13 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.legend_handler import HandlerPatch
 
-from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.indices import compute_indices
 
 
 # TODO: Refactor. Bring plot_spectral_trajectory into this module.
 def plot_spectral_trajectory(
     timeseries_data: xr.DataArray,
-    restoration_polygons: gpd.GeoDataFrame,
+    restoration_polygon: gpd.GeoDataFrame,
     recovery_target: xr.DataArray,
     reference_start: str = None, 
     reference_end: str = None, 
@@ -38,19 +37,17 @@ def plot_spectral_trajectory(
         Recovery target method to derive recovery target values
 
     """
-    restoration_area = RestorationArea(
-        restoration_site=restoration_polygons,
-        composite_stack=timeseries_data,
-        recovery_target=recovery_target,
-    )
+    # Prepare arguments being passed to the metric functions
+    clipped_timeseries = timeseries_data.rio.clip([restoration_polygon.geometry.values])
     if path:
-        plot_ra(ra=restoration_area, reference_start=reference_start, reference_end=reference_end, path=path)
+        plot_ra(restoration_site=clipped_timeseries, timeseries_data=timeseries_data, recovery_target=recovery_target, reference_start=reference_start, reference_end=reference_end, path=path)
     else:
-        plot_ra(ra=restoration_area, reference_start=reference_start, reference_end=reference_end,)
+        plot_ra(restoration_site=clipped_timeseries, timeseries_data=timeseries_data, recovery_target=recovery_target, reference_start=reference_start, reference_end=reference_end,)
 
 
 def plot_ra(
-        ra: RestorationArea,
+        timeseries_data: xr.DataArray,
+        recovery_target: xr.DataArray,
         reference_start: str, 
         reference_end: str,
         path: str = None,
@@ -68,7 +65,7 @@ def plot_ra(
 
     plot_ref_window = bool(reference_start and reference_end)
 
-    stats = ra.restoration_image_stack.satts.stats()
+    stats = timeseries_data.satts.stats()
     stats = stats.sel(
         stats=[
             "median",
@@ -80,8 +77,8 @@ def plot_ra(
     stats = stats.assign_coords(band=([str(b) for b in stats.band.values]))
     stats = stats.to_dataframe("value")
 
-    recovery_target = ra.recovery_target.assign_coords(
-        band=([str(b) for b in ra.recovery_target.band.values])
+    recovery_target = recovery_target.assign_coords(
+        band=([str(b) for b in recovery_target.band.values])
     )
     reco_targets = recovery_target.to_dataframe("reco_targets").dropna(how="any")
 

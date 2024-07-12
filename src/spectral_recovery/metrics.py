@@ -8,9 +8,6 @@ import pandas as pd
 import geopandas as gpd
 
 from spectral_recovery._utils import maintain_rio_attrs
-from spectral_recovery.restoration import RestorationArea
-from spectral_recovery.indices import compute_indices
-
 
 NEG_TIMESTEP_MSG = "timestep cannot be negative."
 VALID_PERC_MSP = "percent must be between 0 and 100."
