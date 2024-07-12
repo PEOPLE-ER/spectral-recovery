@@ -32,7 +32,7 @@ class TestReadingCanPassToIndices:
             timeseries_data=indices,
         )
     
-    def test_indices_and_polys_wo_dates_attr_to_metrics_completes(self):
+    def test_indices_and_multi_polys_to_metrics_completes(self):
         rest_site = sr.read_restoration_polygons(
             path="src/tests/test_data/composites/test_multiple_polygons.gpkg",
             dist_rest_years={1: [2002, 2003], 5: [2002, 2003], 6: [2004, 2006], 7: [2002, 2004], 8: [2005, 2006]}
@@ -61,7 +61,7 @@ class TestReadingCanPassToIndices:
             timeseries_data=indices
         )
     
-    def test_indices_and_polys_w_dates_attr_to_metrics_completes(self):
+    def test_indices_and_multi_polys_w_dates_attr_to_metrics_completes(self):
         rest_site = sr.read_restoration_polygons(
             path="src/tests/test_data/composites/test_multiple_polygons.gpkg",
         )
@@ -83,8 +83,9 @@ class TestReadingCanPassToIndices:
         )
         indices = sr.compute_indices(timeseries, indices=["NBR", "NDVI", "SAVI"])
 
-        sr.compute_metrics(
+        metrics = sr.compute_metrics(
             metrics=["dNBR", "YrYr"],
             restoration_polygons=rest_site,
             timeseries_data=indices,
         )
+        print(metrics)

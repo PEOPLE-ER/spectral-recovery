@@ -198,8 +198,6 @@ class TestComputeMetrics:
                     result[polyid].sel(metric=metric).data, np.array([[[i]]])
                 )
 
-
-
     def test_custom_params_passed_to_metric_funcs(
         self, valid_array, valid_frame, valid_rt
     ):
@@ -294,8 +292,7 @@ class TestY2R:
         ra_mock.restoration_start = "2020"
         ra_mock.recovery_target = recovery_target
 
-        result = y2r(ra=ra_mock).drop_vars('spatial_ref')
-        print(result, expected)
+        result = y2r(site=, timeseries_data=obs, recovery_target=rt).drop_vars('spatial_ref')
         assert result.equals(expected)
 
     @patch("spectral_recovery.restoration.RestorationArea")

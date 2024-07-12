@@ -7,7 +7,7 @@ from typing import Dict, List
 # TODO: allow users to pass attribute col names for date cols
 def read_restoration_polygons(
         path: str,
-        dist_rest_years: Dict[int:, List[int]] = None,
+        dist_rest_years: Dict[int, List[int]] = None,
     ):
     """Read restoration polygons
 
