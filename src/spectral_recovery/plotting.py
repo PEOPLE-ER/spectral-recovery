@@ -1,6 +1,7 @@
 from typing import List, Dict, Tuple
 
 import geopandas as gpd
+import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -9,17 +10,15 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.legend_handler import HandlerPatch
 
-from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.indices import compute_indices
 
 
-# TODO: Refactor. Bring plot_spectral_trajectory into this module.
 def plot_spectral_trajectory(
     timeseries_data: xr.DataArray,
-    restoration_polygons: gpd.GeoDataFrame,
+    restoration_polygon: gpd.GeoDataFrame,
     recovery_target: xr.DataArray,
-    reference_start: str = None, 
-    reference_end: str = None, 
+    reference_start: str = None,
+    reference_end: str = None,
     path: str = None,
 ):
     """Plot the spectral trajectory of the restoration polygon
@@ -38,37 +37,48 @@ def plot_spectral_trajectory(
         Recovery target method to derive recovery target values
 
     """
-    restoration_area = RestorationArea(
-        restoration_site=restoration_polygons,
-        composite_stack=timeseries_data,
-        recovery_target=recovery_target,
-    )
+    # Prepare arguments being passed to the metric functions
+    clipped_timeseries = timeseries_data.rio.clip([restoration_polygon.geometry.values])
     if path:
-        plot_ra(ra=restoration_area, reference_start=reference_start, reference_end=reference_end, path=path)
+        plot_ra(
+            disturbance_start=clipped_timeseries["dist_start"].iloc[0],
+            restoration_start=clipped_timeseries["rest_start"].iloc[0],
+            recovery_target=clipped_timeseries,
+            reference_start=reference_start,
+            reference_end=reference_end,
+            path=path,
+        )
     else:
-        plot_ra(ra=restoration_area, reference_start=reference_start, reference_end=reference_end,)
+        plot_ra(
+            disturbance_start=clipped_timeseries["dist_start"].iloc[0],
+            restoration_start=clipped_timeseries["rest_start"].iloc[0],
+            recovery_target=recovery_target,
+            reference_start=reference_start,
+            reference_end=reference_end,
+        )
 
 
 def plot_ra(
-        ra: RestorationArea,
-        reference_start: str, 
-        reference_end: str,
-        path: str = None,
-        legend: bool = True,
-        ) -> None:
+    disturbance_start: int,
+    restoration_start: int,
+    timeseries_data: xr.DataArray,
+    recovery_target: xr.DataArray,
+    reference_start: str,
+    reference_end: str,
+    path: str = None,
+    legend: bool = True,
+) -> None:
     """Create spectral trajectory plot of the RestorationArea (ra)
 
     Parameters
     ----------
-    ra : spectral_recovery.restoration.RestorationArea
-        The restoration area to plot.
     path : str, optional
         The path to save the plot to.
     """
 
     plot_ref_window = bool(reference_start and reference_end)
 
-    stats = ra.restoration_image_stack.satts.stats()
+    stats = timeseries_data.satts.stats()
     stats = stats.sel(
         stats=[
             "median",
@@ -80,8 +90,8 @@ def plot_ra(
     stats = stats.assign_coords(band=([str(b) for b in stats.band.values]))
     stats = stats.to_dataframe("value")
 
-    recovery_target = ra.recovery_target.assign_coords(
-        band=([str(b) for b in ra.recovery_target.band.values])
+    recovery_target = recovery_target.assign_coords(
+        band=([str(b) for b in recovery_target.band.values])
     )
     reco_targets = recovery_target.to_dataframe("reco_targets").dropna(how="any")
 
@@ -124,12 +134,21 @@ def plot_ra(
             linestyle=(0, (3, 5, 1, 5)),
             lw=1,
         )
-        _draw_trajectory_windows(ra, reference_start, reference_end, axi, palette, plot_ref_window)
-        _set_axis_labels(ra, axi, band, data["time"].unique().tolist())
+        timeseries_end = np.max(timeseries_data["time"].dt.year.values)
+        _draw_trajectory_windows(
+            restoration_start,
+            disturbance_start,
+            timeseries_end,
+            reference_end,
+            axi,
+            palette,
+            plot_ref_window,
+        )
+        _set_axis_labels(axi, band, data["time"].unique().tolist())
     (
         labels,
         custom_handles,
-    ) = _custom_legend_labels_handles(ra, palette, plot_ref_window)
+    ) = _custom_legend_labels_handles(palette, plot_ref_window)
 
     if legend:
         plt.figlegend(
@@ -150,7 +169,7 @@ def plot_ra(
         plt.show()
 
 
-def _set_axis_labels(self, axi, title, xlabels):
+def _set_axis_labels(axi, title, xlabels):
     """Set the axis labels to desired values"""
     axi.set_xticks(
         axi.get_xticks(),
@@ -162,7 +181,16 @@ def _set_axis_labels(self, axi, title, xlabels):
     axi.set_ylabel(f"{title} Value")
 
 
-def _draw_trajectory_windows(ra, refs, refe, axi, palette, plot_ref_window):
+def _draw_trajectory_windows(
+    restoration_start,
+    disturbance_start,
+    timeseries_end,
+    refs,
+    refe,
+    axi,
+    palette,
+    plot_ref_window,
+):
     """Draw the trajectory windows onto subplots.
 
     Uses two verticle dashed lines to delimit the start and
@@ -176,19 +204,19 @@ def _draw_trajectory_windows(ra, refs, refe, axi, palette, plot_ref_window):
     """
     # Draw recovery window
     axi.axvline(
-        x=ra.restoration_start,
+        x=restoration_start,
         color=palette[2],
         linestyle="dashed",
         lw=1,
     )
     axi.axvspan(
-        ra.restoration_start,
-        ra.timeseries_end,
+        restoration_start,
+        timeseries_end,
         alpha=0.2,
         color=palette[2],
     )
     axi.axvline(
-        x=ra.timeseries_end,
+        x=timeseries_end,
         color=palette[2],
         linestyle="dashed",
         lw=1,
@@ -196,14 +224,14 @@ def _draw_trajectory_windows(ra, refs, refe, axi, palette, plot_ref_window):
 
     # Draw disturbance window
     axi.axvline(
-        x=ra.disturbance_start,
+        x=disturbance_start,
         color=palette[3],
         linestyle="dashed",
         lw=1,
     )
     axi.axvspan(
-        ra.disturbance_start,
-        ra.restoration_start,
+        disturbance_start,
+        restoration_start,
         alpha=0.2,
         color=palette[3],
     )
@@ -232,7 +260,7 @@ def _draw_trajectory_windows(ra, refs, refe, axi, palette, plot_ref_window):
             )
 
 
-def _custom_legend_labels_handles(ra, palette, plot_ref_window) -> Tuple[List, List]:
+def _custom_legend_labels_handles(palette, plot_ref_window) -> Tuple[List, List]:
     """Create a custom legend to match trajectory plots
 
     Returns

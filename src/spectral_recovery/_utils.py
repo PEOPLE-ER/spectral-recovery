@@ -55,7 +55,9 @@ def maintain_rio_attrs(func: callable) -> callable:
                     crs = kwarg_vals[i].rio.crs
                     epsgs.append(crs)
             if not epsgs.count(epsgs[0]) == len(epsgs):
-                raise ValueError(f"Ambiguous input for wrapper. CRS on xarray.DataArray inputs do not match.")
+                raise ValueError(
+                    f"Ambiguous input for wrapper. CRS on xarray.DataArray inputs do not match."
+                )
         for i, val in enumerate(arg_da):
             if val:
                 xarray_obj = args[i]
@@ -121,13 +123,15 @@ def bands_pretty_table():
     ]
     for st in list(spx.bands):
         platforms = _format_platforms(_platforms_from_band(spx.bands[st]), 3)
-        band_table.add_row([
-            st,
-            spx.bands[st].common_name,
-            spx.bands[st].long_name,
-            f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
-            platforms,
-        ])
+        band_table.add_row(
+            [
+                st,
+                spx.bands[st].common_name,
+                spx.bands[st].long_name,
+                f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
+                platforms,
+            ]
+        )
     return band_table
 
 

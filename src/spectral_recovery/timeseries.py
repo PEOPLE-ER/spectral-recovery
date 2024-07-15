@@ -57,7 +57,7 @@ class _SatelliteTimeSeries:
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-    
+
     @property
     def has_req_dims(self) -> bool:
         """Check if DataArray has the required dims.
@@ -73,7 +73,7 @@ class _SatelliteTimeSeries:
         if not set(self._obj.dims) == set(REQ_DIMS):
             return False
         return True
-    
+
     @property
     def has_no_year_breaks(self, start_year: int, end_year: int):
         """Check all years between start_year-end_year exist"""

@@ -14,7 +14,10 @@ from spectral_recovery.enums import Metric
 from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.indices import compute_indices
 from spectral_recovery.io.raster import read_timeseries, _metrics_to_tifs
-from spectral_recovery.io.polygon import read_reference_polygons, read_restoration_polygons
+from spectral_recovery.io.polygon import (
+    read_reference_polygons,
+    read_restoration_polygons,
+)
 
 METRIC_CHOICE = [str(m) for m in Metric]
 
@@ -36,7 +39,7 @@ METRIC_CHOICE = [str(m) for m in Metric]
     "--reference",
     required=False,
     type=click.Path(exists=True, path_type=Path),
-    help="Path to reference polygon(s) with dates."
+    help="Path to reference polygon(s) with dates.",
 )
 @click.option(
     "-i",

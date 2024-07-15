@@ -25,6 +25,7 @@ from spectral_recovery._config import (
 COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
 BANDS_TABLE = bands_pretty_table()
 
+
 def read_timeseries(
     path_to_tifs: str | Dict[str, str],
     band_names: Dict[int, str] = None,
@@ -67,16 +68,24 @@ def read_timeseries(
         for file in directory_of_tifs:
             filename_year = Path(file).stem
             if _valid_year_str(filename_year):
-                image_dict[pd.to_datetime(filename_year)] = _read_from_path(file=file, array_type=array_type)
+                image_dict[pd.to_datetime(filename_year)] = _read_from_path(
+                    file=file, array_type=array_type
+                )
     elif isinstance(path_to_tifs, dict):
         for key_year, file in path_to_tifs.items():
             if _valid_year_str(str(key_year)):
-                image_dict[pd.to_datetime(key_year)] = _read_from_path(file=file, array_type=array_type)
+                image_dict[pd.to_datetime(str(key_year))] = _read_from_path(
+                    file=file, array_type=array_type
+                )
     else:
-        raise TypeError(f"Invalid path input. path_to_tifs can be a str path to a directory of TIFs or a dictionary mapping str years to str paths of individual TIF files. Recieved {type(path_to_tifs)}")
-        
+        raise TypeError(
+            f"Invalid path input. path_to_tifs can be a str path to a directory of TIFs or a dictionary mapping str years to str paths of individual TIF files. Recieved {type(path_to_tifs)}"
+        )
+
     # Stack images along the time dimension
-    stacked_data = xr.concat(image_dict.values(), dim=pd.Index(image_dict.keys(), name="time"))
+    stacked_data = xr.concat(
+        image_dict.values(), dim=pd.Index(image_dict.keys(), name="time")
+    )
 
     band_nums = stacked_data.band.values
     if band_names is None:
@@ -97,11 +106,13 @@ def read_timeseries(
 
     return stacked_data
 
+
 def _valid_year_str(str_year):
     """Check if str is a valid year"""
     if VALID_YEAR.match(str_year) is None:
         raise ValueError(f"Cannot interpret {str_year} as year (YYYY).") from None
     return True
+
 
 def _read_from_path(file, array_type):
     """Read TIF file into Xarray DataArray"""
@@ -114,25 +125,27 @@ def _read_from_path(file, array_type):
             xarray_tif = _floating(data)
     return xarray_tif
 
-def _names_from_desc(raster_data: xr.DataArray, band_nums: List) -> Dict[int, str]:
-        """Get band names from the raster band descriptions
 
-        If band descriptions are present in the rasters,
-        then rioxarray sets those descriptions as 'long_name'
-        attributes on the DataArray object. T/f check if the
-        "long_name" attribue exists, if it doesn't then there
-        are no band descriptions on the raster.
-        
-        """
-        try:
-            long_names = raster_data.attrs["long_name"]
-            band_names = dict(zip(band_nums, long_names))
-        except KeyError:
-            raise ValueError(
-                "Band descriptions not found in TIFs. Please provide band "
-                " names using the band_names argument."
-            ) from None
-        return band_names
+def _names_from_desc(raster_data: xr.DataArray, band_nums: List) -> Dict[int, str]:
+    """Get band names from the raster band descriptions
+
+    If band descriptions are present in the rasters,
+    then rioxarray sets those descriptions as 'long_name'
+    attributes on the DataArray object. T/f check if the
+    "long_name" attribue exists, if it doesn't then there
+    are no band descriptions on the raster.
+
+    """
+    try:
+        long_names = raster_data.attrs["long_name"]
+        band_names = dict(zip(band_nums, long_names))
+    except KeyError:
+        raise ValueError(
+            "Band descriptions not found in TIFs. Please provide band "
+            " names using the band_names argument."
+        ) from None
+    return band_names
+
 
 def _get_tifs_from_dir(path: str) -> List[str]:
     """Return all tif files inside directory as list"""
@@ -145,11 +158,13 @@ def _get_tifs_from_dir(path: str) -> List[str]:
         raise ValueError("path_to_tifs is not a directory.")
     return directory_of_tifs
 
+
 def _floating(data: xr.DataArray) -> np.float64:
     """Convert int to float64 dtype"""
     if not np.issubdtype(data.dtype, np.floating):
         data = data.astype(np.float64)
     return data
+
 
 def _valid_band_name_mapping(band_names: Dict[int, str], band_nums: List[int]) -> bool:
     """Check if band_names dict maps each band to a name and vice versa.
@@ -165,7 +180,7 @@ def _valid_band_name_mapping(band_names: Dict[int, str], band_nums: List[int]) -
     ------
     bool
         - True if all bands numbers in band_nums have a band_name mapping.
-    
+
     Raises
     ------
     ValueError
@@ -176,7 +191,7 @@ def _valid_band_name_mapping(band_names: Dict[int, str], band_nums: List[int]) -
     for b in band_names.keys():
         if b not in band_nums:
             raise ValueError(
-               f"Invalid band to name mapping. {b} is not in raster bands of {band_nums} "
+                f"Invalid band to name mapping. {b} is not in raster bands of {band_nums} "
             )
 
     for num in band_nums:
