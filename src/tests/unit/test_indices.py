@@ -1,5 +1,3 @@
-import random
-import re
 import pytest
 
 import xarray as xr
@@ -8,8 +6,7 @@ import spyndex as spx
 
 from typing import List
 
-from unittest.mock import Mock, patch, ANY
-from tests.utils import SAME_XR
+from unittest.mock import patch
 
 from spectral_recovery._config import REQ_DIMS
 from spectral_recovery.indices import (
