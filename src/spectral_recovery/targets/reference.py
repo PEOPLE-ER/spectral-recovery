@@ -16,13 +16,13 @@ def _window_time_clip(timeseries_data, site, reference_start, reference_end):
         clipped_stacks.values(),
         dim=pdIndex(clipped_stacks.keys(), name="poly_id"),
     )
-    return reference_image_stack.sel(time=slice(reference_start, reference_end))
+    return reference_image_stack.sel(time=slice(str(reference_start), str(reference_end)))
 
 def median(
     reference_sites: gpd.GeoDataFrame | str,
     timeseries_data: xr.DataArray,
-    reference_start: str,
-    reference_end: str,
+    reference_start: int,
+    reference_end: int,
 ):
     """Median target method for reference sites.
 
@@ -68,12 +68,13 @@ def median(
         reference_end=reference_end,
     )
     # Compute median sequentially
-    target_data = clipped_data.sel(time=slice(reference_start, reference_end))
-    median_time = target_data.median(dim="time", skipna=True)
-
+    # First compute median over time
+    median_time = clipped_data.median(dim="time", skipna=True)
+    # then compute over flattened y/x cells
     median_time = median_time.median(dim=["y", "x"], skipna=True)
+    # finally, get the median value across all polygons
     median_time = median_time.median(dim="poly_id", skipna=True)
 
     # Re-assign lost band coords.
-    median_target = median_time.assign_coords(band=target_data.coords["band"])
+    median_target = median_time.assign_coords(band=timeseries_data.coords["band"])
     return median_target

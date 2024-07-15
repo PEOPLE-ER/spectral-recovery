@@ -36,7 +36,7 @@ def test_invalid_scale_throws_value_error():
                 "x": [0, 1]
             },
         )
-        median(polygon=valid_poly, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="not_a_scale")
+        median(polygon=valid_poly, timeseries_data=test_stack, reference_years={0: [2010, 2011]}, scale="not_a_scale")
     
 class TestMedianPolygonScale:
 
@@ -68,7 +68,7 @@ class TestMedianPolygonScale:
                 "x": [1]
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        _ = median(restoration_sites="pathy", timeseries_data=valid_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
+        _ = median(restoration_sites="pathy", timeseries_data=valid_stack, reference_years={0: [2010, 2011]}, scale="polygon")
 
         read_mock.assert_called_once()
         assert read_mock.call_args.args[0] == "pathy"
@@ -104,7 +104,7 @@ class TestMedianPolygonScale:
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
 
-        out_targets = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
+        out_targets = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: [2010, 2011]}, scale="polygon")
 
         assert len(out_targets.keys()) == 1
         assert list(out_targets.keys())[0] == 0
@@ -144,7 +144,7 @@ class TestMedianPolygonScale:
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
 
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2012}}, scale="polygon")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: [2010,2012]}, scale="polygon")
 
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
@@ -179,7 +179,7 @@ class TestMedianPolygonScale:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: [2010, 2011]}, scale="polygon")
 
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
@@ -214,7 +214,7 @@ class TestMedianPolygonScale:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="polygon")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: [2010, 2011]}, scale="polygon")
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
         assert_equal(expected_dict[0], out_dict[0])
@@ -238,7 +238,7 @@ class TestMedianPixelScale:
                 "x": [0, 1],
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="pixel")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: [2010, 2011]}, scale="pixel")
 
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
@@ -273,7 +273,7 @@ class TestMedianPixelScale:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
         }
-        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, scale="pixel")
+        out_dict = median(restoration_sites=valid_gpd, timeseries_data=test_stack, reference_years={0: [2010, 2011]}, scale="pixel")
         assert len(out_dict.keys()) == 1
         assert list(out_dict.keys())[0] == 0
         assert_equal(expected_dict[0], out_dict[0])
@@ -347,9 +347,9 @@ class TestMedianMultipleSites:
             restoration_sites=valid_gpd,
             timeseries_data=test_stack,
             reference_years={
-                    0: {"reference_start": 2010, "reference_end": 2011},
-                    1: {"reference_start": 2010, "reference_end": 2011},
-                    2: {"reference_start": 2010, "reference_end": 2011}
+                    0: [2010, 2011],
+                    1: [2010, 2011],
+                    2: [2010, 2011]
                 },
             scale="pixel"
         )
@@ -419,9 +419,9 @@ class TestMedianMultipleSites:
             restoration_sites=valid_gpd,
             timeseries_data=test_stack,
             reference_years={
-                    0: {"reference_start": 2010, "reference_end": 2011},
-                    1: {"reference_start": 2010, "reference_end": 2011},
-                    2: {"reference_start": 2010, "reference_end": 2011}
+                    0: [2010, 2011],
+                    1: [2010, 2011],
+                    2: [2010, 2011]
                 },
             scale="polygon"
         )
@@ -500,9 +500,9 @@ class TestMedianMultipleSites:
             restoration_sites=valid_gpd,
             timeseries_data=test_stack,
             reference_years={
-                    0: {"reference_start": 2010, "reference_end": 2011},
-                    1: {"reference_start": 2011, "reference_end": 2012},
-                    2: {"reference_start": 2010, "reference_end": 2012}
+                    0: [2010, 2011],
+                    1: [2011, 2012],
+                    2: [2010, 2012]
                 },
             scale="polygon"
         )
@@ -567,9 +567,9 @@ class TestMedianMultipleSites:
             restoration_sites=valid_gpd,
             timeseries_data=test_stack,
             reference_years={
-                    12: {"reference_start": 2010, "reference_end": 2010},
-                    8: {"reference_start": 2010, "reference_end": 2010},
-                    33: {"reference_start": 2010, "reference_end": 2010}
+                    12: [2010, 2010],
+                    8: [2010, 2010],
+                    33: [2010, 2010]
                 },
             scale="polygon"
         )
@@ -598,8 +598,8 @@ class TestCheckReferenceYears:
             restoration_sites=self.valid_gpd,
             timeseries_data=self.test_stack,
             reference_years={
-                0: {"reference_start": 2010, "reference_end": 2010},
-                1: {"reference_start": 2010, "reference_end": 2010}
+                0: [2010, 2010],
+                1: [2010, 2010]
             },
         )
 
@@ -609,8 +609,8 @@ class TestCheckReferenceYears:
                 restoration_sites=self.valid_gpd,
                 timeseries_data=self.test_stack,
                 reference_years={
-                    0: {"reference_start": 0, "reference_end": 2010},
-                    1: {"reference_start": 2010, "reference_end": 0}
+                    0: [0, 2010],
+                    1: [2010, 0]
                 },
             )
     
@@ -620,8 +620,8 @@ class TestCheckReferenceYears:
                 restoration_sites=self.valid_gpd,
                 timeseries_data=self.test_stack,
                 reference_years={
-                    0: {"reference_start": 2009, "reference_end": 2010},
-                    1: {"reference_start": 2010, "reference_end": 2011}
+                    0: [2009, 2010],
+                    1: [2010, 2011]
                 },
             )
 
@@ -631,7 +631,7 @@ class TestCheckReferenceYears:
                 restoration_sites=self.valid_gpd,
                 timeseries_data=self.test_stack,
                 reference_years={
-                    0: {"reference_start": 2010, "reference_end": 2010},
+                    0: [2010, 2010],
                 },
             )
 
@@ -662,7 +662,7 @@ class TestWindow:
     @patch("geopandas.read_file")
     def test_str_polygon_reads_polygon(self, read_mock, valid_array, valid_gpd):
         read_mock.return_value = valid_gpd
-        _ = window(restoration_sites="pathy", timeseries_data=valid_array, reference_years={0: {"reference_start": 2010, "reference_end": 2011}})
+        _ = window(restoration_sites="pathy", timeseries_data=valid_array, reference_years={0: [2010, 2011]})
 
         read_mock.assert_called_once()
         assert read_mock.call_args.args[0] == "pathy"
@@ -672,18 +672,18 @@ class TestWindow:
         with pytest.raises(
             ValueError, 
         ):
-            window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, N=-1)
+            window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: [2010, 2011]}, N=-1)
 
     def test_even_N_throws_value_err(self, valid_array, valid_gpd):
         with pytest.raises(
             ValueError, 
         ):
-            window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: {"reference_start": 2010, "reference_end": 2011}}, N=2)
+            window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: [2010, 2011]}, N=2)
 
     @patch("xarray.DataArray.rolling")
     def test_rolling_called_with_N_center_True_and_minp_None(self, roll_mock, valid_array, valid_gpd):
 
-        window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: {"reference_start": 2010, "reference_end": 2011}})
+        window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: [2010, 2011]})
         assert roll_mock.called_once
         roll_mock.call_args.kwargs["dim"] == {"x": 3, "y": 3}
         roll_mock.call_args.kwargs["center"] == True
@@ -692,7 +692,7 @@ class TestWindow:
     def test_window_returns_correct_dict(self, valid_array, valid_gpd):
         expected_dims_and_sizes = {"band": 2, "y": 4, "x": 4}
 
-        result = window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: {"reference_start": 2010, "reference_end": 2012}})
+        result = window(restoration_sites=valid_gpd, timeseries_data=valid_array, reference_years={0: [2010, 2012]})
         print(result[0].sizes)
         assert len(result.keys()) == 1
         assert list(result.keys())[0] == 0
@@ -716,7 +716,7 @@ class TestWindow:
         # Since only the centre pixel can have a full 3x3 window, centre should be set 
         # to 5 and all others should be NaN.
         expected_data = np.array([[[np.nan, np.nan, np.nan],[np.nan, 5.0, np.nan], [np.nan, np.nan, np.nan]]])
-        result = window(restoration_sites=valid_gpd, timeseries_data=input_data, reference_years={0: {"reference_start": 2010, "reference_end": 2012}})
+        result = window(restoration_sites=valid_gpd, timeseries_data=input_data, reference_years={0: [2010, 2012]})
 
         assert_array_equal(expected_data, result[0])
     
@@ -749,7 +749,7 @@ class TestWindow:
         test_poly = Polygon([(-2.5, -2.5), (-2.5, 2.5), (2.5, 2.5), (2.5, -2.5)])
         test_gpd = gpd.GeoDataFrame(geometry=[test_poly]).set_crs("EPSG:4326")
 
-        valid_build = {"restoration_sites": test_gpd, "timeseries_data": test_data, "reference_years": {0: {"reference_start": 2010, "reference_end": 2010}}}
+        valid_build = {"restoration_sites": test_gpd, "timeseries_data": test_data, "reference_years": {0: [2010, 2010]}}
 
         
         expected_data = xr.DataArray([[
@@ -781,7 +781,7 @@ class TestWindow:
         ).rio.write_crs("EPSG:3348", inplace=True)
         test_poly = Polygon([(-3.5, -3.5), (-3.5, 3.5), (3.5, 3.5), (3.5, -3.5)])
         test_gpd = gpd.GeoDataFrame(geometry=[test_poly]).set_crs("EPSG:4326")
-        valid_build = {"restoration_sites": test_gpd, "timeseries_data": test_array, "reference_years": {0: {"reference_start": 2010, "reference_end": 2010}}}
+        valid_build = {"restoration_sites": test_gpd, "timeseries_data": test_array, "reference_years": {0: [2010, 2010]}}
         
         expected_stack = xr.DataArray([[
                 [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
@@ -829,7 +829,7 @@ class TestWindow:
         ).rio.write_crs("EPSG:3348", inplace=True)
         test_poly = Polygon([(-2.5, -2.5), (-2.5, 2.5), (2.5, 2.5), (2.5, -2.5)])
         test_gpd = gpd.GeoDataFrame(geometry=[test_poly]).set_crs("EPSG:4326")
-        valid_build = {"restoration_sites": test_gpd, "timeseries_data": test_array, "reference_years": {0: {"reference_start": 2010, "reference_end": 2010}}}
+        valid_build = {"restoration_sites": test_gpd, "timeseries_data": test_array, "reference_years": {0: [2010, 2010]}}
 
         expected_data = xr.DataArray([[
                 [np.nan, np.nan, np.nan, np.nan],

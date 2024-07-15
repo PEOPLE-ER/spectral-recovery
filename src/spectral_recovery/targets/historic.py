@@ -8,8 +8,8 @@ def _clip_to_dict(timeseries_data, sites, reference_years) -> dict:
     """Get spatial and temporal clip for all restoration sites"""
     clipped_sites = {}
     for index, site in sites.iterrows():
-            ref_s = str(reference_years[index]["reference_start"])
-            ref_e = str(reference_years[index]["reference_end"])
+            ref_s = str(reference_years[index][0])
+            ref_e = str(reference_years[index][1])
             clipped_data = timeseries_data.rio.clip(gpd.GeoSeries(site.geometry).values)
             clipped_sites[index] = clipped_data.sel(time=slice(ref_s, ref_e))
     return clipped_sites
@@ -18,10 +18,10 @@ def _check_reference_years(reference_years, restoration_sites, timeseries_data):
      """Check that reference years are in timeseries coordinates and map to a polygon"""
      for polyid, years in reference_years.items():
         try:
-            if years["reference_start"] not in timeseries_data.time.dt.year:
-                raise ValueError(f"Invalid reference years for polygon {polyid}. {years['reference_start']} not in timeseries_data time coordinates.")
-            if years["reference_end"] not in timeseries_data.time.dt.year:
-                raise ValueError(f"Invalid reference years for polygon {polyid}. {years['reference_end']} not in timeseries_data time coordinates.")
+            if years[0] not in timeseries_data.time.dt.year:
+                raise ValueError(f"Invalid reference years for polygon {polyid}. {years[0]} not in timeseries_data time coordinates.")
+            if years[1] not in timeseries_data.time.dt.year:
+                raise ValueError(f"Invalid reference years for polygon {polyid}. {years[1]} not in timeseries_data time coordinates.")
         except KeyError:
             raise TypeError("Invalid reference_years format. Must be dict mapping polygon id's to nested dict of reference start and end years, e.g {0: {'reference_start': 2010, 'reference_end': 2011}, 1: {...}, ...}")
         for polyid in restoration_sites.index.tolist():
@@ -149,8 +149,8 @@ def window(
 
     window_targets = {}
     for poly_id, site_data in restoration_sites.iterrows():
-        ref_s = str(reference_years[poly_id]["reference_start"])
-        ref_e = str(reference_years[poly_id]["reference_end"])
+        ref_s = str(reference_years[poly_id][0])
+        ref_e = str(reference_years[poly_id][1])
         sliced_data = timeseries_data.sel(time=slice(ref_s, ref_e))
         median_time = sliced_data.median(dim="time", skipna=True)
         if na_rm:
