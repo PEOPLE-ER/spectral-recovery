@@ -67,7 +67,7 @@ def read_restoration_polygons(
     # Check that years are either str or int types
     types = dates_frame.dtypes
     for column_name, data_type in types.items():
-        if data_type != "int64":
+        if data_type != "int64" or data_type != "int32":
             raise ValueError(
                 f"Date fields must be type int in"
                 f" {column_name} field. Given {data_type}."
