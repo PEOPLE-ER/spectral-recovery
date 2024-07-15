@@ -50,8 +50,6 @@ class TestComputeMetrics:
             {
                 "dist_start": [2012],
                 "rest_start": [2013],
-                "reference_start": [2010],
-                "reference_end": [2010],
                 "geometry": [self.valid_poly],
             },
             crs="EPSG:4326",
@@ -220,7 +218,101 @@ class TestComputeMetrics:
 
             metric_mock.call_args.kwargs["params"]["timestep"] == 2
             metric_mock.call_args.kwargs["params"]["percent_of_target"] == 60
-        
+    
+    def test_correct_params_passed_to_metric_func_if_rt_dict(self, valid_array):
+        multi_frame = gpd.GeoDataFrame(
+            {
+                "dist_start": [2012, 2011, 2012],
+                "rest_start": [2013, 2012, 2013],
+                "geometry": [self.valid_poly, self.valid_poly, self.valid_poly],
+            },
+            crs="EPSG:4326",
+        )
+        patched_dict = {}
+        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
+        for i, metric in enumerate(multi_metrics):
+            metric_mock = Mock()
+            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
+            patched_dict[metric.lower()] = metric_mock
+        clipped_array = valid_array.rio.clip(multi_frame["geometry"].values)
+
+        rt_dict = {0: xr.DataArray([0]), 1: xr.DataArray([1]), 2: xr.DataArray([2])}
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
+
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=multi_frame,
+                recovery_target=rt_dict,
+                metrics=multi_metrics,
+            )
+
+        for m in multi_metrics:
+            call0 = patched_dict[m.lower()].call_args_list[0].kwargs
+            call1 = patched_dict[m.lower()].call_args_list[1].kwargs
+            call2 = patched_dict[m.lower()].call_args_list[2].kwargs
+
+            assert call0["restoration_start"] == 2013
+            assert call1["restoration_start"] == 2012
+            assert call2["restoration_start"] == 2013
+            
+            assert call0["disturbance_start"] == 2012
+            assert call1["disturbance_start"] == 2011
+            assert call2["disturbance_start"] == 2012
+
+            xr.testing.assert_equal(call0["timeseries_data"], clipped_array)
+            xr.testing.assert_equal(call1["timeseries_data"], clipped_array)
+            xr.testing.assert_equal(call2["timeseries_data"], clipped_array)
+
+            xr.testing.assert_equal(call0["recovery_target"], rt_dict[0])
+            xr.testing.assert_equal(call1["recovery_target"], rt_dict[1])
+            xr.testing.assert_equal(call2["recovery_target"], rt_dict[2])
+    
+    def test_correct_params_passed_to_metric_func_if_rt_not_dict(self, valid_array, valid_rt):
+        multi_frame = gpd.GeoDataFrame(
+            {
+                "dist_start": [2012, 2011, 2012],
+                "rest_start": [2013, 2012, 2013],
+                "geometry": [self.valid_poly, self.valid_poly, self.valid_poly],
+            },
+            crs="EPSG:4326",
+        )
+        patched_dict = {}
+        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
+        for i, metric in enumerate(multi_metrics):
+            metric_mock = Mock()
+            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
+            patched_dict[metric.lower()] = metric_mock
+        clipped_array = valid_array.rio.clip(multi_frame["geometry"].values)
+
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
+            compute_metrics(
+                timeseries_data=valid_array,
+                restoration_polygons=multi_frame,
+                recovery_target=valid_rt,
+                metrics=multi_metrics,
+            )
+
+        for m in multi_metrics:
+            call0 = patched_dict[m.lower()].call_args_list[0].kwargs
+            call1 = patched_dict[m.lower()].call_args_list[1].kwargs
+            call2 = patched_dict[m.lower()].call_args_list[2].kwargs
+
+            assert call0["disturbance_start"] == 2012
+            assert call1["disturbance_start"] == 2011
+            assert call2["disturbance_start"] == 2012
+
+            assert call0["restoration_start"] == 2013
+            assert call1["restoration_start"] == 2012
+            assert call2["restoration_start"] == 2013
+            
+            xr.testing.assert_equal(call0["timeseries_data"], clipped_array)
+            xr.testing.assert_equal(call1["timeseries_data"], clipped_array)
+            xr.testing.assert_equal(call2["timeseries_data"], clipped_array)
+
+            xr.testing.assert_equal(call0["recovery_target"], valid_rt)
+            xr.testing.assert_equal(call1["recovery_target"], valid_rt)
+            xr.testing.assert_equal(call2["recovery_target"], valid_rt)
+
 
 
 class TestY2R:
@@ -838,8 +930,7 @@ class TestRRI:
                 params={"timestep": timestep, "use_dist_avg": False},
             )
 
-    @patch("spectral_recovery.restoration.RestorationArea")
-    def test_0_denom_sets_inf(self, ra_mock):
+    def test_0_denom_sets_inf(self):
         obs = xr.DataArray(
             [[[[10]], [[10]], [[70]], [[80]], [[90]], [[100]], [[110]]]],
             coords={"time": self.year_period_RI},

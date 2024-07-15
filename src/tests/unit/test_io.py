@@ -526,18 +526,3 @@ class TestValidYearStr:
         with pytest.raises(ValueError):
             _valid_year_str("not_year")
             _valid_year_str("Y2018")
-
-
-class TestReadPolygon:
-
-    def test_polygon_read_into_gpd(self):
-    
-    def test_polygon_with_date_attrs_read_into_gpd_with_dates(self):
-    
-    def test_polygon_no_dates_no_years_fails():
-
-    def test_polygon_fid_retained_in_gpd(self):
-        pass
-
-    def test_years_mapped_to_correct_polygon(self):
-        pass
