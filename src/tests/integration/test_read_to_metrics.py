@@ -6,7 +6,7 @@ class TestReadingCanPassToIndices:
     def test_indices_and_single_p_to_metrics_completes(self):
         rest_site = sr.read_restoration_polygons(
             path="src/tests/test_data/composites/test_single_polygon.gpkg",
-            dist_rest_years={8: [2002, 2003]}
+            dist_rest_years={0: [2002, 2003]}
         )
         timeseries = sr.read_timeseries(
             path_to_tifs={
@@ -35,7 +35,7 @@ class TestReadingCanPassToIndices:
     def test_indices_and_multi_polys_to_metrics_completes(self):
         rest_site = sr.read_restoration_polygons(
             path="src/tests/test_data/composites/test_multiple_polygons.gpkg",
-            dist_rest_years={1: [2002, 2003], 5: [2002, 2003], 6: [2004, 2006], 7: [2002, 2004], 8: [2005, 2006]}
+            dist_rest_years={0: [2002, 2003], 1: [2002, 2003], 2: [2004, 2006], 3: [2002, 2004], 4: [2005, 2006]}
         )
         timeseries = sr.read_timeseries(
             path_to_tifs={
