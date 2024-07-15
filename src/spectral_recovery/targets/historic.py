@@ -8,25 +8,33 @@ def _clip_to_dict(timeseries_data, sites, reference_years) -> dict:
     """Get spatial and temporal clip for all restoration sites"""
     clipped_sites = {}
     for index, site in sites.iterrows():
-            ref_s = str(reference_years[index][0])
-            ref_e = str(reference_years[index][1])
-            clipped_data = timeseries_data.rio.clip(gpd.GeoSeries(site.geometry).values)
-            clipped_sites[index] = clipped_data.sel(time=slice(ref_s, ref_e))
+        ref_s = str(reference_years[index][0])
+        ref_e = str(reference_years[index][1])
+        clipped_data = timeseries_data.rio.clip(gpd.GeoSeries(site.geometry).values)
+        clipped_sites[index] = clipped_data.sel(time=slice(ref_s, ref_e))
     return clipped_sites
 
+
 def _check_reference_years(reference_years, restoration_sites, timeseries_data):
-     """Check that reference years are in timeseries coordinates and map to a polygon"""
-     for polyid, years in reference_years.items():
+    """Check that reference years are in timeseries coordinates and map to a polygon"""
+    for polyid, years in reference_years.items():
         try:
             if years[0] not in timeseries_data.time.dt.year:
-                raise ValueError(f"Invalid reference years for polygon {polyid}. {years[0]} not in timeseries_data time coordinates.")
+                raise ValueError(
+                    f"Invalid reference years for polygon {polyid}. {years[0]} not in timeseries_data time coordinates."
+                )
             if years[1] not in timeseries_data.time.dt.year:
-                raise ValueError(f"Invalid reference years for polygon {polyid}. {years[1]} not in timeseries_data time coordinates.")
+                raise ValueError(
+                    f"Invalid reference years for polygon {polyid}. {years[1]} not in timeseries_data time coordinates."
+                )
         except KeyError:
-            raise TypeError("Invalid reference_years format. Must be dict mapping polygon id's to nested dict of reference start and end years, e.g {0: {'reference_start': 2010, 'reference_end': 2011}, 1: {...}, ...}")
+            raise TypeError(
+                "Invalid reference_years format. Must be dict mapping polygon id's to nested dict of reference start and end years, e.g {0: {'reference_start': 2010, 'reference_end': 2011}, 1: {...}, ...}"
+            )
         for polyid in restoration_sites.index.tolist():
             if polyid not in list(reference_years.keys()):
                 raise ValueError(f"Missing reference_years for polygon {polyid}")
+
 
 def median(
     restoration_sites: gpd.GeoDataFrame | str,
@@ -38,8 +46,8 @@ def median(
 
     Sequentially computes the median over time and, optionally, the
     spatial dimensions (x and y) for each restoration site in the
-    GeoDataFrame. Scale parameter used to determine the scale of 
-    the target for each polygon. 
+    GeoDataFrame. Scale parameter used to determine the scale of
+    the target for each polygon.
 
     Parameters
     ----------
@@ -65,25 +73,25 @@ def median(
         from restoration_sites. If scale="polygon", then DataArrays
         have coordinate dimensions "band". If scale="pixel", has
         coordinate dimensions "band", "y" and "x".
-    
+
     Notes
     ------
     Differs from spectral_recovery.targets.reference.median because 1)
     can be parameterized on scale, and 2) because multiple polygons not
-    reduced into a single value, i.e if 3 sites are given then recovery 
+    reduced into a single value, i.e if 3 sites are given then recovery
     targets are given for each of those 3 sites.
 
     """
     if not ((scale == "polygon") or (scale == "pixel")):
-            raise ValueError(f"scale must be 'polygon' or 'pixel' ('{scale}' provided)")
+        raise ValueError(f"scale must be 'polygon' or 'pixel' ('{scale}' provided)")
     if isinstance(restoration_sites, str):
         restoration_sites = gpd.read_file(restoration_sites)
     _check_reference_years(reference_years, restoration_sites, timeseries_data)
-    # Get dictionary of a time/space data clip for each polygon 
+    # Get dictionary of a time/space data clip for each polygon
     clipped_site_data = _clip_to_dict(
         timeseries_data=timeseries_data,
         sites=restoration_sites,
-        reference_years=reference_years
+        reference_years=reference_years,
     )
     median_targets = {}
     for poly_id, clipped_data in clipped_site_data.items():
@@ -93,7 +101,9 @@ def median(
         if scale == "polygon":
             median_time_data = median_time_data.median(dim=["y", "x"], skipna=True)
         # Re-assign lost band coords.
-        median_time_data = median_time_data.assign_coords(band=clipped_data.coords["band"])
+        median_time_data = median_time_data.assign_coords(
+            band=clipped_data.coords["band"]
+        )
         # Store in the output dictionary
         median_targets[poly_id] = median_time_data
 
@@ -105,7 +115,7 @@ def window(
     timeseries_data: xr.DataArray,
     reference_years: dict,
     N: int = 3,
-    na_rm: bool = False
+    na_rm: bool = False,
 ):
     """Windowed recovery target method, parameterized on window size.
 
@@ -131,7 +141,7 @@ def window(
         Size of the window (NxN). Must be odd. Default is 3.
     na_rm : bool
         If True, NaN will be removed from focal computations. The result will
-        only be NA if all focal cells are NA., using na.rm=TRUE may not be a good idea in this function because it can unbalance the effect of the weights 
+        only be NA if all focal cells are NA., using na.rm=TRUE may not be a good idea in this function because it can unbalance the effect of the weights
 
     """
     if not isinstance(N, int):
@@ -162,6 +172,8 @@ def window(
         median_window = median_time.rolling(
             dim={"y": N, "x": N}, center=True, min_periods=min_periods
         ).mean()
-        window_targets[poly_id] = median_window.rio.clip(gpd.GeoSeries(site_data.geometry).values)
-    
+        window_targets[poly_id] = median_window.rio.clip(
+            gpd.GeoSeries(site_data.geometry).values
+        )
+
     return window_targets

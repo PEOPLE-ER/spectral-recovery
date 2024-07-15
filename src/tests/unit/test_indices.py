@@ -11,7 +11,7 @@ from unittest.mock import patch
 from spectral_recovery._config import REQ_DIMS
 from spectral_recovery.indices import (
     compute_indices,
-    INDEX_CONSTANT_DEFAULTS,   
+    INDEX_CONSTANT_DEFAULTS,
 )
 
 INDICES = list(spx.indices)
@@ -90,9 +90,7 @@ class TestComputeIndices:
         assert input_kwargs == {"index": [index], "params": expected_params}
 
     @patch("spyndex.computeIndex")
-    def test_no_constants_passed_uses_defaults(
-        self, mock_spyndex
-    ):
+    def test_no_constants_passed_uses_defaults(self, mock_spyndex):
         index = "SAVI"
         bands = bands_from_index([index])
 
@@ -103,7 +101,7 @@ class TestComputeIndices:
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
         )
-        
+
         bands_dict = {b: data.sel(band=b) for b in bands}
         expected_params = bands_dict | defaults_dict
 
@@ -111,9 +109,9 @@ class TestComputeIndices:
 
         input_kwargs = mock_spyndex.call_args.kwargs
         assert input_kwargs == {"index": [index], "params": expected_params}
-    
+
     def test_default_constants_w_shared_constants_throws_value_err(self):
-        index = ["SAVI", "EVI"] # both use L with diff defaults
+        index = ["SAVI", "EVI"]  # both use L with diff defaults
         bands = bands_from_index(index)
 
         data = xr.DataArray(
@@ -121,36 +119,36 @@ class TestComputeIndices:
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
         )
-        
+
         with pytest.raises(ValueError):
             compute_indices(data, index)
 
     @patch("spyndex.computeIndex")
-    def test_given_constants_merged_with_defaults(
-        self, mock_spyndex
-    ):
+    def test_given_constants_merged_with_defaults(self, mock_spyndex):
         index = "EVI2"
         bands = bands_from_index([index])
 
-        given_constants = {"L": 0.7} # missing g
+        given_constants = {"L": 0.7}  # missing g
 
         data = xr.DataArray(
             np.ones((len(bands), 1, 1, 1)),
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
         )
-        
+
         bands_dict = {b: data.sel(band=b) for b in bands}
-        expected_params = bands_dict | given_constants | {"g": INDEX_CONSTANT_DEFAULTS[index]["defaults"]["g"]}
+        expected_params = (
+            bands_dict
+            | given_constants
+            | {"g": INDEX_CONSTANT_DEFAULTS[index]["defaults"]["g"]}
+        )
         compute_indices(data, [index], constants=given_constants)
 
         input_kwargs = mock_spyndex.call_args.kwargs
         assert input_kwargs == {"index": [index], "params": expected_params}
-    
+
     @patch("spyndex.computeIndex")
-    def test_missing_constants_and_null_default_throws_value_err(
-        self, mock_spyndex
-    ):
+    def test_missing_constants_and_null_default_throws_value_err(self, mock_spyndex):
         index = "NIRvP"
         bands = bands_from_index([index])
 
@@ -159,7 +157,7 @@ class TestComputeIndices:
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
         )
-        
+
         with pytest.raises(ValueError):
             compute_indices(data, [index])
 

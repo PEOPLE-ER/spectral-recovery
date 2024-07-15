@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from spectral_recovery.targets.reference import median
 
+
 class TestMedian:
 
     @pytest.fixture()
@@ -34,17 +35,18 @@ class TestMedian:
         valid_stack = xr.DataArray(
             test_data,
             dims=["time", "band", "y", "x"],
-            coords={
-                "time": [0, 1],
-                "y": [1],
-                "x": [1]
-            },
+            coords={"time": [0, 1], "y": [1], "x": [1]},
         ).rio.write_crs("EPSG:4326", inplace=True)
-        _ = median(reference_sites="pathy", timeseries_data=valid_stack, reference_start=0, reference_end=1)
+        _ = median(
+            reference_sites="pathy",
+            timeseries_data=valid_stack,
+            reference_start=0,
+            reference_end=1,
+        )
 
         read_mock.assert_called_once()
         assert read_mock.call_args.args[0] == "pathy"
-    
+
     def test_no_nan_returns_avg_over_time(self, valid_gpd):
         test_data = [
             [
@@ -59,22 +61,21 @@ class TestMedian:
         test_stack = xr.DataArray(
             test_data,
             dims=["time", "band", "y", "x"],
-            coords={
-                "time": [0, 1],
-                "y": [1],
-                "x": [1]
-            },
+            coords={"time": [0, 1], "y": [1], "x": [1]},
         ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [2.0, 3.0]
         expected_stack = xr.DataArray(
             expected_data,
             dims=["band"],
-            coords={
-                "band": [0, 1]
-            },
+            coords={"band": [0, 1]},
         ).rio.write_crs("EPSG:4326", inplace=True)
 
-        out_targets = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
+        out_targets = median(
+            reference_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_start=0,
+            reference_end=1,
+        )
 
         assert_equal(expected_stack, out_targets)
 
@@ -96,11 +97,7 @@ class TestMedian:
         test_stack = xr.DataArray(
             test_data,
             dims=["time", "band", "y", "x"],
-            coords={
-                "time": [0, 1, 2],
-                "y": [1],
-                "x": [1]
-            },
+            coords={"time": [0, 1, 2], "y": [1], "x": [1]},
         ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [3.0, 5.0]
         expected_stack = xr.DataArray(
@@ -111,9 +108,13 @@ class TestMedian:
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
 
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=2)
+        out_stack = median(
+            reference_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_start=0,
+            reference_end=2,
+        )
         assert_equal(expected_stack, out_stack)
-
 
     def test_nan_timeseries_is_nan(self, valid_gpd):
         test_data = [
@@ -129,21 +130,20 @@ class TestMedian:
         test_stack = xr.DataArray(
             test_data,
             dims=["time", "band", "y", "x"],
-            coords={
-                "time": [0, 1],
-                "y": [1],
-                "x": [1]
-            },
+            coords={"time": [0, 1], "y": [1], "x": [1]},
         ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [np.nan, 4.0]
         expected_stack = xr.DataArray(
             expected_data,
             dims=["band"],
-            coords={
-                "band": [0, 1]
-            },
+            coords={"band": [0, 1]},
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
+        out_stack = median(
+            reference_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_start=0,
+            reference_end=1,
+        )
 
         assert_equal(expected_stack, out_stack)
 
@@ -161,11 +161,7 @@ class TestMedian:
         test_stack = xr.DataArray(
             test_data,
             dims=["time", "band", "y", "x"],
-            coords={
-                "time": [0, 1],
-                "y": [1],
-                "x": [1]
-            },
+            coords={"time": [0, 1], "y": [1], "x": [1]},
         ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [9.0, 4.0]
         expected_stack = xr.DataArray(
@@ -175,9 +171,14 @@ class TestMedian:
                 "band": [0, 1],
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
+        out_stack = median(
+            reference_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_start=0,
+            reference_end=1,
+        )
         assert_equal(expected_stack, out_stack)
-    
+
     def test_one_value_per_band_returned(self):
         polygon = Polygon([(-1, 5), (-1, 5), (5, 5), (5, -1)])
         valid_gpd = gpd.GeoDataFrame(geometry=[polygon]).set_crs("EPSG:4326")
@@ -185,11 +186,7 @@ class TestMedian:
         test_stack = xr.DataArray(
             test_data,
             dims=["band", "time", "y", "x"],
-            coords={
-                "time": [0, 1],
-                "y": np.arange(5),
-                "x": np.arange(5)
-            },
+            coords={"time": [0, 1], "y": np.arange(5), "x": np.arange(5)},
         ).rio.write_crs("EPSG:4326", inplace=True)
         expected_data = [1.0, 1.0, 1.0]
         expected_stack = xr.DataArray(
@@ -199,53 +196,49 @@ class TestMedian:
                 "band": [0, 1, 2],
             },
         ).rio.write_crs("EPSG:4326", inplace=True)
-        out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start=0, reference_end=1)
-        
+        out_stack = median(
+            reference_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_start=0,
+            reference_end=1,
+        )
+
         assert out_stack.dims == ("band",)
         assert len(out_stack.band) == 3
         assert_equal(expected_stack, out_stack)
 
-   
 
 class TestMedianMultipleSites:
 
-     def test_averages_over_reference_sites(self):
-            
-            polygon1 = Polygon([(-2, 2), (0.75, 2), (0.75, -1.75), (-2, -2), (-2, 2)])
-            polygon2 = Polygon([(0.75, 2), (0, 2), (2, 2), (0.75, -1.75), (0.75, 2)])
-            valid_gpd = gpd.GeoDataFrame(geometry=[polygon1, polygon2]).set_crs("EPSG:3348")
+    def test_averages_over_reference_sites(self):
 
-            test_data = [
-                    [
-                        [
-                            [1., 2., 3.],
-                            [4., 5., 6.],
-                            [7., 8., 9.]
-                        ]
-                    ],
+        polygon1 = Polygon([(-2, 2), (0.75, 2), (0.75, -1.75), (-2, -2), (-2, 2)])
+        polygon2 = Polygon([(0.75, 2), (0, 2), (2, 2), (0.75, -1.75), (0.75, 2)])
+        valid_gpd = gpd.GeoDataFrame(geometry=[polygon1, polygon2]).set_crs("EPSG:3348")
 
-                    [[[10., 11., 12.],
-                    [13., 14., 15.],
-                    [16., 17., 18.]]]
-            ]
-    
-            test_stack = xr.DataArray(
-                test_data,
-                dims=["time", "band", "y", "x"],
-                coords={
-                    "time": [0, 1],
-                    "y": [1, 0, -1],
-                    "x": [-1, 0, 1]
-                },
-            ).rio.write_crs("EPSG:3348", inplace=True)
-            expected_data = [9.75]
-            expected_stack = xr.DataArray(
-                expected_data,
-                dims=["band"],
-                coords={
-                    "band": [0],
-                },
-            ).rio.write_crs("EPSG:4326", inplace=True)
+        test_data = [
+            [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]],
+            [[[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, 17.0, 18.0]]],
+        ]
 
-            out_stack = median(reference_sites=valid_gpd, timeseries_data=test_stack, reference_start="0", reference_end="1")
-            assert_equal(out_stack, expected_stack)
+        test_stack = xr.DataArray(
+            test_data,
+            dims=["time", "band", "y", "x"],
+            coords={"time": [0, 1], "y": [1, 0, -1], "x": [-1, 0, 1]},
+        ).rio.write_crs("EPSG:3348", inplace=True)
+        expected_data = [9.75]
+        expected_stack = xr.DataArray(
+            expected_data,
+            dims=["band"],
+            coords={
+                "band": [0],
+            },
+        ).rio.write_crs("EPSG:4326", inplace=True)
+
+        out_stack = median(
+            reference_sites=valid_gpd,
+            timeseries_data=test_stack,
+            reference_start="0",
+            reference_end="1",
+        )
+        assert_equal(out_stack, expected_stack)

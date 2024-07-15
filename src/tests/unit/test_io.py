@@ -7,10 +7,7 @@ import pandas as pd
 
 from numpy.testing import assert_array_equal
 from unittest.mock import patch
-from spectral_recovery.io.raster import (
-    read_timeseries,
-    _valid_year_str
-)
+from spectral_recovery.io.raster import read_timeseries, _valid_year_str
 
 
 class TestReadTimeseriesDirectoryInput:
@@ -23,11 +20,11 @@ class TestReadTimeseriesDirectoryInput:
     @pytest.fixture
     def rasterio_return(self):
         return xr.DataArray(
-                    [[[[0]]]],
-                    dims=["band", "time", "y", "x"],
-                    attrs={"long_name": ["red"]},
-                )
-    
+            [[[[0]]]],
+            dims=["band", "time", "y", "x"],
+            attrs={"long_name": ["red"]},
+        )
+
     @pytest.mark.parametrize(
         ("tif_paths", "rasterio_return"),
         [
@@ -92,9 +89,7 @@ class TestReadTimeseriesDirectoryInput:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
     def test_correct_stacked_output_sizes(
         self,
         mocked_get_tifs,
@@ -108,7 +103,7 @@ class TestReadTimeseriesDirectoryInput:
             path_to_tifs="a/dir",
             array_type="numpy",
         )
-        
+
         assert stacked_tifs.sizes["time"] == len(tif_paths)
         assert (
             stacked_tifs.sizes["band"]
@@ -149,9 +144,7 @@ class TestReadTimeseriesDirectoryInput:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
     def test_bad_filenames_throws_value_err(
         self,
         mocked_get_tifs,
@@ -172,9 +165,7 @@ class TestReadTimeseriesDirectoryInput:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
     def test_sorted_years(
         self,
         mocked_get_tifs,
@@ -186,13 +177,18 @@ class TestReadTimeseriesDirectoryInput:
             np.datetime64("2017"),
             np.datetime64("2018"),
         ]
-        mocked_get_tifs.return_value = [f"2017.tif", f"2018.tif", f"1992.tif", f"1990.tif"]
+        mocked_get_tifs.return_value = [
+            f"2017.tif",
+            f"2018.tif",
+            f"1992.tif",
+            f"1990.tif",
+        ]
         mocked_rasterio_open.return_value = xr.DataArray(
-                    [[[[0]]], [[[0]]], [[[0]]]],
-                    dims=["band", "time", "y", "x"],
-                    coords={"band": [1, 2, 3]},
-                    attrs={"long_name": ["blue", "red", "nir"]},
-                )
+            [[[[0]]], [[[0]]], [[[0]]]],
+            dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
+            attrs={"long_name": ["blue", "red", "nir"]},
+        )
         stacked_tifs = read_timeseries(
             path_to_tifs="a/dir",
             array_type="numpy",
@@ -204,14 +200,28 @@ class TestReadTimeseriesDirectoryInput:
     def test_array_type_default_uses_dask_arrays(self):
         stacked_tifs = read_timeseries(
             path_to_tifs="src/tests/test_data/composites/",
-            band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"}
+            band_names={
+                1: "blue",
+                2: "green",
+                3: "red",
+                4: "nir",
+                5: "swir16",
+                6: "swir22",
+            },
         )
         assert isinstance(stacked_tifs.data, da.Array)
-    
+
     def test_array_type_numpy_returns_numpy_array(self):
         stacked_tifs = read_timeseries(
             path_to_tifs="src/tests/test_data/composites/",
-            band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"},
+            band_names={
+                1: "blue",
+                2: "green",
+                3: "red",
+                4: "nir",
+                5: "swir16",
+                6: "swir22",
+            },
             array_type="numpy",
         )
         assert isinstance(stacked_tifs.data, np.ndarray)
@@ -219,9 +229,7 @@ class TestReadTimeseriesDirectoryInput:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
     def test_int_raster_input_converted_to_float64(
         self,
         mocked_get_tifs,
@@ -239,13 +247,11 @@ class TestReadTimeseriesDirectoryInput:
         )
 
         assert np.issubdtype(stacked_tifs.dtype, np.float64)
-    
+
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
     def test_float_raster_input_unconverted(
         self,
         mocked_get_tifs,
@@ -253,7 +259,7 @@ class TestReadTimeseriesDirectoryInput:
         filenames,
         rasterio_return,
     ):
-        
+
         mocked_get_tifs.return_value = filenames
         f32_raster = rasterio_return.astype(np.float32)
         mocked_rasterio_open.return_value = f32_raster
@@ -271,8 +277,9 @@ class TestReadTimeseriesDirectoryInput:
         )
         assert np.issubdtype(stacked_tifs.dtype, np.float64)
 
+
 class TestReadTimeseriesBandNames:
-    
+
     @pytest.fixture
     def filenames(self):
         filenames = ["path/to/2019.tif", "path/to/2020.tif", "path/to/2021.tif"]
@@ -281,10 +288,10 @@ class TestReadTimeseriesBandNames:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_correct_bands_from_tifs_with_long_name(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_correct_bands_from_tifs_with_long_name(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -295,16 +302,19 @@ class TestReadTimeseriesBandNames:
         mocked_get_tifs.return_value = filenames
         mocked_rasterio_open.return_value = rasterio_return
 
-        stacked_tifs = read_timeseries(path_to_tifs="a/dir", array_type="numpy",)
+        stacked_tifs = read_timeseries(
+            path_to_tifs="a/dir",
+            array_type="numpy",
+        )
         assert np.all(stacked_tifs["band"].data == expected_bands)
 
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_correct_bands_from_tifs_w_band_dict(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_correct_bands_from_tifs_w_band_dict(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -325,10 +335,10 @@ class TestReadTimeseriesBandNames:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_invalid_band_name_throws_error(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_invalid_band_name_throws_error(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         rasterio_return = xr.DataArray(
             [[[[0]]]], dims=["band", "time", "y", "x"], coords={"band": [1]}
         )
@@ -347,10 +357,10 @@ class TestReadTimeseriesBandNames:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_band_dict_supersedes_band_desc(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_band_dict_supersedes_band_desc(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         expected_bands = ["B", "R", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -371,10 +381,10 @@ class TestReadTimeseriesBandNames:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_band_dict_assigns_name_by_key_not_order(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_band_dict_assigns_name_by_key_not_order(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         expected_bands = ["R", "B", "N"]
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
@@ -396,10 +406,10 @@ class TestReadTimeseriesBandNames:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_band_dict_missing_mapping_throws_value_err(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_band_dict_missing_mapping_throws_value_err(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
@@ -420,10 +430,10 @@ class TestReadTimeseriesBandNames:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_band_dict_invalid_mapping_throws_value_err(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_band_dict_invalid_mapping_throws_value_err(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
@@ -444,10 +454,10 @@ class TestReadTimeseriesBandNames:
     @patch(
         "rioxarray.open_rasterio",
     )
-    @patch(
-        "spectral_recovery.io.raster._get_tifs_from_dir"
-    )
-    def test_no_band_desc_or_band_names_throws_value_err(self, mocked_get_tifs, mocked_rasterio_open, filenames):
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_no_band_desc_or_band_names_throws_value_err(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
         rasterio_return = xr.DataArray(
             [[[[0]]], [[[0]]], [[[0]]]],
             dims=["band", "time", "y", "x"],
@@ -463,20 +473,24 @@ class TestReadTimeseriesBandNames:
                 path_to_tifs="a/dir",
                 array_type="numpy",
             )
-    
+
+
 class TestReadTimeseriesDictInput:
 
     @patch(
         "rioxarray.open_rasterio",
     )
     def test_dict_of_tifs_is_read(self, rasterio_mock):
-        path_dict_int = {2015: "path/to/some_file.tif", 2016: "path/to/another.tif", 2017: "path/to/last.tif"}
+        path_dict_int = {
+            2015: "path/to/some_file.tif",
+            2016: "path/to/another.tif",
+            2017: "path/to/last.tif",
+        }
         bands = {0: "blue"}
-        rasterio_mock.return_value = xr.DataArray(
-            [[[0.]]], 
-            dims=["band", "y", "x"]
+        rasterio_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+        int_years = read_timeseries(
+            path_to_tifs=path_dict_int, band_names=bands, array_type="numpy"
         )
-        int_years = read_timeseries(path_to_tifs=path_dict_int, band_names=bands, array_type="numpy")
         expceted_years = [2015, 2016, 2017]
         for i, d in enumerate(int_years.time.values):
             assert pd.to_datetime(d).year == expceted_years[i]
@@ -485,30 +499,35 @@ class TestReadTimeseriesDictInput:
         "rioxarray.open_rasterio",
     )
     def test_dict_of_tifs_maps_years_correctly(self, rasterio_mock):
-        out_of_order_tifs = {"2017": "path/to/some_file.tif", "2015": "path/to/another.tif", "2016": "path/to/last.tif"}
+        out_of_order_tifs = {
+            "2017": "path/to/some_file.tif",
+            "2015": "path/to/another.tif",
+            "2016": "path/to/last.tif",
+        }
         bands = {0: "blue"}
         rasterio_mock.side_effect = [
-            xr.DataArray(
-            [[[0.]]], 
-            dims=["band", "y", "x"]
-        ), 
-        xr.DataArray(
-            [[[1.]]], 
-            dims=["band", "y", "x"]
-        ), 
-        xr.DataArray(
-            [[[2.]]], 
-            dims=["band", "y", "x"]
-        )
+            xr.DataArray([[[0.0]]], dims=["band", "y", "x"]),
+            xr.DataArray([[[1.0]]], dims=["band", "y", "x"]),
+            xr.DataArray([[[2.0]]], dims=["band", "y", "x"]),
         ]
         excepted_output = xr.DataArray(
-            [[[[1.]],[[2.]],[[0.]]]],
+            [[[[1.0]], [[2.0]], [[0.0]]]],
             dims=["band", "time", "y", "x"],
-            coords={"time": [np.datetime64("2015"), np.datetime64("2016"), np.datetime64("2017")], "band": ["B"]}
+            coords={
+                "time": [
+                    np.datetime64("2015"),
+                    np.datetime64("2016"),
+                    np.datetime64("2017"),
+                ],
+                "band": ["B"],
+            },
         )
 
-        output_ts = read_timeseries(path_to_tifs=out_of_order_tifs, band_names=bands, array_type="numpy")
+        output_ts = read_timeseries(
+            path_to_tifs=out_of_order_tifs, band_names=bands, array_type="numpy"
+        )
         assert output_ts.equals(excepted_output)
+
 
 class TestValidYearStr:
 
@@ -521,7 +540,7 @@ class TestValidYearStr:
         with pytest.raises(ValueError):
             _valid_year_str("17")
             _valid_year_str("11803")
-    
+
     def not_year_raises_value_err(self):
         with pytest.raises(ValueError):
             _valid_year_str("not_year")

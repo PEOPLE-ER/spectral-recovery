@@ -19,6 +19,7 @@ def register_metric(f):
     METRIC_FUNCS[f.__name__] = f
     return f
 
+
 @maintain_rio_attrs
 def compute_metrics(
     timeseries_data: xr.DataArray,
@@ -35,8 +36,10 @@ def compute_metrics(
     if recovery_target is None:
         for tmetric in ["Y2R", "R80P"]:
             if tmetric in metrics:
-                raise ValueError(f"{tmetric} requires a recovery target but recovery_target is None")
-    
+                raise ValueError(
+                    f"{tmetric} requires a recovery target but recovery_target is None"
+                )
+
     per_polygon_metrics = {}
     for index, row in restoration_polygons.iterrows():
         # Prepare arguments being passed to the metric functions
@@ -48,11 +51,11 @@ def compute_metrics(
             params={
                 "timestep": timestep,
                 "percent_of_target": percent_of_target,
-            }
+            },
         )
         if isinstance(recovery_target, dict):
             m_kwargs["recovery_target"] = recovery_target[index]
-        else: 
+        else:
             # if a DataArray or None, just pass as-is
             m_kwargs["recovery_target"] = recovery_target
 
@@ -62,13 +65,14 @@ def compute_metrics(
                 m_func = METRIC_FUNCS[m.lower()]
             except KeyError:
                 raise ValueError(f"{m} is not a valid metric choice!")
-            m_results.append(
-                m_func(**m_kwargs).assign_coords({"metric": m})
-            )
+            m_results.append(m_func(**m_kwargs).assign_coords({"metric": m}))
         per_polygon_metrics[index] = xr.concat(m_results, "metric")
-    metric_da = xr.concat(per_polygon_metrics.values(), pd.Index(per_polygon_metrics.keys(), name="site"))
+    metric_da = xr.concat(
+        per_polygon_metrics.values(), pd.Index(per_polygon_metrics.keys(), name="site")
+    )
     metric_ds = metric_da.to_dataset(dim="site")
     return metric_ds
+
 
 def has_no_missing_years(images: xr.DataArray):
     """Check for continous set of years in DataArray"""
@@ -77,8 +81,15 @@ def has_no_missing_years(images: xr.DataArray):
         return False
     return True
 
+
 @register_metric
-def dnbr(restoration_start: int, timeseries_data: xr.DataArray, params: Dict = {"timestep": 5}, recovery_target: xr.DataArray = None, disturbance_start: int = None) -> xr.DataArray:
+def dnbr(
+    restoration_start: int,
+    timeseries_data: xr.DataArray,
+    params: Dict = {"timestep": 5},
+    recovery_target: xr.DataArray = None,
+    disturbance_start: int = None,
+) -> xr.DataArray:
     """Per-pixel dNBR.
 
     The absolute change in a spectral index’s value at a point in the
@@ -104,7 +115,9 @@ def dnbr(restoration_start: int, timeseries_data: xr.DataArray, params: Dict = {
         raise ValueError(NEG_TIMESTEP_MSG)
 
     rest_post_t = str(restoration_start + params["timestep"])
-    timesries_end = np.max(timeseries_data.time.values).astype('datetime64[Y]').astype(int) + 1970
+    timesries_end = (
+        np.max(timeseries_data.time.values).astype("datetime64[Y]").astype(int) + 1970
+    )
     if int(rest_post_t) > int(timesries_end):
         raise ValueError(
             f" {restoration_start}+{params['timestep']}={rest_post_t} is greater"
@@ -120,7 +133,13 @@ def dnbr(restoration_start: int, timeseries_data: xr.DataArray, params: Dict = {
 
 
 @register_metric
-def yryr(restoration_start: int, timeseries_data: xr.DataArray, params: Dict = {"timestep": 5}, recovery_target: xr.DataArray = None, disturbance_start: int = None):
+def yryr(
+    restoration_start: int,
+    timeseries_data: xr.DataArray,
+    params: Dict = {"timestep": 5},
+    recovery_target: xr.DataArray = None,
+    disturbance_start: int = None,
+):
     """Per-pixel YrYr.
 
     The average annual recovery rate relative to a fixed time interval
@@ -147,9 +166,7 @@ def yryr(restoration_start: int, timeseries_data: xr.DataArray, params: Dict = {
 
     rest_post_t = str(restoration_start + params["timestep"])
     obs_post_t = timeseries_data.sel(time=rest_post_t).drop_vars("time")
-    obs_start = timeseries_data.sel(time=str(restoration_start)).drop_vars(
-        "time"
-    )
+    obs_start = timeseries_data.sel(time=str(restoration_start)).drop_vars("time")
     yryr_v = ((obs_post_t - obs_start) / params["timestep"]).squeeze("time")
 
     return yryr_v
@@ -157,11 +174,11 @@ def yryr(restoration_start: int, timeseries_data: xr.DataArray, params: Dict = {
 
 @register_metric
 def r80p(
-    restoration_start: int, 
+    restoration_start: int,
     timeseries_data: xr.DataArray,
     recovery_target: xr.DataArray,
     params: Dict = {"percent_of_target": 80, "timestep": 5},
-    disturbance_start: int = None,  
+    disturbance_start: int = None,
 ) -> xr.DataArray:
     """Per-pixel R80P.
 
@@ -210,7 +227,13 @@ def r80p(
 
 
 @register_metric
-def y2r(restoration_start: int, timeseries_data: xr.DataArray, recovery_target: xr.DataArray, params: Dict = {"percent_of_target": 80}, disturbance_start: int = None) -> xr.DataArray:
+def y2r(
+    restoration_start: int,
+    timeseries_data: xr.DataArray,
+    recovery_target: xr.DataArray,
+    params: Dict = {"percent_of_target": 80},
+    disturbance_start: int = None,
+) -> xr.DataArray:
     """Per-pixel Y2R.
 
     The length of time taken (in time steps/years) for a given pixel to
@@ -235,14 +258,14 @@ def y2r(restoration_start: int, timeseries_data: xr.DataArray, recovery_target: 
     """
     if params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
         raise ValueError(VALID_PERC_MSP)
-    
-    recovery_window = timeseries_data.sel(
-        time=slice(str(restoration_start), None)
-    )
+
+    recovery_window = timeseries_data.sel(time=slice(str(restoration_start), None))
     if not has_no_missing_years(recovery_window):
-        raise ValueError(f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}.")
-    
-    print(recovery_target, params["percent_of_target"] )
+        raise ValueError(
+            f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}."
+        )
+
+    print(recovery_target, params["percent_of_target"])
     y2r_target = recovery_target * (params["percent_of_target"] / 100)
 
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
@@ -270,7 +293,13 @@ def y2r(restoration_start: int, timeseries_data: xr.DataArray, recovery_target: 
 
 
 @register_metric
-def rri(disturbance_start: int, restoration_start: int, timeseries_data: xr.DataArray, params: Dict = {"timestep": 5}, recovery_target: xr.DataArray = None) -> xr.DataArray:
+def rri(
+    disturbance_start: int,
+    restoration_start: int,
+    timeseries_data: xr.DataArray,
+    params: Dict = {"timestep": 5},
+    recovery_target: xr.DataArray = None,
+) -> xr.DataArray:
     """Per-pixel RRI.
 
     A modified version of the commonly used RI, the RRI accounts for
@@ -310,15 +339,11 @@ def rri(disturbance_start: int, restoration_start: int, timeseries_data: xr.Data
     if pd.to_datetime(rest_post_t) not in timeseries_data.time.values:
         raise ValueError(f"{rest_post_t} (year of timestep) not found in time dim.")
 
-    max_rest_t_tm1 = timeseries_data.sel(
-        time=slice(rest_post_tm1, rest_post_t)
-    ).max(dim=["time"])
-    rest_start = timeseries_data.sel(time=str(restoration_start)).drop_vars(
-        "time"
+    max_rest_t_tm1 = timeseries_data.sel(time=slice(rest_post_tm1, rest_post_t)).max(
+        dim=["time"]
     )
-    dist_start = timeseries_data.sel(time=str(disturbance_start)).drop_vars(
-        "time"
-    )
+    rest_start = timeseries_data.sel(time=str(restoration_start)).drop_vars("time")
+    dist_start = timeseries_data.sel(time=str(disturbance_start)).drop_vars("time")
     dist_end = rest_start
 
     rri_v = (max_rest_t_tm1 - rest_start) / (dist_start - dist_end)

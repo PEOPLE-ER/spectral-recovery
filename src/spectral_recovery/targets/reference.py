@@ -5,8 +5,9 @@ import xarray as xr
 
 from pandas import Index as pdIndex
 
+
 def _window_time_clip(timeseries_data, site, reference_start, reference_end):
-    """Clip data to """
+    """Clip data to"""
     clipped_stacks = {}
     for i, row in site.iterrows():
         polygon_stack = timeseries_data.rio.clip(gpd.GeoSeries(row.geometry).values)
@@ -16,7 +17,10 @@ def _window_time_clip(timeseries_data, site, reference_start, reference_end):
         clipped_stacks.values(),
         dim=pdIndex(clipped_stacks.keys(), name="poly_id"),
     )
-    return reference_image_stack.sel(time=slice(str(reference_start), str(reference_end)))
+    return reference_image_stack.sel(
+        time=slice(str(reference_start), str(reference_end))
+    )
+
 
 def median(
     reference_sites: gpd.GeoDataFrame | str,
@@ -27,7 +31,7 @@ def median(
     """Median target method for reference sites.
 
     Sequentially computes the median over time and the
-    spatial dimensions (x and y). If there is more than 
+    spatial dimensions (x and y). If there is more than
     one reference site in the GeoDataFrame then the median
     is also then taken from all reference site medians.
 
@@ -52,7 +56,7 @@ def median(
 
     Notes
     ------
-    Differs from spectral_recovery.targets.historic.median because 1) no scale 
+    Differs from spectral_recovery.targets.historic.median because 1) no scale
     parameter is given because a reference site can only be of scale "polygon",
     and 2) because multiple polygons are reduced to a single value.
 

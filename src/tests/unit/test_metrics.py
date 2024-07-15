@@ -59,13 +59,10 @@ class TestComputeMetrics:
     @pytest.fixture()
     def valid_rt(self, valid_array):
 
-        valid_rt = valid_array[:,0, :, :].drop_vars("time")
+        valid_rt = valid_array[:, 0, :, :].drop_vars("time")
         return valid_rt
 
-
-    def test_none_rt_passes(
-        self, valid_array, valid_frame
-    ):
+    def test_none_rt_passes(self, valid_array, valid_frame):
 
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
@@ -77,11 +74,11 @@ class TestComputeMetrics:
                 timeseries_data=valid_array,
                 restoration_polygons=valid_frame,
                 metrics=["YrYr"],
-                recovery_target=none_rt
+                recovery_target=none_rt,
             )
 
             assert y2r_mock.call_args.kwargs["recovery_target"] is None
-    
+
     def test_none_rt_with_metric_that_requires_rt_throws_value_err(
         self, valid_array, valid_frame
     ):
@@ -96,16 +93,16 @@ class TestComputeMetrics:
                     timeseries_data=valid_array,
                     restoration_polygons=valid_frame,
                     metrics=["Y2R"],
-                    recovery_target=none_rt
+                    recovery_target=none_rt,
                 )
-            
+
             with pytest.raises(ValueError):
                 compute_metrics(
-                        timeseries_data=valid_array,
-                        restoration_polygons=valid_frame,
-                        metrics=["YrYr", "Y2R"],
-                        recovery_target=none_rt
-                    )
+                    timeseries_data=valid_array,
+                    restoration_polygons=valid_frame,
+                    metrics=["YrYr", "Y2R"],
+                    recovery_target=none_rt,
+                )
 
     def test_correct_metrics_called_from_metric_func_dict(
         self, valid_array, valid_frame, valid_rt
@@ -129,7 +126,6 @@ class TestComputeMetrics:
 
         for m in multi_metrics:
             assert patched_dict[m.lower()].called_once()
-
 
     def test_output_data_array_stacked_along_metric_dim(
         self, valid_array, valid_frame, valid_rt
@@ -159,9 +155,7 @@ class TestComputeMetrics:
                 result[0].sel(metric=metric).data, np.array([[[i]]])
             )
 
-    def test_output_dataset_contains_all_polygons(
-        self, valid_array, valid_rt
-    ):
+    def test_output_dataset_contains_all_polygons(self, valid_array, valid_rt):
         multi_frame = gpd.GeoDataFrame(
             {
                 "dist_start": [2012, 2011, 2012],
@@ -176,7 +170,7 @@ class TestComputeMetrics:
             metric_mock = Mock()
             metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
             patched_dict[metric.lower()] = metric_mock
-        
+
         expected_polyids = [0, 1, 2]
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
@@ -210,7 +204,7 @@ class TestComputeMetrics:
             compute_metrics(
                 timeseries_data=valid_array,
                 restoration_polygons=valid_frame,
-                recovery_target=valid_rt, 
+                recovery_target=valid_rt,
                 metrics=[metric],
                 timestep=2,
                 percent_of_target=60,
@@ -218,7 +212,7 @@ class TestComputeMetrics:
 
             metric_mock.call_args.kwargs["params"]["timestep"] == 2
             metric_mock.call_args.kwargs["params"]["percent_of_target"] == 60
-    
+
     def test_correct_params_passed_to_metric_func_if_rt_dict(self, valid_array):
         multi_frame = gpd.GeoDataFrame(
             {
@@ -254,7 +248,7 @@ class TestComputeMetrics:
             assert call0["restoration_start"] == 2013
             assert call1["restoration_start"] == 2012
             assert call2["restoration_start"] == 2013
-            
+
             assert call0["disturbance_start"] == 2012
             assert call1["disturbance_start"] == 2011
             assert call2["disturbance_start"] == 2012
@@ -266,8 +260,10 @@ class TestComputeMetrics:
             xr.testing.assert_equal(call0["recovery_target"], rt_dict[0])
             xr.testing.assert_equal(call1["recovery_target"], rt_dict[1])
             xr.testing.assert_equal(call2["recovery_target"], rt_dict[2])
-    
-    def test_correct_params_passed_to_metric_func_if_rt_not_dict(self, valid_array, valid_rt):
+
+    def test_correct_params_passed_to_metric_func_if_rt_not_dict(
+        self, valid_array, valid_rt
+    ):
         multi_frame = gpd.GeoDataFrame(
             {
                 "dist_start": [2012, 2011, 2012],
@@ -304,7 +300,7 @@ class TestComputeMetrics:
             assert call0["restoration_start"] == 2013
             assert call1["restoration_start"] == 2012
             assert call2["restoration_start"] == 2013
-            
+
             xr.testing.assert_equal(call0["timeseries_data"], clipped_array)
             xr.testing.assert_equal(call1["timeseries_data"], clipped_array)
             xr.testing.assert_equal(call2["timeseries_data"], clipped_array)
@@ -314,10 +310,9 @@ class TestComputeMetrics:
             xr.testing.assert_equal(call2["recovery_target"], valid_rt)
 
 
-
 class TestY2R:
     valid_poly = Polygon([(0, 0), (0, 1), (1, 1), (1, 0)])
-    
+
     @pytest.mark.parametrize(
         ("rt", "obs", "expected"),
         [
@@ -360,11 +355,13 @@ class TestY2R:
             (
                 xr.DataArray([100], dims=["band"]).rio.write_crs("4326"),
                 xr.DataArray(
-                    [[
-                        [[70, 60], [70, 60]],
-                        [[80, 70], [70, 70]],
-                        [[100, 70], [70, 80]],
-                    ]],
+                    [
+                        [
+                            [[70, 60], [70, 60]],
+                            [[80, 70], [70, 70]],
+                            [[100, 70], [70, 80]],
+                        ]
+                    ],
                     coords={
                         "time": [
                             pd.to_datetime("2020"),
@@ -374,14 +371,14 @@ class TestY2R:
                     },
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-                xr.DataArray(
-                    [[[1.0, -9999], [-9999, 2.0]]], dims=["band", "y", "x"]
-                ),
+                xr.DataArray([[[1.0, -9999], [-9999, 2.0]]], dims=["band", "y", "x"]),
             ),
         ],
     )
     def test_single_target_y2r(self, rt, obs, expected):
-        result = y2r(restoration_start=2020, timeseries_data=obs, recovery_target=rt).drop_vars('spatial_ref')
+        result = y2r(
+            restoration_start=2020, timeseries_data=obs, recovery_target=rt
+        ).drop_vars("spatial_ref")
         assert result.equals(expected)
 
     def test_distinguishes_unrecovered_and_nan(self):
@@ -398,16 +395,14 @@ class TestY2R:
             dims=["band", "time", "y", "x"],
         ).rio.write_crs("4326")
 
-        expected = xr.DataArray([[[-9999, np.nan]]], dims=["band", "y", "x"]).rio.write_crs(
-            "4326"
-        )
+        expected = xr.DataArray(
+            [[[-9999, np.nan]]], dims=["band", "y", "x"]
+        ).rio.write_crs("4326")
 
         assert y2r(
-            restoration_start=2020,
-            timeseries_data=obs,
-            recovery_target=rt
+            restoration_start=2020, timeseries_data=obs, recovery_target=rt
         ).equals(expected)
-    
+
     def test_only_first_year_nan_returns_value(self):
         rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
         obs = xr.DataArray(
@@ -422,19 +417,13 @@ class TestY2R:
             dims=["band", "time", "y", "x"],
         ).rio.write_crs("4326")
 
-        expected = xr.DataArray([[[2]]], dims=["band", "y", "x"]).rio.write_crs(
-            "4326"
-        )
+        expected = xr.DataArray([[[2]]], dims=["band", "y", "x"]).rio.write_crs("4326")
 
         assert y2r(
-            restoration_start=2020,
-            timeseries_data=obs,
-            recovery_target=rt
+            restoration_start=2020, timeseries_data=obs, recovery_target=rt
         ).equals(expected)
 
-    def test_returns_first_recovered_year_when_successive_recovered_years_smaller(
-        self
-    ):
+    def test_returns_first_recovered_year_when_successive_recovered_years_smaller(self):
         rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
         obs = xr.DataArray(
             [[[[70]], [[90]], [[85]], [[80]], [[80]]]],
@@ -454,9 +443,7 @@ class TestY2R:
             "4326"
         )
         assert y2r(
-            restoration_start=2020,
-            timeseries_data=obs,
-            recovery_target=rt
+            restoration_start=2020, timeseries_data=obs, recovery_target=rt
         ).equals(expected)
 
     def test_returns_first_recovered_year_when_successive_group_recovered_years_smaller(
@@ -478,14 +465,12 @@ class TestY2R:
             },
             dims=["band", "time", "y", "x"],
         ).rio.write_crs("4326")
-      
+
         expected = xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs(
             "4326"
         )
         assert y2r(
-            restoration_start=2020,
-            timeseries_data=obs,
-            recovery_target=rt
+            restoration_start=2020, timeseries_data=obs, recovery_target=rt
         ).equals(expected)
 
     @pytest.mark.parametrize(
@@ -528,9 +513,8 @@ class TestY2R:
     def test_per_pixel_target(self, rt, obs, expected):
 
         assert y2r(
-            restoration_start=2020,
-            timeseries_data=obs,
-            recovery_target=rt).equals(expected)
+            restoration_start=2020, timeseries_data=obs, recovery_target=rt
+        ).equals(expected)
 
     @pytest.mark.parametrize(
         ("rt", "obs", "percent", "expected"),
@@ -567,11 +551,17 @@ class TestY2R:
             recovery_target=rt,
             params={"percent_of_target": percent},
         ).equals(expected)
-    
+
     def test_missing_years_in_recovery_window_throws_value_err(self):
         obs = xr.DataArray(
             [[[[10]], [[19]], [[20]]]],
-            coords={"time": [pd.to_datetime("2020"), pd.to_datetime("2021"), pd.to_datetime("2023")]},
+            coords={
+                "time": [
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                    pd.to_datetime("2023"),
+                ]
+            },
             dims=["band", "time", "y", "x"],
         ).rio.write_crs("4326")
         rt = xr.DataArray([[[20]]], dims=["band", "y", "x"]).rio.write_crs("4326")
@@ -579,20 +569,29 @@ class TestY2R:
 
         with pytest.raises(ValueError):
             y2r(
-            restoration_start=2020,
-            timeseries_data=obs,
-            recovery_target=rt, 
-            params={"percent_of_target": percent})
-    
+                restoration_start=2020,
+                timeseries_data=obs,
+                recovery_target=rt,
+                params={"percent_of_target": percent},
+            )
+
     def test_missing_years_outside_recovery_window_does_now_throw_value_err(self):
         obs = xr.DataArray(
             [[[[10]], [[19]], [[20]]]],
-            coords={"time": [pd.to_datetime("2018"), pd.to_datetime("2020"), pd.to_datetime("2021")]},
+            coords={
+                "time": [
+                    pd.to_datetime("2018"),
+                    pd.to_datetime("2020"),
+                    pd.to_datetime("2021"),
+                ]
+            },
             dims=["band", "time", "y", "x"],
         ).rio.write_crs("4326")
         rt = xr.DataArray([[[20.0]]], dims=["band", "y", "x"]).rio.write_crs("4326")
         percent = 100
-        expected = xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs("4326")
+        expected = xr.DataArray([[[1.0]]], dims=["band", "y", "x"]).rio.write_crs(
+            "4326"
+        )
 
         assert y2r(
             restoration_start=2020,
@@ -613,7 +612,7 @@ class TestDNBR:
     ]
 
     @pytest.mark.parametrize(
-        ("obs","expected"),
+        ("obs", "expected"),
         [
             (
                 xr.DataArray(
@@ -621,7 +620,6 @@ class TestDNBR:
                     coords={"time": year_period},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-
                 xr.DataArray(
                     [[[50]]],
                     dims=["band", "y", "x"],
@@ -629,14 +627,16 @@ class TestDNBR:
             ),
             (
                 xr.DataArray(
-                    [[
-                        [[50, 10], [10, 20]],
-                        [[60, 20], [10, 20]],
-                        [[70, 30], [10, 20]],
-                        [[80, 40], [10, 20]],
-                        [[90, 50], [10, 20]],
-                        [[100, 80], [10, 20]],
-                    ]],
+                    [
+                        [
+                            [[50, 10], [10, 20]],
+                            [[60, 20], [10, 20]],
+                            [[70, 30], [10, 20]],
+                            [[80, 40], [10, 20]],
+                            [[90, 50], [10, 20]],
+                            [[100, 80], [10, 20]],
+                        ]
+                    ],
                     coords={"time": year_period},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
@@ -677,10 +677,7 @@ class TestDNBR:
     )
     def test_default_dNBR(self, obs, expected):
         rest_start = 2010
-        assert dnbr(
-            restoration_start=rest_start,
-            timeseries_data=obs
-            ).equals(expected)
+        assert dnbr(restoration_start=rest_start, timeseries_data=obs).equals(expected)
 
     def test_timestep_dNBR(self):
         rest_start = 2010
@@ -711,7 +708,6 @@ class TestDNBR:
         ).rio.write_crs("4326")
         restoration_date = "2010"
         timestep = -2
-
 
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             dnbr(
@@ -777,34 +773,33 @@ class TestRRI:
             ),
         ],
     )
-    def test_correct_default(
-        self, obs, expected
-    ):
+    def test_correct_default(self, obs, expected):
         dist_start = 2000
         rest_start = 2001
         assert rri(
             disturbance_start=dist_start,
             restoration_start=rest_start,
-            timeseries_data=obs
+            timeseries_data=obs,
         ).equals(expected)
 
     def test_correct_multi_dimension_result(self):
         obs = xr.DataArray(
-            [[
-                [[50, 2], [30, 2]],  # dist_start
-                [[20, 1], [25, 1]],  # dist_end
-                [[20, 1.0], [20, 1.0]],
-                [[30, 2], [15, 1]],
-                [[40, 3], [20, 1]],
-                [[50, 4], [25, 1]],
-                [[50, 5], [30, 1]],
-            ]],
+            [
+                [
+                    [[50, 2], [30, 2]],  # dist_start
+                    [[20, 1], [25, 1]],  # dist_end
+                    [[20, 1.0], [20, 1.0]],
+                    [[30, 2], [15, 1]],
+                    [[40, 3], [20, 1]],
+                    [[50, 4], [25, 1]],
+                    [[50, 5], [30, 1]],
+                ]
+            ],
             coords={"time": self.year_period_RI},
             dims=["band", "time", "y", "x"],
         ).rio.write_crs("4326")
         dist_start = 2000
         rest_start = 2001
-
 
         # 4 pixels for dist_start - dist_end:
         # 1. 50 - 20 = 30
@@ -829,7 +824,7 @@ class TestRRI:
         result = rri(
             disturbance_start=dist_start,
             restoration_start=rest_start,
-            timeseries_data=obs
+            timeseries_data=obs,
         )
         assert result.equals(expected)
 
@@ -862,9 +857,7 @@ class TestRRI:
             ),
         ],
     )
-    def test_timestep(
-        self, obs, timestep, expected
-    ):
+    def test_timestep(self, obs, timestep, expected):
         dist_start = 2000
         rest_start = 2001
         assert rri(
@@ -887,7 +880,6 @@ class TestRRI:
                 timeseries_data=obs,
                 params={"timestep": timestep, "use_dist_avg": False},
             )
-
 
     def test_out_bound_timestep_raises_err(self):
         obs = xr.DataArray(
@@ -918,7 +910,6 @@ class TestRRI:
         rest_start = 2001
         dist_start = 2000
         timestep = 0
-
 
         with pytest.raises(
             ValueError, match="timestep for RRI must be greater than 0."
@@ -1007,14 +998,10 @@ class TestR80P:
             ),
         ],
     )
-    def test_default_exactly_recovered(
-        self, obs, rt, expected
-    ):
+    def test_default_exactly_recovered(self, obs, rt, expected):
         rest_start = 2010
         result = r80p(
-            restoration_start=rest_start,
-            timeseries_data=obs,
-            recovery_target=rt
+            restoration_start=rest_start, timeseries_data=obs, recovery_target=rt
         )
         assert result.equals(expected)
 
@@ -1124,7 +1111,6 @@ class TestYrYr:
                     coords={"time": year_period},
                     dims=["band", "time", "y", "x"],
                 ).rio.write_crs("4326"),
-
                 xr.DataArray(
                     [[[0.0]]],
                     dims=["band", "y", "x"],
@@ -1168,6 +1154,6 @@ class TestYrYr:
         with pytest.raises(ValueError, match="timestep cannot be negative."):
             yryr(
                 restoration_start=rest_start,
-            timeseries_data=obs,
+                timeseries_data=obs,
                 params={"timestep": timestep},
             )

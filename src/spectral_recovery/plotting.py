@@ -12,12 +12,13 @@ from matplotlib.legend_handler import HandlerPatch
 
 from spectral_recovery.indices import compute_indices
 
+
 def plot_spectral_trajectory(
     timeseries_data: xr.DataArray,
     restoration_polygon: gpd.GeoDataFrame,
     recovery_target: xr.DataArray,
-    reference_start: str = None, 
-    reference_end: str = None, 
+    reference_start: str = None,
+    reference_end: str = None,
     path: str = None,
 ):
     """Plot the spectral trajectory of the restoration polygon
@@ -39,21 +40,34 @@ def plot_spectral_trajectory(
     # Prepare arguments being passed to the metric functions
     clipped_timeseries = timeseries_data.rio.clip([restoration_polygon.geometry.values])
     if path:
-        plot_ra(disturbance_start=clipped_timeseries["dist_start"].iloc[0], restoration_start=clipped_timeseries["rest_start"].iloc[0], recovery_target=clipped_timeseries, reference_start=reference_start, reference_end=reference_end, path=path)
+        plot_ra(
+            disturbance_start=clipped_timeseries["dist_start"].iloc[0],
+            restoration_start=clipped_timeseries["rest_start"].iloc[0],
+            recovery_target=clipped_timeseries,
+            reference_start=reference_start,
+            reference_end=reference_end,
+            path=path,
+        )
     else:
-        plot_ra(disturbance_start=clipped_timeseries["dist_start"].iloc[0], restoration_start=clipped_timeseries["rest_start"].iloc[0], recovery_target=recovery_target, reference_start=reference_start, reference_end=reference_end,)
+        plot_ra(
+            disturbance_start=clipped_timeseries["dist_start"].iloc[0],
+            restoration_start=clipped_timeseries["rest_start"].iloc[0],
+            recovery_target=recovery_target,
+            reference_start=reference_start,
+            reference_end=reference_end,
+        )
 
 
 def plot_ra(
-        disturbance_start: int, 
-        restoration_start: int,
-        timeseries_data: xr.DataArray,
-        recovery_target: xr.DataArray,
-        reference_start: str, 
-        reference_end: str,
-        path: str = None,
-        legend: bool = True,
-        ) -> None:
+    disturbance_start: int,
+    restoration_start: int,
+    timeseries_data: xr.DataArray,
+    recovery_target: xr.DataArray,
+    reference_start: str,
+    reference_end: str,
+    path: str = None,
+    legend: bool = True,
+) -> None:
     """Create spectral trajectory plot of the RestorationArea (ra)
 
     Parameters
@@ -121,7 +135,15 @@ def plot_ra(
             lw=1,
         )
         timeseries_end = np.max(timeseries_data["time"].dt.year.values)
-        _draw_trajectory_windows(restoration_start, disturbance_start, timeseries_end, reference_end, axi, palette, plot_ref_window)
+        _draw_trajectory_windows(
+            restoration_start,
+            disturbance_start,
+            timeseries_end,
+            reference_end,
+            axi,
+            palette,
+            plot_ref_window,
+        )
         _set_axis_labels(axi, band, data["time"].unique().tolist())
     (
         labels,
@@ -159,7 +181,16 @@ def _set_axis_labels(axi, title, xlabels):
     axi.set_ylabel(f"{title} Value")
 
 
-def _draw_trajectory_windows(restoration_start, disturbance_start, timeseries_end, refs, refe, axi, palette, plot_ref_window):
+def _draw_trajectory_windows(
+    restoration_start,
+    disturbance_start,
+    timeseries_end,
+    refs,
+    refe,
+    axi,
+    palette,
+    plot_ref_window,
+):
     """Draw the trajectory windows onto subplots.
 
     Uses two verticle dashed lines to delimit the start and
