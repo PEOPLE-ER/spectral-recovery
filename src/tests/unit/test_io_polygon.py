@@ -20,7 +20,7 @@ class TestReadPolygon:
         output = read_restoration_polygons("src/tests/test_data/polygon_inbound_epsg3005.gpkg")
         assert list(output) == ["dist_start", "rest_start", "geometry"]
     
-    def test_rest_and_dist_years_read_into_gpd_from_param(self):
+    def test_rest_and_dist_years_read_into_gpd_from_param_over_attr(self):
         output = read_restoration_polygons(
             "src/tests/test_data/polygon_multi_inbound_epsg3005.gpkg",
             dist_rest_years={0: [2004, 2005], 1: [2003, 2006]})

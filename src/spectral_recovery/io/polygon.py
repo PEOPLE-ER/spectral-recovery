@@ -1,5 +1,6 @@
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 
 from typing import Dict, List
 
@@ -24,16 +25,17 @@ def read_restoration_polygons(
     """
     # Read the vector file and check there is only one polygon
     restoration_polygons = gpd.read_file(path)
-    print(restoration_polygons)
     if not dist_rest_years:
         if "rest_start" not in list(restoration_polygons) or "dist_start" not in list(restoration_polygons):
-            raise ValueError("Missing disturbance and restoration years. Must pass  years to `dist_rest_years` or as polygon attributes in the vector file.")
+            raise ValueError("Missing disturbance and restoration years. Must pass year values to `dist_rest_years` param or as polygon attributes in the vector file.")
     else:
-        # Add the passed dates into gpd cols
-        dates = {
-                "dist_start": [],
-                "rest_start": [],
-        }
+        # Check if the given keys actually reference polygons
+        for polyid in dist_rest_years.keys():
+            if polyid not in restoration_polygons.index.values.tolist():
+                raise ValueError("polygon id {polyid} is not found in {path}.")
+        
+        restoration_polygons["dist_start"] = 0
+        restoration_polygons["rest_start"] = 0
         # Check that dates make sense
         for polyid, years in dist_rest_years.items():
             disturbance_start, restoration_start = years
@@ -42,28 +44,23 @@ def read_restoration_polygons(
                 "Disturbance start year cannot be greater than or equal to the restoration start year"
                 f" ({disturbance_start} >= {restoration_start})"
             )
-            dates["dist_start"].append(disturbance_start)
-            dates["rest_start"].append(restoration_start)
+            restoration_polygons.loc[polyid, "dist_start"] = disturbance_start
+            restoration_polygons.loc[polyid, "rest_start"] = restoration_start
+        # Check that all polygons were given dates
+        if (restoration_polygons["dist_start"]==0).any() or (restoration_polygons["rest_start"]==0).any():
+            raise ValueError("Missing dist/rest start years for some polygons. Please provide a mapping for each polygon.")
         
-        restoration_polygons = restoration_polygons.assign(**dates)
-
     # Dates must be in order: dist, rest then geom 
     restoration_polygons = restoration_polygons[["dist_start", "rest_start", "geometry"]]
     # Look at the dates within the geodataframe (data from attribute table)
     dates_frame = pd.DataFrame(restoration_polygons.drop(columns="geometry"))
-    if len(dates_frame.columns) < 2:
-        raise ValueError(
-            "Attribute table must have at least 2 columns containing disturbance start"
-            f" year and restoration start year ({len(dates_frame.columns)} column"
-            " given)"
-        )
     # Check that years are either str or int types
     types = dates_frame.dtypes
     for column_name, data_type in types.items():
-        if data_type != "int64" and data_type != "object" :
+        if data_type != "int64":
             raise ValueError(
-                f"Date fields must be type int or str (given {data_type}) in field"
-                f" {column_name})"
+                f"Date fields must be type int in"
+                f" {column_name} field. Given {data_type}."
             )
         
 
