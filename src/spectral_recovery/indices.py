@@ -68,6 +68,7 @@ def compute_indices(
             index_stack = index_stack.expand_dims(dim={"band": indices})
     return index_stack
 
+
 def GCI(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     try:
         gci = (params_dict["N"] / params_dict["G"]) - 1
@@ -75,19 +76,36 @@ def GCI(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
         raise KeyError(f"Missing '{e.args[0]}' in the parameters for GCI")
     return gci
 
+
 def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     try:
-        tcw = 0.1511*params_dict["B"] + 0.1973*params_dict["G"] + 0.3283*params_dict["R"] + 0.3407*params_dict["N"] - 0.7117*params_dict["S1"] - 0.4559*params_dict["S2"]
+        tcw = (
+            0.1511 * params_dict["B"]
+            + 0.1973 * params_dict["G"]
+            + 0.3283 * params_dict["R"]
+            + 0.3407 * params_dict["N"]
+            - 0.7117 * params_dict["S1"]
+            - 0.4559 * params_dict["S2"]
+        )
     except KeyError as e:
         raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCW")
     return tcw
 
+
 def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     try:
-        tcw = -0.2941*params_dict["B"] - 0.243*params_dict["G"] - 0.5424*params_dict["R"] + 0.7276*params_dict["N"] + 0.0713*params_dict["S1"] - 0.1608*params_dict["S2"]
+        tcw = (
+            -0.2941 * params_dict["B"]
+            - 0.243 * params_dict["G"]
+            - 0.5424 * params_dict["R"]
+            + 0.7276 * params_dict["N"]
+            + 0.0713 * params_dict["S1"]
+            - 0.1608 * params_dict["S2"]
+        )
     except KeyError as e:
         raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCG")
     return tcw
+
 
 def _supported_domain(indices: list[str]):
     """Determine whether indices application domains are supported by tool.
