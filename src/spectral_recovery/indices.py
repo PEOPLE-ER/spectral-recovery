@@ -29,6 +29,46 @@ with pkg_resources.open_text(
 ) as f:
     INDEX_CONSTANT_DEFAULTS = json.load(f)
 
+def GCI(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+    """Compute the Green Chlorophyll Index (GCI) index"""
+    try:
+        gci = (params_dict["N"] / params_dict["G"]) - 1
+    except KeyError as e:
+        raise KeyError(f"Missing '{e.args[0]}' in the parameters for GCI")
+    return gci
+
+
+def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+    """Compute the Tasselled Cap Wetness (TCW) index"""
+    try:
+        tcw = (
+            0.1511 * params_dict["B"]
+            + 0.1973 * params_dict["G"]
+            + 0.3283 * params_dict["R"]
+            + 0.3407 * params_dict["N"]
+            - 0.7117 * params_dict["S1"]
+            - 0.4559 * params_dict["S2"]
+        )
+    except KeyError as e:
+        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCW")
+    return tcw
+
+def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+    """Compute the Tasselled Cap Greenness (TCW) index"""
+    try:
+        tcw = (
+            -0.2941 * params_dict["B"]
+            - 0.243 * params_dict["G"]
+            - 0.5424 * params_dict["R"]
+            + 0.7276 * params_dict["N"]
+            + 0.0713 * params_dict["S1"]
+            - 0.1608 * params_dict["S2"]
+        )
+    except KeyError as e:
+        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCG")
+    return tcw
+
+SR_REC_IDXS = {"GCI": GCI, "TCW": TCW, "TCG": TCG}
 
 @maintain_rio_attrs
 def compute_indices(
@@ -54,57 +94,44 @@ def compute_indices(
         the band dimension.
 
     """
-    if _supported_domain(indices):
-        params_dict = _build_params_dict(image_stack)
-        constants_dict = _build_constants_dict(indices, constants)
-
-        params_dict = params_dict | constants_dict | kwargs
-        index_stack = spx.computeIndex(index=indices, params=params_dict)
-        try:
-            # rename 'index' dim to 'bands' to match tool's expected dims
-            index_stack = index_stack.rename({"index": "band"})
-        except ValueError:
-            # computeIndex will not return an index dim if only 1 index passed
-            index_stack = index_stack.expand_dims(dim={"band": indices})
+    spx_indices, sr_indices = _split_indices_by_source(indices)
+    params_dict = _build_params_dict(image_stack)
+    if spx_indices:
+        if _supported_domain(spx_indices):
+            constants_dict = _build_constants_dict(spx_indices, constants)
+            params_dict = params_dict | constants_dict | kwargs
+            spx_index_stack = spx.computeIndex(index=spx_indices, params=params_dict)
+            try:
+                # rename 'index' dim to 'bands' to match tool's expected dims
+                spx_index_stack = spx_index_stack.rename({"index": "band"})
+            except ValueError:
+                # computeIndex will not return an index dim if only 1 index passed
+                spx_index_stack = spx_index_stack.expand_dims(dim={"band": spx_indices})
+    if sr_indices:
+        sr_idxs_outputs = []
+        for i in sr_indices:
+            index_func = SR_REC_IDXS[i]
+            sr_idxs_outputs.append(index_func(params_dict=params_dict))
+        sr_index_stack = xr.concat(sr_idxs_outputs, dim={"band": sr_indices})
+    print(sr_index_stack, spx_index_stack)
+    index_stack = xr.concat([sr_index_stack, spx_index_stack], dim="band")
     return index_stack
 
 
-def GCI(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
-    try:
-        gci = (params_dict["N"] / params_dict["G"]) - 1
-    except KeyError as e:
-        raise KeyError(f"Missing '{e.args[0]}' in the parameters for GCI")
-    return gci
-
-
-def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
-    try:
-        tcw = (
-            0.1511 * params_dict["B"]
-            + 0.1973 * params_dict["G"]
-            + 0.3283 * params_dict["R"]
-            + 0.3407 * params_dict["N"]
-            - 0.7117 * params_dict["S1"]
-            - 0.4559 * params_dict["S2"]
-        )
-    except KeyError as e:
-        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCW")
-    return tcw
-
-
-def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
-    try:
-        tcw = (
-            -0.2941 * params_dict["B"]
-            - 0.243 * params_dict["G"]
-            - 0.5424 * params_dict["R"]
-            + 0.7276 * params_dict["N"]
-            + 0.0713 * params_dict["S1"]
-            - 0.1608 * params_dict["S2"]
-        )
-    except KeyError as e:
-        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCG")
-    return tcw
+def _split_indices_by_source(indices: List[str]) -> tuple[List[str], List[str]]:
+    """Split a list of indices by their source of computation, spyndex or spectral-recovery"""
+    spx_list = []
+    sr_list = []
+    spx_indices = list(spx.indices)
+    sr_indices = list(SR_REC_IDXS.keys())
+    for i in indices:
+        if i in sr_indices:
+            sr_list.append(i)
+        elif i in spx_indices:
+            spx_list.append(i)
+        else:
+            raise ValueError(f"'{i}' is not a supported index")
+    return (spx_list, sr_list)
 
 
 def _supported_domain(indices: list[str]):

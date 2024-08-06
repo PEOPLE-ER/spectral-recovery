@@ -15,19 +15,17 @@ from spectral_recovery.indices import (
     TCW,
     TCG,
     GCI,
+    _split_indices_by_source
 )
-
-INDICES = list(spx.indices) + ["GCI", "TCW", "TCG"]
-BANDS = list(spx.bands)
-CONSTANTS = list(spx.constants)
-
 
 def bands_from_index(indices: List[str]):
     """Return list of bands used in an index"""
     bands = []
-    for index in indices:
+    for index in indices: 
+        if index in ["TCW", "TCG", "GCI"]:
+            continue     
         for b in spx.indices[index].bands:
-            if b in BANDS and b not in bands:
+            if b in list(spx.bands) and b not in bands:
                 bands.append(b)
     return bands
 
@@ -36,8 +34,10 @@ def constants_from_index(indices: List[str]):
     """Return list of constants used in an index"""
     constants = []
     for index in indices:
+        if index in ["TCW", "TCG", "GCI"]:
+            continue
         for b in spx.indices[index].bands:
-            if b in CONSTANTS and b not in constants:
+            if b in list(spx.constants) and b not in constants:
                 constants.append(b)
     return constants
 
@@ -180,8 +180,8 @@ class TestComputeIndices:
         assert isinstance(result, xr.DataArray)
 
     def test_correct_dimensions_and_coords_on_result(self):
-        index = ["CIRE", "NDVI", "EVI"]
-        bands = bands_from_index(index)
+        index = ["CIRE", "NDVI", "EVI", "GCI"]
+        bands = bands_from_index(index) + ["G"]
         constants = constants_from_index(index)
         constants_dict = {c: spx.constants[c].default for c in constants}
 
@@ -235,6 +235,31 @@ class TestComputeIndices:
         # Act and Assert
         with pytest.raises(ValueError):
             result = compute_indices(data, [index])
+
+class TestSplitIndices:
+    def test_only_spx_returns_empty_sr(self):
+        indices = ["SR", "NDVI"]
+        spx_list, sr_list = _split_indices_by_source(indices)
+        assert spx_list == ["SR", "NDVI"]
+        assert sr_list == []
+
+    def test_only_sr_returns_empty_spx(self):
+        indices = ["GCI", "TCW"]
+        spx_list, sr_list = _split_indices_by_source(indices)
+        assert spx_list == []
+        assert sr_list == ["GCI", "TCW"]
+
+    def test_unsupported_index_raises_value_err(self):
+        indices = ["BBG"]
+        with pytest.raises(ValueError) as valerr:
+            _split_indices_by_source(indices)
+        assert "'BBG'" in str(valerr.value)
+        
+    def test_spx_and_sr_split_correctly(self):
+        indices = ["SR", "TCW", "NDVI", "GCI"]
+        spx_list, sr_list = _split_indices_by_source(indices)
+        assert spx_list == ["SR", "NDVI"]
+        assert sr_list == ["TCW", "GCI"]
 
 
 class TestGCI:
