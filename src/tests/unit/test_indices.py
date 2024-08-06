@@ -12,9 +12,12 @@ from spectral_recovery._config import REQ_DIMS
 from spectral_recovery.indices import (
     compute_indices,
     INDEX_CONSTANT_DEFAULTS,
+    TCW, 
+    TCG, 
+    GCI,
 )
 
-INDICES = list(spx.indices)
+INDICES = list(spx.indices) + ["GCI", "TCW", "TCG"]
 BANDS = list(spx.bands)
 CONSTANTS = list(spx.constants)
 
@@ -232,3 +235,51 @@ class TestComputeIndices:
         # Act and Assert
         with pytest.raises(ValueError):
             result = compute_indices(data, [index])
+
+class TestGCI:
+    def test_returns_correct_values(self):
+        params_dict_1 = {"N": xr.DataArray([0.2]), "G": xr.DataArray([0.4])}
+        expected_1 = xr.DataArray([-0.5]) # (0.2/0.4)-1 
+        params_dict_2 = {"N": xr.DataArray([0.4]), "G": xr.DataArray([0.2])}
+        expected_2 = xr.DataArray([1.0]) # (0.4/0.2)-1 
+
+        output_1 = GCI(params_dict=params_dict_1)
+        output_2 = GCI(params_dict=params_dict_2)
+
+        xr.testing.assert_equal(output_1, expected_1)
+        xr.testing.assert_equal(output_2, expected_2)
+
+    def test_throws_key_error_if_params_missing_bands(self):
+        params_dict = {"G": xr.DataArray([0.4])}
+        with pytest.raises(KeyError) as keyerr:
+            GCI(params_dict=params_dict)
+        assert "'N'" in str(keyerr.value)
+
+class TestTCW:
+    def test_returns_correct_values(self):
+        params_dict = {"B": xr.DataArray([0.1]),"G": xr.DataArray([0.2]),"R": xr.DataArray([0.3]), "N": xr.DataArray([0.4]), "S1": xr.DataArray([0.5]), "S2": xr.DataArray([0.6])}
+        expected = xr.DataArray([-0.34004999999999996]) # 0.1511*0.1+0.1973*0.2+0.3283*0.3+0.3407*0.4-0.7117*0.5-0.4559*0.6
+        output = TCW(params_dict=params_dict)
+
+        xr.testing.assert_equal(output, expected)
+
+    def test_throws_key_error_if_params_missing_bands(self):
+        params_dict = {"G": xr.DataArray([0.2]),"R": xr.DataArray([0.3]), "N": xr.DataArray([0.4]), "S1": xr.DataArray([0.5]), "S2": xr.DataArray([0.6])}
+        with pytest.raises(KeyError) as keyerr:
+            TCW(params_dict=params_dict)
+        assert "'B'" in str(keyerr.value)
+
+class TestTCG:
+    def test_returns_correct_values(self):
+        params_dict = {"B": xr.DataArray([0.1]),"G": xr.DataArray([0.2]),"R": xr.DataArray([0.3]), "N": xr.DataArray([0.4]), "S1": xr.DataArray([0.5]), "S2": xr.DataArray([0.6])}
+        expected = xr.DataArray([-0.010519999999999974]) # -0.2941*(0.1)-0.243*(0.2)-0.5424*(0.3)+0.7276*(0.4)+0.0713*(0.5)-0.1608*(0.6)
+
+        output = TCG(params_dict=params_dict)
+        
+        xr.testing.assert_equal(output, expected)
+
+    def test_throws_key_error_if_params_missing_bands(self):
+        params_dict = {"G": xr.DataArray([0.2]),"R": xr.DataArray([0.3]), "N": xr.DataArray([0.4]), "S1": xr.DataArray([0.5]), "S2": xr.DataArray([0.6])}
+        with pytest.raises(KeyError) as keyerr:
+            TCG(params_dict=params_dict)
+        assert "'B'" in str(keyerr.value)
