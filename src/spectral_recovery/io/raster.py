@@ -14,6 +14,7 @@ import numpy as np
 import xarray as xr
 
 from spectral_recovery._utils import bands_pretty_table, common_and_long_to_short
+from spectral_recovery._config import SUPPORTED_INDICES
 from rasterio._err import CPLE_AppDefinedError
 
 from spectral_recovery._config import (
@@ -227,16 +228,17 @@ def _to_standard_band_names(in_names: List[str]) -> Tuple[List[str], List[str]]:
             converted = True
             standard_names.append(COMMON_LONG_SHORT_DICT[given_name])
             attr_names.append(given_name)
-
         elif given_name in STANDARD_BANDS:
+            converted = True
+            standard_names.append(given_name)
+        elif given_name in SUPPORTED_INDICES:
             converted = True
             standard_names.append(given_name)
 
         if not converted:
             raise ValueError(
-                "Band must be named standard, common, or long name. Could not find"
-                f" '{given_name}' in catalogue. See table below for accepted names:"
-                f" \n\n {BANDS_TABLE} \n\n"
+                "Band must be named standard, common, or long name for a spectral band, or a spectral index. Could not find"
+                f" '{given_name}' in supported bands or indices."
             ).with_traceback(None) from None
 
     return (standard_names, attr_names)
@@ -250,39 +252,3 @@ def _mask_stack(stack: xr.DataArray, mask: xr.DataArray, fill=np.nan) -> xr.Data
         )
     masked_stack = stack.where(mask, fill)
     return masked_stack
-
-
-def _metrics_to_tifs(
-    metric: xr.DataArray,
-    out_dir: str,
-) -> None:
-    """
-    Write a DataArray of metrics to TIFs.
-
-    Parameters
-    ----------
-    metric : xr.DataArray
-        The metric to write to TIFs. Must have dimensions: 'metric', 'band', 'y', and 'x'.
-    out_dir : str
-        Path to directory to write TIFs.
-
-    """
-    # NOTE: out_raster MUST be all null otherwise merging of rasters will fail
-    out_raster = xr.full_like(metric[0, 0, :, :], np.nan)
-    for m in metric["metric"].values:
-        xa_dataset = xr.Dataset()
-        for band in metric["band"].values:
-            out_metric = metric.sel(metric=m, band=band)
-
-            merged = out_metric.combine_first(out_raster)
-            xa_dataset[str(band)] = merged
-            try:
-                filename = f"{out_dir}/{str(m)}.tif"
-                xa_dataset.rio.to_raster(raster_path=filename)
-            # TODO: Probably shouldn't except on an error hidden from API users...
-            except CPLE_AppDefinedError:
-                raise PermissionError(
-                    f"Permission denied to overwrite {filename}. Is the existing TIF"
-                    " open in an application (e.g QGIS)? If so, try closing it before"
-                    " your next run to avoid this error."
-                ) from None

@@ -19,11 +19,11 @@ import spyndex as spx
 from typing import List, Dict
 
 from spectral_recovery._utils import maintain_rio_attrs
+from spectral_recovery._config import SUPPORTED_DOMAINS
 
 # Set up global index configurations:
 #    1. Only support vegetation and burn indices
 #    2. Init index-specific constant defaults
-SUPPORTED_DOMAINS = ["vegetation", "burn"]
 with pkg_resources.open_text(
     "spectral_recovery.resources", "constant_defaults.json"
 ) as f:
