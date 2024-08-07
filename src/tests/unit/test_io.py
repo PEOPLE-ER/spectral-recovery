@@ -473,7 +473,31 @@ class TestReadTimeseriesBandNames:
                 path_to_tifs="a/dir",
                 array_type="numpy",
             )
+    
+    @patch(
+        "rioxarray.open_rasterio",
+    )
+    @patch("spectral_recovery.io.raster._get_tifs_from_dir")
+    def test_index_band_names_accepted(
+        self, mocked_get_tifs, mocked_rasterio_open, filenames
+    ):
+        expected_bands = ["GCI", "NBR", "NDVI"]
+        rasterio_return = xr.DataArray(
+            [[[[0]]], [[[0]]], [[[0]]]],
+            dims=["band", "time", "y", "x"],
+            coords={"band": [1, 2, 3]},
+        )
+        mocked_get_tifs.return_value = filenames
+        mocked_rasterio_open.return_value = rasterio_return
 
+        stacked_tifs = read_timeseries(
+            path_to_tifs="a/dir",
+            band_names={1: "GCI", 2: "NBR", 3: "NDVI"},
+            array_type="numpy",
+        )
+        # assert
+        print(stacked_tifs["band"].data, expected_bands)
+        assert_array_equal(stacked_tifs["band"].data, expected_bands)
 
 class TestReadTimeseriesDictInput:
 
