@@ -75,14 +75,6 @@
         show_root_heading: true
         show_source: false
 
-:::src.scripts.cli
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false
-
 <!-- :::src.spectral_recovery.io.raster
     options:
         docstring_options:
