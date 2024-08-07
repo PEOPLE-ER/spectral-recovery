@@ -65,6 +65,7 @@ class TestComputeIndices:
             coords={"band": bands},
         )
         expected_params = {b: data.sel(band=b) for b in bands}
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         compute_indices(data, [index])
 
@@ -86,6 +87,7 @@ class TestComputeIndices:
         bands = {b: data.sel(band=b) for b in bands}
         constants = {c: spx.constants[c].default for c in constants}
         expected_params = bands | constants
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         compute_indices(data, [index], constants=constants)
 
@@ -107,6 +109,7 @@ class TestComputeIndices:
 
         bands_dict = {b: data.sel(band=b) for b in bands}
         expected_params = bands_dict | defaults_dict
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         compute_indices(data, [index])
 
@@ -145,6 +148,8 @@ class TestComputeIndices:
             | given_constants
             | {"g": INDEX_CONSTANT_DEFAULTS[index]["defaults"]["g"]}
         )
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
+
         compute_indices(data, [index], constants=given_constants)
 
         input_kwargs = mock_spyndex.call_args.kwargs
@@ -160,6 +165,7 @@ class TestComputeIndices:
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
         )
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         with pytest.raises(ValueError):
             compute_indices(data, [index])
@@ -265,9 +271,9 @@ class TestSplitIndices:
 class TestGCI:
     def test_returns_correct_values(self):
         params_dict_1 = {"N": xr.DataArray([0.2]), "G": xr.DataArray([0.4])}
-        expected_1 = xr.DataArray([-0.5])  # (0.2/0.4)-1
+        expected_1 = xr.DataArray([[-0.5]], dims=["band", "dim_0"], coords={"band": ["GCI"]})  # (0.2/0.4)-1
         params_dict_2 = {"N": xr.DataArray([0.4]), "G": xr.DataArray([0.2])}
-        expected_2 = xr.DataArray([1.0])  # (0.4/0.2)-1
+        expected_2 = xr.DataArray([[1.0]], dims=["band", "dim_0"], coords={"band": ["GCI"]})  # (0.4/0.2)-1
 
         output_1 = GCI(params_dict=params_dict_1)
         output_2 = GCI(params_dict=params_dict_2)
@@ -293,7 +299,7 @@ class TestTCW:
             "S2": xr.DataArray([0.6]),
         }
         expected = xr.DataArray(
-            [-0.34004999999999996]
+            [[-0.34004999999999996]], dims=["band", "dim_0"], coords={"band": ["TCW"]}
         )  # 0.1511*0.1+0.1973*0.2+0.3283*0.3+0.3407*0.4-0.7117*0.5-0.4559*0.6
         output = TCW(params_dict=params_dict)
 
@@ -323,7 +329,7 @@ class TestTCG:
             "S2": xr.DataArray([0.6]),
         }
         expected = xr.DataArray(
-            [-0.010519999999999974]
+            [[-0.010519999999999974]], dims=["band", "dim_0"], coords={"band": ["TCG"]}
         )  # -0.2941*(0.1)-0.243*(0.2)-0.5424*(0.3)+0.7276*(0.4)+0.0713*(0.5)-0.1608*(0.6)
 
         output = TCG(params_dict=params_dict)
