@@ -12,19 +12,20 @@ from spectral_recovery._config import REQ_DIMS
 from spectral_recovery.indices import (
     compute_indices,
     INDEX_CONSTANT_DEFAULTS,
+    TCW,
+    TCG,
+    GCI,
+    _split_indices_by_source
 )
-
-INDICES = list(spx.indices)
-BANDS = list(spx.bands)
-CONSTANTS = list(spx.constants)
-
 
 def bands_from_index(indices: List[str]):
     """Return list of bands used in an index"""
     bands = []
-    for index in indices:
+    for index in indices: 
+        if index in ["TCW", "TCG", "GCI"]:
+            continue     
         for b in spx.indices[index].bands:
-            if b in BANDS and b not in bands:
+            if b in list(spx.bands) and b not in bands:
                 bands.append(b)
     return bands
 
@@ -33,8 +34,10 @@ def constants_from_index(indices: List[str]):
     """Return list of constants used in an index"""
     constants = []
     for index in indices:
+        if index in ["TCW", "TCG", "GCI"]:
+            continue
         for b in spx.indices[index].bands:
-            if b in CONSTANTS and b not in constants:
+            if b in list(spx.constants) and b not in constants:
                 constants.append(b)
     return constants
 
@@ -62,6 +65,7 @@ class TestComputeIndices:
             coords={"band": bands},
         )
         expected_params = {b: data.sel(band=b) for b in bands}
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         compute_indices(data, [index])
 
@@ -83,6 +87,7 @@ class TestComputeIndices:
         bands = {b: data.sel(band=b) for b in bands}
         constants = {c: spx.constants[c].default for c in constants}
         expected_params = bands | constants
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         compute_indices(data, [index], constants=constants)
 
@@ -104,6 +109,7 @@ class TestComputeIndices:
 
         bands_dict = {b: data.sel(band=b) for b in bands}
         expected_params = bands_dict | defaults_dict
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         compute_indices(data, [index])
 
@@ -142,6 +148,8 @@ class TestComputeIndices:
             | given_constants
             | {"g": INDEX_CONSTANT_DEFAULTS[index]["defaults"]["g"]}
         )
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
+
         compute_indices(data, [index], constants=given_constants)
 
         input_kwargs = mock_spyndex.call_args.kwargs
@@ -157,6 +165,7 @@ class TestComputeIndices:
             dims=["band", "time", "y", "x"],
             coords={"band": bands},
         )
+        mock_spyndex.return_value = xr.DataArray([[[0.1]]], dims=["time", "y", "x"])
 
         with pytest.raises(ValueError):
             compute_indices(data, [index])
@@ -177,8 +186,8 @@ class TestComputeIndices:
         assert isinstance(result, xr.DataArray)
 
     def test_correct_dimensions_and_coords_on_result(self):
-        index = ["CIRE", "NDVI", "EVI"]
-        bands = bands_from_index(index)
+        index = ["CIRE", "NDVI", "EVI", "GCI"]
+        bands = bands_from_index(index) + ["G"]
         constants = constants_from_index(index)
         constants_dict = {c: spx.constants[c].default for c in constants}
 
@@ -232,3 +241,109 @@ class TestComputeIndices:
         # Act and Assert
         with pytest.raises(ValueError):
             result = compute_indices(data, [index])
+
+class TestSplitIndices:
+    def test_only_spx_returns_empty_sr(self):
+        indices = ["SR", "NDVI"]
+        spx_list, sr_list = _split_indices_by_source(indices)
+        assert spx_list == ["SR", "NDVI"]
+        assert sr_list == []
+
+    def test_only_sr_returns_empty_spx(self):
+        indices = ["GCI", "TCW"]
+        spx_list, sr_list = _split_indices_by_source(indices)
+        assert spx_list == []
+        assert sr_list == ["GCI", "TCW"]
+
+    def test_unsupported_index_raises_value_err(self):
+        indices = ["BBG"]
+        with pytest.raises(ValueError) as valerr:
+            _split_indices_by_source(indices)
+        assert "'BBG'" in str(valerr.value)
+        
+    def test_spx_and_sr_split_correctly(self):
+        indices = ["SR", "TCW", "NDVI", "GCI"]
+        spx_list, sr_list = _split_indices_by_source(indices)
+        assert spx_list == ["SR", "NDVI"]
+        assert sr_list == ["TCW", "GCI"]
+
+
+class TestGCI:
+    def test_returns_correct_values(self):
+        params_dict_1 = {"N": xr.DataArray([0.2]), "G": xr.DataArray([0.4])}
+        expected_1 = xr.DataArray([[-0.5]], dims=["band", "dim_0"], coords={"band": ["GCI"]})  # (0.2/0.4)-1
+        params_dict_2 = {"N": xr.DataArray([0.4]), "G": xr.DataArray([0.2])}
+        expected_2 = xr.DataArray([[1.0]], dims=["band", "dim_0"], coords={"band": ["GCI"]})  # (0.4/0.2)-1
+
+        output_1 = GCI(params_dict=params_dict_1)
+        output_2 = GCI(params_dict=params_dict_2)
+
+        xr.testing.assert_equal(output_1, expected_1)
+        xr.testing.assert_equal(output_2, expected_2)
+
+    def test_throws_key_error_if_params_missing_bands(self):
+        params_dict = {"G": xr.DataArray([0.4])}
+        with pytest.raises(KeyError) as keyerr:
+            GCI(params_dict=params_dict)
+        assert "'N'" in str(keyerr.value)
+
+
+class TestTCW:
+    def test_returns_correct_values(self):
+        params_dict = {
+            "B": xr.DataArray([0.1]),
+            "G": xr.DataArray([0.2]),
+            "R": xr.DataArray([0.3]),
+            "N": xr.DataArray([0.4]),
+            "S1": xr.DataArray([0.5]),
+            "S2": xr.DataArray([0.6]),
+        }
+        expected = xr.DataArray(
+            [[-0.34004999999999996]], dims=["band", "dim_0"], coords={"band": ["TCW"]}
+        )  # 0.1511*0.1+0.1973*0.2+0.3283*0.3+0.3407*0.4-0.7117*0.5-0.4559*0.6
+        output = TCW(params_dict=params_dict)
+
+        xr.testing.assert_equal(output, expected)
+
+    def test_throws_key_error_if_params_missing_bands(self):
+        params_dict = {
+            "G": xr.DataArray([0.2]),
+            "R": xr.DataArray([0.3]),
+            "N": xr.DataArray([0.4]),
+            "S1": xr.DataArray([0.5]),
+            "S2": xr.DataArray([0.6]),
+        }
+        with pytest.raises(KeyError) as keyerr:
+            TCW(params_dict=params_dict)
+        assert "'B'" in str(keyerr.value)
+
+
+class TestTCG:
+    def test_returns_correct_values(self):
+        params_dict = {
+            "B": xr.DataArray([0.1]),
+            "G": xr.DataArray([0.2]),
+            "R": xr.DataArray([0.3]),
+            "N": xr.DataArray([0.4]),
+            "S1": xr.DataArray([0.5]),
+            "S2": xr.DataArray([0.6]),
+        }
+        expected = xr.DataArray(
+            [[-0.010519999999999974]], dims=["band", "dim_0"], coords={"band": ["TCG"]}
+        )  # -0.2941*(0.1)-0.243*(0.2)-0.5424*(0.3)+0.7276*(0.4)+0.0713*(0.5)-0.1608*(0.6)
+
+        output = TCG(params_dict=params_dict)
+
+        xr.testing.assert_equal(output, expected)
+
+    def test_throws_key_error_if_params_missing_bands(self):
+        params_dict = {
+            "G": xr.DataArray([0.2]),
+            "R": xr.DataArray([0.3]),
+            "N": xr.DataArray([0.4]),
+            "S1": xr.DataArray([0.5]),
+            "S2": xr.DataArray([0.6]),
+        }
+        with pytest.raises(KeyError) as keyerr:
+            TCG(params_dict=params_dict)
+        assert "'B'" in str(keyerr.value)
