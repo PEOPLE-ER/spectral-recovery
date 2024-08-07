@@ -42,15 +42,6 @@
         show_root_heading: true
         show_source: false
 
-:::src.spectral_recovery.restoration
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false
-        filters: ['!^_']
-
 :::src.spectral_recovery.targets
     options:
         docstring_options:
