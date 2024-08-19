@@ -5,7 +5,6 @@ import spyndex as spx
 import xarray as xr
 
 from rioxarray.exceptions import MissingCRS
-from prettytable import PrettyTable, ALL
 
 
 def maintain_rio_attrs(func: callable) -> callable:
@@ -99,41 +98,6 @@ def common_and_long_to_short(standard):
         common_and_short[spx.bands[band].short_name] = band
         common_and_short[spx.bands[band].common_name] = band
     return common_and_short
-
-
-def bands_pretty_table():
-    """Create a PrettyTable of all bands (names and id info).
-
-    Returns
-    -------
-    band_table : PrettyTable
-        table for displaying short names, common names, long
-        names, wavelength and platform info for bands in the
-        spyndex package.
-
-    """
-    band_table = PrettyTable()
-    band_table.hrules = ALL
-    band_table.field_names = [
-        "Standard/Short Name",
-        "Common Name",
-        "Long Name",
-        "Wavelength (min, max)",
-        "Platforms",
-    ]
-    for st in list(spx.bands):
-        platforms = _format_platforms(_platforms_from_band(spx.bands[st]), 3)
-        band_table.add_row(
-            [
-                st,
-                spx.bands[st].common_name,
-                spx.bands[st].long_name,
-                f"{spx.bands[st].min_wavelength, spx.bands[st].max_wavelength}",
-                platforms,
-            ]
-        )
-    return band_table
-
 
 def _platforms_from_band(band_object):
     """Get list of platform names supported by each band"""
