@@ -118,17 +118,3 @@ def _platforms_from_band(band_object):
         except AttributeError:
             continue
     return platforms
-
-
-def _format_platforms(comment_list, max_items_on_line):
-    """Format list of platform strs into prettier multi-line str"""
-    ACC_length = 0
-    formatted_comment = ""
-    for word in comment_list:
-        if ACC_length + 1 < max_items_on_line:
-            formatted_comment = formatted_comment + word + ", "
-            ACC_length = ACC_length + 1
-        else:
-            formatted_comment = formatted_comment + "\n" + word + ", "
-            ACC_length = +1
-    return formatted_comment
