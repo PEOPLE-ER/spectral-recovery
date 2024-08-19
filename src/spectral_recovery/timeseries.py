@@ -40,8 +40,7 @@ def _datetime_to_index(
 
 @xr.register_dataarray_accessor("satts")
 class _SatelliteTimeSeries:
-    """A accessor for operations commonly performed over
-    a timeseries of satellite images stored in an xarray.DataArray.
+    """Accessor for timeseries-related operations in spectral-recovery.
 
     See "Extending xarray using accessors" for more information:
     https://docs.xarray.dev/en/stable/internals/extending-xarray.html
