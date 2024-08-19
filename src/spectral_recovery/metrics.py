@@ -23,9 +23,9 @@ def register_metric(f):
 @maintain_rio_attrs
 def compute_metrics(
     timeseries_data: xr.DataArray,
-    restoration_polygons: gpd.GeoDataFrame,
+    restoration_sites: gpd.GeoDataFrame,
     metrics: List[str],
-    recovery_target: xr.DataArray = None,
+    recovery_targets: xr.DataArray = None,
     timestep: int = 5,
     percent_of_target: int = 80,
 ):
@@ -33,7 +33,7 @@ def compute_metrics(
     TODO: Add docstring.
 
     """
-    if recovery_target is None:
+    if recovery_targets is None:
         for tmetric in ["Y2R", "R80P"]:
             if tmetric in metrics:
                 raise ValueError(
@@ -41,7 +41,7 @@ def compute_metrics(
                 )
 
     per_polygon_metrics = {}
-    for index, row in restoration_polygons.iterrows():
+    for index, row in restoration_sites.iterrows():
         # Prepare arguments being passed to the metric functions
         clipped_ts = timeseries_data.rio.clip([row.geometry])
         m_kwargs = dict(
@@ -53,11 +53,11 @@ def compute_metrics(
                 "percent_of_target": percent_of_target,
             },
         )
-        if isinstance(recovery_target, dict):
-            m_kwargs["recovery_target"] = recovery_target[index]
+        if isinstance(recovery_targets, dict):
+            m_kwargs["recovery_target"] = recovery_targets[index]
         else:
             # if a DataArray or None, just pass as-is
-            m_kwargs["recovery_target"] = recovery_target
+            m_kwargs["recovery_target"] = recovery_targets
 
         m_results = []
         for m in metrics:
