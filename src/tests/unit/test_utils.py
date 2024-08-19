@@ -1,8 +1,8 @@
 import pytest
 import xarray as xr
 
-from spectral_recovery._utils import common_and_long_to_short
-from spectral_recovery._utils import maintain_rio_attrs
+from spectral_recovery.utils import common_and_long_to_short
+from spectral_recovery.utils import maintain_rio_attrs
 
 
 def test_green_maps_to_G_not_G1():

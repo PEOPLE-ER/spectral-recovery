@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 from shapely.geometry import box
-from spectral_recovery._config import DATETIME_FREQ, REQ_DIMS
+from spectral_recovery.config import DATETIME_FREQ, REQ_DIMS
 
 
 def _datetime_to_index(

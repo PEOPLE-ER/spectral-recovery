@@ -27,7 +27,7 @@ def plot_spectral_trajectory(
     ----------
     timeseries_data : xr.DataArray
         Timeseries data (annual composites)
-    restoration_polygons : gpd.GeoDataFrame
+    restoration_polygon : gpd.GeoDataFrame
         Restoration polygon and dates
     indices : list of str
         Indices to visualize trajectory for

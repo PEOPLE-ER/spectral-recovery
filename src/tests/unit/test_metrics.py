@@ -11,7 +11,7 @@ from shapely import Polygon
 # from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.metrics import (
     y2r,
-    dnbr,
+    dir,
     rri,
     yryr,
     r80p,
@@ -21,7 +21,7 @@ from spectral_recovery.metrics import (
 
 
 def test_metric_funcs_global_contains_all_funcs():
-    expected_dict = {"y2r": y2r, "dnbr": dnbr, "yryr": yryr, "r80p": r80p, "rri": rri}
+    expected_dict = {"y2r": y2r, "dir": dir, "yryr": yryr, "r80p": r80p, "rri": rri}
     assert METRIC_FUNCS == expected_dict
 
 
@@ -677,7 +677,7 @@ class TestDNBR:
     )
     def test_default_dNBR(self, obs, expected):
         rest_start = 2010
-        assert dnbr(restoration_start=rest_start, timeseries_data=obs).equals(expected)
+        assert dir(restoration_start=rest_start, timeseries_data=obs).equals(expected)
 
     def test_timestep_dNBR(self):
         rest_start = 2010
@@ -693,7 +693,7 @@ class TestDNBR:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        assert dnbr(
+        assert dir(
             restoration_start=rest_start,
             timeseries_data=obs,
             params={"timestep": timestep},
@@ -710,7 +710,7 @@ class TestDNBR:
         timestep = -2
 
         with pytest.raises(ValueError, match="timestep cannot be negative."):
-            dnbr(
+            dir(
                 restoration_start=rest_start,
                 timeseries_data=obs,
                 params={"timestep": timestep},
@@ -728,7 +728,7 @@ class TestDNBR:
         with pytest.raises(
             ValueError,
         ):
-            dnbr(
+            dir(
                 restoration_start=rest_start,
                 timeseries_data=obs,
                 params={"timestep": timestep},

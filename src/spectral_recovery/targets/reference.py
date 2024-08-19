@@ -7,7 +7,7 @@ from pandas import Index as pdIndex
 
 
 def _window_time_clip(timeseries_data, site, reference_start, reference_end):
-    """Clip data to"""
+    """Clip DataArray to window and time values"""
     clipped_stacks = {}
     for i, row in site.iterrows():
         polygon_stack = timeseries_data.rio.clip(gpd.GeoSeries(row.geometry).values)
@@ -37,15 +37,16 @@ def median(
 
     Parameters
     ----------
-    polygon : gpd.GeoDataFrame
-        The polygon/area to compute a recovery target for.
-    timeseries_data : xr.DataArrah
+    restoration_sites : gpd.GeoDataFrame or str
+       The restoration sites to compute a recovery targets for. If str, 
+       must be a patch to a vector file containing one more more polygons.
+    timeseries_data : xr.DataArray
         The timeseries of indices to derive the recovery target from.
         Must contain band, time, y, and x dimensions.
-    reference_start : str
+    reference_start : int
         Start year of reference window. Must exist in timeseries_data's
         time coordinates.
-    reference_end :
+    reference_end : int
         End year of reference window. Must exist in timeseries_data's
         time coordinates.
 

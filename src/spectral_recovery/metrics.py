@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 
-from spectral_recovery._utils import maintain_rio_attrs
+from spectral_recovery.utils import maintain_rio_attrs
 
 NEG_TIMESTEP_MSG = "timestep cannot be negative."
 VALID_PERC_MSP = "percent must be between 0 and 100."
@@ -22,18 +22,54 @@ def register_metric(f):
 
 @maintain_rio_attrs
 def compute_metrics(
-    timeseries_data: xr.DataArray,
-    restoration_polygons: gpd.GeoDataFrame,
     metrics: List[str],
-    recovery_target: xr.DataArray = None,
+    timeseries_data: xr.DataArray,
+    restoration_sites: gpd.GeoDataFrame,
+    recovery_targets: xr.DataArray | dict = None,
     timestep: int = 5,
     percent_of_target: int = 80,
-):
-    """
-    TODO: Add docstring.
+) -> dict:
+    """Compute recovery metrics for each restoration site.
+
+    Parameters
+    ----------
+    metrics : list of str
+        The names of recovery metrics to compute. Accepted values:
+            - "Y2R": Years-to-Recovery
+            - "R80P": Recovered 80 Percent
+            - "dIR": delta Index Regrowth
+            - "YrYr": Year-on-Year Average
+            - "RRI": Relative Recovery Indicator
+    timeseries_data : xarray.DataArray
+        The timeseries of indices to compute recovery metrics with.
+        Must contain band, time, y, and x dimensions.
+    restoration_sites : geopandas.GeoDataFrame
+        The restoration sites to compute a recovery targets for.
+    recovery_targets : xarray.DataArray or dict
+        The recovery targets. Either a dict mapping polygon IDs to 
+        xarray.DataArrays of recovery targets or a single xarray.DataArray.
+    timestep : int, optional
+        The timestep post-restoration to consider when computing recovery 
+        metrics. Only used for "R80P", "dIR", and "YrYr" and "RRI" recovery
+        metrics. Default = 5.
+    percent_of_target : int, optional
+        The percent of the recovery target to consider when computing
+        recovery metrics. Only used for "Y2R" and "R80P". Default = 80.
+
+    
+    Returns
+    -------
+    metric_ds : xarray.Dataset
+        Dataset of restoration site ID variables, each containing an array
+        of recovery metrics specific to each site.
+
+    Notes
+    -----
+    Recovery target arrays _must_ be broadcastable to the timeseries_data 
+    when timeseries_data is clipped to each restoration site.
 
     """
-    if recovery_target is None:
+    if recovery_targets is None:
         for tmetric in ["Y2R", "R80P"]:
             if tmetric in metrics:
                 raise ValueError(
@@ -41,7 +77,7 @@ def compute_metrics(
                 )
 
     per_polygon_metrics = {}
-    for index, row in restoration_polygons.iterrows():
+    for index, row in restoration_sites.iterrows():
         # Prepare arguments being passed to the metric functions
         clipped_ts = timeseries_data.rio.clip([row.geometry])
         m_kwargs = dict(
@@ -53,11 +89,11 @@ def compute_metrics(
                 "percent_of_target": percent_of_target,
             },
         )
-        if isinstance(recovery_target, dict):
-            m_kwargs["recovery_target"] = recovery_target[index]
+        if isinstance(recovery_targets, dict):
+            m_kwargs["recovery_target"] = recovery_targets[index]
         else:
             # if a DataArray or None, just pass as-is
-            m_kwargs["recovery_target"] = recovery_target
+            m_kwargs["recovery_target"] = recovery_targets
 
         m_results = []
         for m in metrics:
@@ -83,7 +119,7 @@ def has_no_missing_years(images: xr.DataArray):
 
 
 @register_metric
-def dnbr(
+def dir(
     restoration_start: int,
     timeseries_data: xr.DataArray,
     params: Dict = {"timestep": 5},
@@ -99,15 +135,20 @@ def dnbr(
 
     Parameters
     ----------
-    ra : RestorationArea
-        The restoration area to compute dnbr for.
+    restoration_start : int
+        The start year of restoration activities.
+    timeseries_data: 
+        The timeseries of indices to compute dIR with. Must contain
+        band, time, y, and x coordinate dimensions.
     params : Dict
-        Parameters to customize metric computation. dnbr uses
+        Parameters to customize metric computation. dIR uses
         the 'timestep' parameter with default = {"timestep": 5}
+    recovery_target : xarray.DataArray
+        Recovery target values. Must be broadcastable to timeseries_data.
 
     Returns
     -------
-    dnbr_v : xr.DataArray
+    dir_v : xr.DataArray
         DataArray containing the dNBR value for each pixel.
 
     """
@@ -124,12 +165,12 @@ def dnbr(
             f" than end of timeseries: {timesries_end}. "
         ) from None
 
-    dnbr_v = (
+    dir_v = (
         timeseries_data.sel(time=rest_post_t).drop_vars("time")
         - timeseries_data.sel(time=str(restoration_start)).drop_vars("time")
     ).squeeze("time")
 
-    return dnbr_v
+    return dir_v
 
 
 @register_metric
@@ -149,11 +190,16 @@ def yryr(
 
     Parameters
     ----------
-    ra : RestorationArea
-        The restoration area to compute yryr for.
+    restoration_start : int
+        The start year of restoration activities.
+    timeseries_data: 
+        The timeseries of indices to compute YrYr with. Must contain
+        band, time, y, and x coordinate dimensions.
     params : Dict
-        Parameters to customize metric computation. yryr uses
+        Parameters to customize metric computation. YrYr uses
         the 'timestep' parameter with default = {"timestep": 5}
+    recovery_target : xarray.DataArray
+        Recovery target values. Must be broadcastable to timeseries_data.
 
     Returns
     -------
@@ -193,12 +239,17 @@ def r80p(
 
     Parameters
     ----------
-    ra : RestorationArea
-        The restoration area to compute r80p for.
+    restoration_start : int
+        The start year of restoration activities.
+    timeseries_data: 
+        The timeseries of indices to compute R80P with. Must contain
+        band, time, y, and x coordinate dimensions.
     params : Dict
         Parameters to customize metric computation. r80p uses
         the 'timestep' and 'percent_of_target' parameters with
         default = {"percent_of_target": 80, "timestep": 5}.
+    recovery_target : xarray.DataArray
+        Recovery target values. Must be broadcastable to timeseries_data.
 
     Returns
     -------
@@ -242,11 +293,16 @@ def y2r(
 
     Parameters
     ----------
-    ra : RestorationArea
-        The restoration area to compute r80p for.
+    restoration_start : int
+        The start year of restoration activities.
+    timeseries_data: 
+        The timeseries of indices to compute Y2R with. Must contain
+        band, time, y, and x coordinate dimensions.
     params : Dict
         Parameters to customize metric computation. r80p uses
         the 'percent_of_target' parameter with default = {"percent_of_target": 80}
+    recovery_target : xarray.DataArray
+        Recovery target values. Must be broadcastable to timeseries_data.
 
     Returns
     -------
@@ -310,12 +366,17 @@ def rri(
 
     Parameters
     ----------
-    ra : RestorationArea
-        The restoration area to compute r80p for.
+    restoration_start : int
+        The start year of restoration activities.
+    timeseries_data: 
+        The timeseries of indices to compute RRI with. Must contain
+        band, time, y, and x coordinate dimensions.
     params : Dict
         Parameters to customize metric computation. r80p uses
         the 'timestep' and 'use_dist_avg' parameters with
         default = {"timestep": 5}.
+    recovery_target : xarray.DataArray
+        Recovery target values. Must be broadcastable to timeseries_data.
 
     Returns
     -------

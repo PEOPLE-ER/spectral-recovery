@@ -29,34 +29,32 @@ def read_timeseries(
     band_names: Dict[int, str] = None,
     array_type: str = "dask",
 ):
-    """Reads and stacks a list of tifs into a 4D DataArray.
+    """Reads a timeseries of tifs into a 4D Xarray DataArray.
 
     Parameters
     ----------
-    path_to_tifs : list of str
-        List of paths to TIFs or path to directory containing TIFs.
+    path_to_tifs : dict or str
+        Dict of str paths to TIFs with keys as the year each raster or str path to directory containing TIFs.
     band_names : dict, optional
         Dictionary mapping band numbers to band names. If not provided,
-        band names will be read from the TIFs band descriptions.
-    path_to_mask : str, optional
-        Path to a 2D data mask to apply over all TIFs.
+        band names will be read from the TIFs band descriptions. Values can
+        be short or long spectral band names or short index names.
     array_type : {"dask", "numpy"}
         The type of array to use store data, either numpy or dask.
         NumPy arrays will be loaded into memory while Dask arrays will be
         lazily evaluated until being explicitly loaded into memory with a
-        .compute() call. Default is "numpy".
+        .compute() call. Default is "dask".
 
     Returns
     -------
     stacked_data : xr.DataArray
-        A 4D DataArray containing all rasters passed in
-        `path_to_tifs` and optionally masked. The 'band' dimension coordinates
-        will be either enums.Index or enums.BandCommon types, and 'time' dimension
-        will be datetime object dervied from the filename.
+        A 4D DataArray containing all rasters passed to
+        `path_to_tifs` with time, band, y, and x coordinate dimensions. 
+
 
     Notes
     -----
-    Files must be named in the format 'YYYY.tif' where 'YYYY' is a valid year.
+    If passing a directory of tifs to `path_to_tifs`, each file must be named following a 'YYYY.tif' format, where 'YYYY' is a valid year.
 
     """
     image_dict = {}

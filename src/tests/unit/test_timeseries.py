@@ -7,7 +7,7 @@ import geopandas as gpd
 import xarray as xr
 
 from numpy.testing import assert_almost_equal
-from spectral_recovery._config import DATETIME_FREQ
+from spectral_recovery.config import DATETIME_FREQ
 from spectral_recovery.timeseries import _datetime_to_index, _SatelliteTimeSeries
 
 
