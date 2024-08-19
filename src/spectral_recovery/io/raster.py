@@ -27,7 +27,6 @@ COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
 def read_timeseries(
     path_to_tifs: str | Dict[str, str],
     band_names: Dict[int, str] = None,
-    path_to_mask: str = None,
     array_type: str = "dask",
 ):
     """Reads and stacks a list of tifs into a 4D DataArray.
@@ -97,10 +96,6 @@ def read_timeseries(
     # TODO: catch missing dimension error here
     stacked_data = stacked_data.transpose(*REQ_DIMS)
     stacked_data = stacked_data.sortby("time")
-
-    if path_to_mask is not None:
-        with rioxarray.open_rasterio(Path(path_to_mask), chunks="auto") as mask:
-            stacked_data = _mask_stack(stacked_data, mask)
 
     return stacked_data
 
