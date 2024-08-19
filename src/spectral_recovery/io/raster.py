@@ -13,9 +13,8 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 
-from spectral_recovery._utils import bands_pretty_table, common_and_long_to_short
+from spectral_recovery._utils import common_and_long_to_short
 from spectral_recovery._config import SUPPORTED_INDICES
-from rasterio._err import CPLE_AppDefinedError
 
 from spectral_recovery._config import (
     VALID_YEAR,
@@ -24,8 +23,6 @@ from spectral_recovery._config import (
 )
 
 COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
-BANDS_TABLE = bands_pretty_table()
-
 
 def read_timeseries(
     path_to_tifs: str | Dict[str, str],

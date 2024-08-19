@@ -30,7 +30,6 @@ dependencies = [
     "dask-expr >= 1.0",
     "matplotlib >= 3.7.1",
     "seaborn >= 0.12.2",
-    "prettytable >= 3.9.0",
 ]
 
 [project.optional-dependencies]
