@@ -241,7 +241,8 @@ def _build_constants_dict(indices: List, constants: Dict) -> Dict:
         for c, v in default_constants["defaults"].items():
             if v is None:
                 raise ValueError(
-                    f"No default value for {c} available (required by {i}). Please provide a value for {c} with the `constants` param."
+                    f"No default value for {c} available (required by {i}). Please"
+                    f" provide a value for {c} with the `constants` param."
                 )
             # If more than one index needs the same constant and the constant value wasn't given in `constants` dict
             # (i.e must use defaults), check that the default values match o.w fail
@@ -249,7 +250,10 @@ def _build_constants_dict(indices: List, constants: Dict) -> Dict:
                 if c in constants_dict:
                     if constants_dict[c] != v:
                         raise ValueError(
-                            f"Cannot use default values for constants because {c} has more than one default value between the set of indices. Please provide a value for {c} with the `constants` param."
+                            f"Cannot use default values for constants because {c} has"
+                            " more than one default value between the set of indices."
+                            f" Please provide a value for {c} with the `constants`"
+                            " param."
                         )
                 else:
                     # Set constant value to the default value

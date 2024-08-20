@@ -75,7 +75,9 @@ def read_timeseries(
                 )
     else:
         raise TypeError(
-            f"Invalid path input. path_to_tifs can be a str path to a directory of TIFs or a dictionary mapping str years to str paths of individual TIF files. Recieved {type(path_to_tifs)}"
+            "Invalid path input. path_to_tifs can be a str path to a directory of TIFs"
+            " or a dictionary mapping str years to str paths of individual TIF files."
+            f" Recieved {type(path_to_tifs)}"
         )
 
     # Stack images along the time dimension
@@ -183,7 +185,8 @@ def _valid_band_name_mapping(band_names: Dict[int, str], band_nums: List[int]) -
     for b in band_names.keys():
         if b not in band_nums:
             raise ValueError(
-                f"Invalid band to name mapping. {b} is not in raster bands of {band_nums} "
+                f"Invalid band to name mapping. {b} is not in raster bands of"
+                f" {band_nums} "
             )
 
     for num in band_nums:
@@ -228,8 +231,9 @@ def _to_standard_band_names(in_names: List[str]) -> Tuple[List[str], List[str]]:
 
         if not converted:
             raise ValueError(
-                "Band must be named standard, common, or long name for a spectral band, or a spectral index. Could not find"
-                f" '{given_name}' in supported bands or indices."
+                "Band must be named standard, common, or long name for a spectral"
+                f" band, or a spectral index. Could not find '{given_name}' in"
+                " supported bands or indices."
             ).with_traceback(None) from None
 
     return (standard_names, attr_names)

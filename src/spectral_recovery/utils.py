@@ -55,7 +55,8 @@ def maintain_rio_attrs(func: callable) -> callable:
                     epsgs.append(crs)
             if not epsgs.count(epsgs[0]) == len(epsgs):
                 raise ValueError(
-                    f"Ambiguous input for wrapper. CRS on xarray.DataArray inputs do not match."
+                    f"Ambiguous input for wrapper. CRS on xarray.DataArray inputs do"
+                    f" not match."
                 )
         for i, val in enumerate(arg_da):
             if val:

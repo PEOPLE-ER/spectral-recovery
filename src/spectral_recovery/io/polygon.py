@@ -42,7 +42,8 @@ def read_restoration_sites(
             restoration_polygons
         ):
             raise ValueError(
-                "Missing disturbance and restoration years. Must pass year values to `dist_rest_years` param or as polygon attributes in the vector file."
+                "Missing disturbance and restoration years. Must pass year values to"
+                " `dist_rest_years` param or as polygon attributes in the vector file."
             )
     else:
         # Check if the given keys actually reference polygons
@@ -57,8 +58,9 @@ def read_restoration_sites(
             disturbance_start, restoration_start = years
             if disturbance_start >= restoration_start:
                 raise ValueError(
-                    "Disturbance start year cannot be greater than or equal to the restoration start year"
-                    f" ({disturbance_start} >= {restoration_start})"
+                    "Disturbance start year cannot be greater than or equal to the"
+                    f" restoration start year ({disturbance_start} >="
+                    f" {restoration_start})"
                 )
             restoration_polygons.loc[polyid, "dist_start"] = disturbance_start
             restoration_polygons.loc[polyid, "rest_start"] = restoration_start
@@ -67,7 +69,8 @@ def read_restoration_sites(
             restoration_polygons["rest_start"] == 0
         ).any():
             raise ValueError(
-                "Missing dist/rest start years for some polygons. Please provide a mapping for each polygon."
+                "Missing dist/rest start years for some polygons. Please provide a"
+                " mapping for each polygon."
             )
 
     # Dates must be in order: dist, rest then geom
@@ -81,7 +84,7 @@ def read_restoration_sites(
     for column_name, data_type in types.items():
         if data_type != "int64" and data_type != "int32":
             raise ValueError(
-                f"Date fields must be type int in"
+                "Date fields must be type int in"
                 f" {column_name} field. Given {data_type}."
             )
 

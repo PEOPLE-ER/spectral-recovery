@@ -1,7 +1,6 @@
 """Configuration for the spectral recovery package.""" ""
 
 import re
-import json
 import spyndex as spx
 
 DATETIME_FREQ = "YS"

@@ -322,7 +322,8 @@ def y2r(
     recovery_window = timeseries_data.sel(time=slice(str(restoration_start), None))
     if not has_no_missing_years(recovery_window):
         raise ValueError(
-            f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}."
+            "Missing years. Y2R requires data for all years between"
+            f" {recovery_window.time.min()}-{recovery_window.time.max()}."
         )
     y2r_target = recovery_target * (params["percent_of_target"] / 100)
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
