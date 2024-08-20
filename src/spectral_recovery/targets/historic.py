@@ -76,7 +76,7 @@ def median(
     Notes
     ------
     Differs from spectral_recovery.targets.reference.median because 1)
-    can be parameterized on scale, and 2) because multiple polygons are 
+    can be parameterized on scale, and 2) because multiple polygons are
     not reduced into a single value, i.e if 3 sites are given to this
     method then recovery targets are given for each of those 3 sites.
 

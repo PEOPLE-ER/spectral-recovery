@@ -29,6 +29,7 @@ with pkg_resources.open_text(
 ) as f:
     INDEX_CONSTANT_DEFAULTS = json.load(f)
 
+
 def GCI(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Green Chlorophyll Index (GCI) index"""
     try:
@@ -55,6 +56,7 @@ def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     tcw = tcw.expand_dims(dim={"band": ["TCW"]})
     return tcw
 
+
 def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Tasselled Cap Greenness (TCW) index with Landsat 8/9 coeff"""
     try:
@@ -71,7 +73,9 @@ def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     tcg = tcg.expand_dims(dim={"band": ["TCG"]})
     return tcg
 
+
 SR_REC_IDXS = {"GCI": GCI, "TCW": TCW, "TCG": TCG}
+
 
 @maintain_rio_attrs
 def compute_indices(
@@ -79,7 +83,7 @@ def compute_indices(
 ):
     """Compute spectral indices.
 
-    Compute spectral indices using the spyndex package or 
+    Compute spectral indices using the spyndex package or
     manually implemented indices.
 
     Parameters
@@ -111,9 +115,11 @@ def compute_indices(
             params_dict = params_dict | constants_dict | kwargs
             spx_index_stack = spx.computeIndex(index=spx_indices, params=params_dict)
             # Rename index to band or expand if only one index was computed
-            spx_index_stack = (spx_index_stack.rename({"index": "band"})
-                   if "index" in spx_index_stack.dims
-                   else spx_index_stack.expand_dims(dim={"band": spx_indices}))
+            spx_index_stack = (
+                spx_index_stack.rename({"index": "band"})
+                if "index" in spx_index_stack.dims
+                else spx_index_stack.expand_dims(dim={"band": spx_indices})
+            )
             spx_and_sr_outputs.append(spx_index_stack)
     if sr_indices:
         # Compute indexes implemented in sr (spectral-recovery)

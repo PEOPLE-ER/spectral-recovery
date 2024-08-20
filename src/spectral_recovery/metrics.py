@@ -10,17 +10,23 @@ import warnings
 
 from spectral_recovery.utils import maintain_rio_attrs
 
-warnings.filterwarnings("ignore", message="invalid value encountered in divide", category=RuntimeWarning)
-warnings.filterwarnings("ignore", message="All-NaN slice encountered", category=RuntimeWarning)
+warnings.filterwarnings(
+    "ignore", message="invalid value encountered in divide", category=RuntimeWarning
+)
+warnings.filterwarnings(
+    "ignore", message="All-NaN slice encountered", category=RuntimeWarning
+)
 
 NEG_TIMESTEP_MSG = "timestep cannot be negative."
 VALID_PERC_MSP = "percent must be between 0 and 100."
 METRIC_FUNCS = {}
 
+
 def register_metric(f):
     """Add function and name to global name/func dict"""
     METRIC_FUNCS[f.__name__] = f
     return f
+
 
 @maintain_rio_attrs
 def compute_metrics(
@@ -48,17 +54,17 @@ def compute_metrics(
     restoration_sites : geopandas.GeoDataFrame
         The restoration sites to compute a recovery targets for.
     recovery_targets : xarray.DataArray or dict
-        The recovery targets. Either a dict mapping polygon IDs to 
+        The recovery targets. Either a dict mapping polygon IDs to
         xarray.DataArrays of recovery targets or a single xarray.DataArray.
     timestep : int, optional
-        The timestep post-restoration to consider when computing recovery 
+        The timestep post-restoration to consider when computing recovery
         metrics. Only used for "R80P", "dIR", and "YrYr" and "RRI" recovery
         metrics. Default = 5.
     percent_of_target : int, optional
         The percent of the recovery target to consider when computing
         recovery metrics. Only used for "Y2R" and "R80P". Default = 80.
 
-    
+
     Returns
     -------
     metric_ds : xarray.Dataset
@@ -67,7 +73,7 @@ def compute_metrics(
 
     Notes
     -----
-    Recovery target arrays _must_ be broadcastable to the timeseries_data 
+    Recovery target arrays _must_ be broadcastable to the timeseries_data
     when timeseries_data is clipped to each restoration site.
 
     """
@@ -105,7 +111,7 @@ def compute_metrics(
                 raise ValueError(f"{m} is not a valid metric choice!")
             m_results.append(m_func(**m_kwargs).assign_coords({"metric": m}))
         per_polygon_metrics[index] = xr.concat(m_results, "metric")
-    
+
     return per_polygon_metrics
 
 
@@ -115,6 +121,7 @@ def has_no_missing_years(images: xr.DataArray):
     if not np.all((years == list(range(years[0], years[-1] + 1)))):
         return False
     return True
+
 
 @register_metric
 def dir(
@@ -135,7 +142,7 @@ def dir(
     ----------
     restoration_start : int
         The start year of restoration activities.
-    timeseries_data: 
+    timeseries_data:
         The timeseries of indices to compute dIR with. Must contain
         band, time, y, and x coordinate dimensions.
     params : Dict
@@ -190,7 +197,7 @@ def yryr(
     ----------
     restoration_start : int
         The start year of restoration activities.
-    timeseries_data: 
+    timeseries_data:
         The timeseries of indices to compute YrYr with. Must contain
         band, time, y, and x coordinate dimensions.
     params : Dict
@@ -238,7 +245,7 @@ def r80p(
     ----------
     restoration_start : int
         The start year of restoration activities.
-    timeseries_data: 
+    timeseries_data:
         The timeseries of indices to compute R80P with. Must contain
         band, time, y, and x coordinate dimensions.
     params : Dict
@@ -273,6 +280,7 @@ def r80p(
         pass
     return r80p_v
 
+
 @register_metric
 def y2r(
     restoration_start: int,
@@ -291,7 +299,7 @@ def y2r(
     ----------
     restoration_start : int
         The start year of restoration activities.
-    timeseries_data: 
+    timeseries_data:
         The timeseries of indices to compute Y2R with. Must contain
         band, time, y, and x coordinate dimensions.
     params : Dict
@@ -361,7 +369,7 @@ def rri(
     ----------
     restoration_start : int
         The start year of restoration activities.
-    timeseries_data: 
+    timeseries_data:
         The timeseries of indices to compute RRI with. Must contain
         band, time, y, and x coordinate dimensions.
     params : Dict

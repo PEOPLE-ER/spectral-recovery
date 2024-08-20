@@ -12,7 +12,7 @@ def read_restoration_sites(
 ) -> gpd.GeoDataFrame:
     """Read restoration polygons
 
-    A loose wrapper of the geopandas.read_file function that 
+    A loose wrapper of the geopandas.read_file function that
     ensures each polygon has a valid disturbance and
     restoration start year.
 
@@ -22,14 +22,14 @@ def read_restoration_sites(
         path to restoration polygon vector file
     dist_rest_years : dict
         Mapping of polygon id to a list with disturbance
-        and restoration start years, respectively. 
+        and restoration start years, respectively.
         e.g {0: [2006. 2007]} will map a disturbance start
         of 2006 and restoration start of 2007 to polygon 0.
-    
+
     Returns
     --------
     restoration_polygons : gpd.GeoDataFrame
-        The restoration site polygons with assiged disturbance 
+        The restoration site polygons with assiged disturbance
         start, and restoration start years. Disturbance start
         years are stored in "dist_start" col while restoration start
         years are stored in "rest_start" col.

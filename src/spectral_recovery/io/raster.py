@@ -19,10 +19,11 @@ from spectral_recovery.config import (
     VALID_YEAR,
     REQ_DIMS,
     STANDARD_BANDS,
-    SUPPORTED_INDICES
+    SUPPORTED_INDICES,
 )
 
 COMMON_LONG_SHORT_DICT = common_and_long_to_short(STANDARD_BANDS)
+
 
 def read_timeseries(
     path_to_tifs: str | Dict[str, str],
@@ -49,7 +50,7 @@ def read_timeseries(
     -------
     stacked_data : xr.DataArray
         A 4D DataArray containing all rasters passed to
-        `path_to_tifs` with time, band, y, and x coordinate dimensions. 
+        `path_to_tifs` with time, band, y, and x coordinate dimensions.
 
 
     Notes

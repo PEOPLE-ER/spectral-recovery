@@ -72,11 +72,14 @@ def maintain_rio_attrs(func: callable) -> callable:
             if isinstance(result, dict):
                 for i, elem in result.items():
                     result[i] = elem.rio.write_crs(xarray_obj.rio.crs, inplace=True)
-                    result[i] = elem.rio.update_encoding(xarray_obj.encoding, inplace=True)
+                    result[i] = elem.rio.update_encoding(
+                        xarray_obj.encoding, inplace=True
+                    )
         except MissingCRS as mcrs:
             # TODO: add warning log here?
             pass
         return result
+
     return wrapper_maintain_rio_attrs
 
 
@@ -102,6 +105,7 @@ def common_and_long_to_short(standard):
         common_and_short[spx.bands[band].short_name] = band
         common_and_short[spx.bands[band].common_name] = band
     return common_and_short
+
 
 def _platforms_from_band(band_object):
     """Get list of platform names supported by each band"""
