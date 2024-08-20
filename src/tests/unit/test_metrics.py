@@ -11,7 +11,7 @@ from shapely import Polygon
 # from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.metrics import (
     y2r,
-    dnbr,
+    dir,
     rri,
     yryr,
     r80p,
@@ -21,7 +21,7 @@ from spectral_recovery.metrics import (
 
 
 def test_metric_funcs_global_contains_all_funcs():
-    expected_dict = {"y2r": y2r, "dnbr": dnbr, "yryr": yryr, "r80p": r80p, "rri": rri}
+    expected_dict = {"y2r": y2r, "dir": dir, "yryr": yryr, "r80p": r80p, "rri": rri}
     assert METRIC_FUNCS == expected_dict
 
 
@@ -72,9 +72,9 @@ class TestComputeMetrics:
 
             compute_metrics(
                 timeseries_data=valid_array,
-                restoration_polygons=valid_frame,
+                restoration_sites=valid_frame,
                 metrics=["YrYr"],
-                recovery_target=none_rt,
+                recovery_targets=none_rt,
             )
 
             assert y2r_mock.call_args.kwargs["recovery_target"] is None
@@ -91,17 +91,17 @@ class TestComputeMetrics:
             with pytest.raises(ValueError):
                 compute_metrics(
                     timeseries_data=valid_array,
-                    restoration_polygons=valid_frame,
+                    restoration_sites=valid_frame,
                     metrics=["Y2R"],
-                    recovery_target=none_rt,
+                    recovery_targets=none_rt,
                 )
 
             with pytest.raises(ValueError):
                 compute_metrics(
                     timeseries_data=valid_array,
-                    restoration_polygons=valid_frame,
+                    restoration_sites=valid_frame,
                     metrics=["YrYr", "Y2R"],
-                    recovery_target=none_rt,
+                    recovery_targets=none_rt,
                 )
 
     def test_correct_metrics_called_from_metric_func_dict(
@@ -119,8 +119,8 @@ class TestComputeMetrics:
 
             compute_metrics(
                 timeseries_data=valid_array,
-                restoration_polygons=valid_frame,
-                recovery_target=valid_rt,
+                restoration_sites=valid_frame,
+                recovery_targets=valid_rt,
                 metrics=multi_metrics,
             )
 
@@ -143,19 +143,19 @@ class TestComputeMetrics:
 
             result = compute_metrics(
                 timeseries_data=valid_array,
-                restoration_polygons=valid_frame,
+                restoration_sites=valid_frame,
                 metrics=multi_metrics,
-                recovery_target=valid_rt,
+                recovery_targets=valid_rt,
             )
 
         assert result[0].dims == ("metric", "band", "y", "x")
-        assert sorted(result.metric.values) == sorted(multi_metrics)
+        assert sorted(result[0].metric.values) == sorted(multi_metrics)
         for i, metric in enumerate(multi_metrics):
             np.testing.assert_array_equal(
                 result[0].sel(metric=metric).data, np.array([[[i]]])
             )
 
-    def test_output_dataset_contains_all_polygons(self, valid_array, valid_rt):
+    def test_output_dict_contains_all_polygons(self, valid_array, valid_rt):
         multi_frame = gpd.GeoDataFrame(
             {
                 "dist_start": [2012, 2011, 2012],
@@ -177,12 +177,12 @@ class TestComputeMetrics:
 
             result = compute_metrics(
                 timeseries_data=valid_array,
-                restoration_polygons=multi_frame,
+                restoration_sites=multi_frame,
                 metrics=multi_metrics,
-                recovery_target=valid_rt,
+                recovery_targets=valid_rt,
             )
 
-        assert list(result.data_vars) == expected_polyids
+        assert list(result.keys()) == expected_polyids
         for polyid in expected_polyids:
             assert result[polyid].dims == ("metric", "band", "y", "x")
             for i, metric in enumerate(multi_metrics):
@@ -203,8 +203,8 @@ class TestComputeMetrics:
 
             compute_metrics(
                 timeseries_data=valid_array,
-                restoration_polygons=valid_frame,
-                recovery_target=valid_rt,
+                restoration_sites=valid_frame,
+                recovery_targets=valid_rt,
                 metrics=[metric],
                 timestep=2,
                 percent_of_target=60,
@@ -235,8 +235,8 @@ class TestComputeMetrics:
 
             compute_metrics(
                 timeseries_data=valid_array,
-                restoration_polygons=multi_frame,
-                recovery_target=rt_dict,
+                restoration_sites=multi_frame,
+                recovery_targets=rt_dict,
                 metrics=multi_metrics,
             )
 
@@ -283,8 +283,8 @@ class TestComputeMetrics:
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
             compute_metrics(
                 timeseries_data=valid_array,
-                restoration_polygons=multi_frame,
-                recovery_target=valid_rt,
+                restoration_sites=multi_frame,
+                recovery_targets=valid_rt,
                 metrics=multi_metrics,
             )
 
@@ -677,7 +677,7 @@ class TestDNBR:
     )
     def test_default_dNBR(self, obs, expected):
         rest_start = 2010
-        assert dnbr(restoration_start=rest_start, timeseries_data=obs).equals(expected)
+        assert dir(restoration_start=rest_start, timeseries_data=obs).equals(expected)
 
     def test_timestep_dNBR(self):
         rest_start = 2010
@@ -693,7 +693,7 @@ class TestDNBR:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        assert dnbr(
+        assert dir(
             restoration_start=rest_start,
             timeseries_data=obs,
             params={"timestep": timestep},
@@ -710,7 +710,7 @@ class TestDNBR:
         timestep = -2
 
         with pytest.raises(ValueError, match="timestep cannot be negative."):
-            dnbr(
+            dir(
                 restoration_start=rest_start,
                 timeseries_data=obs,
                 params={"timestep": timestep},
@@ -728,7 +728,7 @@ class TestDNBR:
         with pytest.raises(
             ValueError,
         ):
-            dnbr(
+            dir(
                 restoration_start=rest_start,
                 timeseries_data=obs,
                 params={"timestep": timestep},

@@ -6,21 +6,33 @@ from typing import Dict, List
 
 
 # TODO: allow users to pass attribute col names for date cols
-def read_restoration_polygons(
+def read_restoration_sites(
     path: str,
     dist_rest_years: Dict[int, List[int]] = None,
-):
+) -> gpd.GeoDataFrame:
     """Read restoration polygons
 
-    A loose wrapper of the geopandas.read_file function. If
-    check_dates=True then this function will check that the
-    vector file at path contains 2 or 4 columns containing
-    str or int values (the restoration site dates).
+    A loose wrapper of the geopandas.read_file function that 
+    ensures each polygon has a valid disturbance and
+    restoration start year.
 
     Parameters
     ----------
     path : str
         path to restoration polygon vector file
+    dist_rest_years : dict
+        Mapping of polygon id to a list with disturbance
+        and restoration start years, respectively. 
+        e.g {0: [2006. 2007]} will map a disturbance start
+        of 2006 and restoration start of 2007 to polygon 0.
+    
+    Returns
+    --------
+    restoration_polygons : gpd.GeoDataFrame
+        The restoration site polygons with assiged disturbance 
+        start, and restoration start years. Disturbance start
+        years are stored in "dist_start" col while restoration start
+        years are stored in "rest_start" col.
 
     """
     # Read the vector file and check there is only one polygon

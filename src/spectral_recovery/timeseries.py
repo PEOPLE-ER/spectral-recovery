@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 from shapely.geometry import box
-from spectral_recovery._config import DATETIME_FREQ, REQ_DIMS
+from spectral_recovery.config import DATETIME_FREQ, REQ_DIMS
 
 
 def _datetime_to_index(
@@ -40,8 +40,7 @@ def _datetime_to_index(
 
 @xr.register_dataarray_accessor("satts")
 class _SatelliteTimeSeries:
-    """A accessor for operations commonly performed over
-    a timeseries of satellite images stored in an xarray.DataArray.
+    """Accessor for timeseries-related operations in spectral-recovery.
 
     See "Extending xarray using accessors" for more information:
     https://docs.xarray.dev/en/stable/internals/extending-xarray.html

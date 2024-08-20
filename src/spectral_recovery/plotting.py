@@ -15,30 +15,32 @@ from spectral_recovery.indices import compute_indices
 
 def plot_spectral_trajectory(
     timeseries_data: xr.DataArray,
-    restoration_polygon: gpd.GeoDataFrame,
+    restoration_site: gpd.GeoDataFrame,
     recovery_target: xr.DataArray,
-    reference_start: str = None,
-    reference_end: str = None,
+    reference_start: int = None,
+    reference_end: int = None,
     path: str = None,
 ):
     """Plot the spectral trajectory of the restoration polygon
 
     Parameters
     ----------
-    timeseries_data : xr.DataArray
-        Timeseries data (annual composites)
-    restoration_polygons : gpd.GeoDataFrame
-        Restoration polygon and dates
-    indices : list of str
-        Indices to visualize trajectory for
-    indices_constants : dict
-        Constant values for indices
-    recovery_target_method : callable
-        Recovery target method to derive recovery target values
+    timeseries_data : xarray.DataArray
+        A timeseries of indices to plot the spectral trajectory with.
+    restoration_site : gpd.GeoDataFrame
+        The resoration site to plot a spectral trajectory of.
+    recovery_target : xarray.DataArray
+        The recovery target value for the given restoration site.
+    reference_start : int
+        The first/start reference year.
+    reference_end : int
+        The final/end reference year.
+    path : str
+        Path and filename for writing plot.
 
     """
     # Prepare arguments being passed to the metric functions
-    clipped_timeseries = timeseries_data.rio.clip([restoration_polygon.geometry.values])
+    clipped_timeseries = timeseries_data.rio.clip([restoration_site.geometry.values])
     if path:
         plot_ra(
             disturbance_start=clipped_timeseries["dist_start"].iloc[0],

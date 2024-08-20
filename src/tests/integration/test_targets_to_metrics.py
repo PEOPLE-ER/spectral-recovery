@@ -6,7 +6,7 @@ class TestWorkflowWithTargets:
 
     def test_single_polygon_target_hist_target_can_produce_metrics(self):
 
-        rest_site = sr.read_restoration_polygons(
+        rest_site = sr.read_restoration_sites(
             path="src/tests/test_data/composites/test_single_polygon.gpkg",
             dist_rest_years={0: [2005, 2006]},
         )
@@ -42,17 +42,17 @@ class TestWorkflowWithTargets:
             scale="pixel",
         )
         metrics = sr.compute_metrics(
-            metrics=["dNBR", "YrYr"],
-            restoration_polygons=rest_site,
+            metrics=["dIR", "YrYr"],
+            restoration_sites=rest_site,
             timeseries_data=indices,
-            recovery_target=median_target,
+            recovery_targets=median_target,
         )
 
-        assert list(metrics.data_vars) == [0]
+        assert list(metrics.keys()) == [0]
         assert dict(metrics[0].sizes) == {"metric": 2, "band": 3, "y": 61, "x": 45}
 
     def test_single_polygon_target_ref_target_can_produce_metrics(self):
-        rest_site = sr.read_restoration_polygons(
+        rest_site = sr.read_restoration_sites(
             path="src/tests/test_data/composites/test_single_polygon.gpkg",
             dist_rest_years={0: [2005, 2006]},
         )
@@ -88,17 +88,17 @@ class TestWorkflowWithTargets:
             reference_end=2011,
         )
         metrics = sr.compute_metrics(
-            metrics=["dNBR", "YrYr"],
-            restoration_polygons=rest_site,
+            metrics=["dIR", "YrYr"],
+            restoration_sites=rest_site,
             timeseries_data=indices,
-            recovery_target=ref_target,
+            recovery_targets=ref_target,
         )
 
-        assert list(metrics.data_vars) == [0]
+        assert list(metrics.keys()) == [0]
         assert dict(metrics[0].sizes) == {"metric": 2, "band": 3, "y": 61, "x": 45}
 
     def test_multi_polygon_target_hist_target_can_produce_metrics(self):
-        rest_site = sr.read_restoration_polygons(
+        rest_site = sr.read_restoration_sites(
             path="src/tests/test_data/composites/test_multiple_polygons.gpkg",
             dist_rest_years={
                 0: [2005, 2006],
@@ -147,15 +147,15 @@ class TestWorkflowWithTargets:
         )
         metrics = sr.compute_metrics(
             metrics=["Y2R", "R80P"],
-            restoration_polygons=rest_site,
+            restoration_sites=rest_site,
             timeseries_data=indices,
-            recovery_target=hist_target,
+            recovery_targets=hist_target,
         )
-        assert list(metrics.data_vars) == [0, 1, 2, 3, 4]
-        assert dict(metrics[0].sizes) == {"metric": 2, "band": 3, "y": 86, "x": 115}
+        assert list(metrics.keys()) == [0, 1, 2, 3, 4]
+        assert dict(metrics[0].sizes) == {"metric": 2, "band": 3, "y": 32, "x": 40}
 
     def test_multi_polygon_target_ref_target_can_produce_metrics(self):
-        rest_site = sr.read_restoration_polygons(
+        rest_site = sr.read_restoration_sites(
             path="src/tests/test_data/composites/test_multiple_polygons.gpkg",
             dist_rest_years={
                 0: [2005, 2006],
@@ -196,10 +196,10 @@ class TestWorkflowWithTargets:
             reference_end=2011,
         )
         metrics = sr.compute_metrics(
-            metrics=["dNBR", "YrYr"],
-            restoration_polygons=rest_site,
+            metrics=["dIR", "YrYr"],
+            restoration_sites=rest_site,
             timeseries_data=indices,
-            recovery_target=ref_target,
+            recovery_targets=ref_target,
         )
-        assert list(metrics.data_vars) == [0, 1, 2, 3, 4]
-        assert dict(metrics[0].sizes) == {"metric": 2, "band": 3, "y": 86, "x": 115}
+        assert list(metrics.keys()) == [0, 1, 2, 3, 4]
+        assert dict(metrics[0].sizes) == {"metric": 2, "band": 3, "y": 32, "x": 40}

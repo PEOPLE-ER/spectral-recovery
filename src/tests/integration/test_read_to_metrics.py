@@ -5,7 +5,7 @@ import spectral_recovery as sr
 class TestReadingCanPassToIndices:
 
     def test_indices_and_single_p_to_metrics_completes(self):
-        rest_site = sr.read_restoration_polygons(
+        rest_site = sr.read_restoration_sites(
             path="src/tests/test_data/composites/test_single_polygon.gpkg",
             dist_rest_years={0: [2002, 2003]},
         )
@@ -35,13 +35,13 @@ class TestReadingCanPassToIndices:
         indices = sr.compute_indices(timeseries, indices=["NBR", "NDVI", "SAVI"])
 
         metrics = sr.compute_metrics(
-            metrics=["dNBR", "YrYr"],
-            restoration_polygons=rest_site,
+            metrics=["dIR", "YrYr"],
+            restoration_sites=rest_site,
             timeseries_data=indices,
         )
 
     def test_indices_and_multi_polys_to_metrics_completes(self):
-        rest_site = sr.read_restoration_polygons(
+        rest_site = sr.read_restoration_sites(
             path="src/tests/test_data/composites/test_multiple_polygons.gpkg",
             dist_rest_years={
                 0: [2002, 2003],
@@ -77,13 +77,13 @@ class TestReadingCanPassToIndices:
         indices = sr.compute_indices(timeseries, indices=["NBR", "NDVI", "SAVI"])
 
         sr.compute_metrics(
-            metrics=["dNBR", "YrYr"],
-            restoration_polygons=rest_site,
+            metrics=["dIR", "YrYr"],
+            restoration_sites=rest_site,
             timeseries_data=indices,
         )
 
     def test_indices_and_multi_polys_w_dates_attr_to_metrics_completes(self):
-        rest_site = sr.read_restoration_polygons(
+        rest_site = sr.read_restoration_sites(
             path="src/tests/test_data/composites/test_multiple_polygons.gpkg",
         )
         timeseries = sr.read_timeseries(
@@ -112,8 +112,7 @@ class TestReadingCanPassToIndices:
         indices = sr.compute_indices(timeseries, indices=["NBR", "NDVI", "SAVI"])
 
         metrics = sr.compute_metrics(
-            metrics=["dNBR", "YrYr"],
-            restoration_polygons=rest_site,
+            metrics=["dIR", "YrYr"],
+            restoration_sites=rest_site,
             timeseries_data=indices,
         )
-        print(metrics)

@@ -57,7 +57,7 @@ def median(
         The timeseries of indices to derive the recovery target from.
         Must contain band, time, y, and x dimensions.
     reference_years : dict
-        A dictionary mapping reference_start and reference_end years
+        Dictionary mapping reference_start and reference_end years
         to each polygon in restoration_sites, e.g {0: {"reference_start": 2017, "reference_end": 2018}}
     scale : {"polygon", "pixel"}
         The scale to compute target for. Either 'polygon' which results
@@ -69,17 +69,16 @@ def median(
     -------
     median_targets : dict
         Dictionary of DataArrays containing the median recovery target
-        for each restoration site. Dictionary keys are the row indexes
-        from restoration_sites. If scale="polygon", then DataArrays
-        have coordinate dimensions "band". If scale="pixel", has
+        for each restoration site by polygon ID. If scale="polygon", then
+        DataArrays have coordinate dimensions "band". If scale="pixel", has
         coordinate dimensions "band", "y" and "x".
 
     Notes
     ------
     Differs from spectral_recovery.targets.reference.median because 1)
-    can be parameterized on scale, and 2) because multiple polygons not
-    reduced into a single value, i.e if 3 sites are given then recovery
-    targets are given for each of those 3 sites.
+    can be parameterized on scale, and 2) because multiple polygons are 
+    not reduced into a single value, i.e if 3 sites are given to this
+    method then recovery targets are given for each of those 3 sites.
 
     """
     if not ((scale == "polygon") or (scale == "pixel")):
@@ -116,7 +115,7 @@ def window(
     reference_years: dict,
     N: int = 3,
     na_rm: bool = False,
-):
+) -> dict:
     """Windowed recovery target method, parameterized on window size.
 
     The windowed method first computes the median along the time
@@ -129,19 +128,25 @@ def window(
 
     Parameters
     ----------
-    polygon : gpd.GeoDataFrame
-        The polygon/area to compute a recovery target for.
+    restoration_sites : gpd.GeoDataFrame
+        The restoration sites to compute a recovery targets for.
     timeseries_data : xr.DataArrah
         The timeseries of indices to derive the recovery target from.
         Must contain band, time, y, and x dimensions.
     reference_years : dict
-        A dictionary mapping reference_start and reference_end years
-        to each polygon in restoration_sites, e.g {0: {"reference_start": 2017, "reference_end": 2018}}
+        Dictionary mapping between each polygon and a list with a reference start and
+        reference end year. respectivaly, e.g {0: [2017, 2018]}
     N : int
         Size of the window (NxN). Must be odd. Default is 3.
     na_rm : bool
         If True, NaN will be removed from focal computations. The result will
         only be NA if all focal cells are NA., using na.rm=TRUE may not be a good idea in this function because it can unbalance the effect of the weights
+
+    Returns
+    -------
+    window_targets : dict
+        Dictionary of DataArrays containing the median recovery target
+        for each restoration site by polygon ID.
 
     """
     if not isinstance(N, int):

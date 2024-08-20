@@ -8,7 +8,7 @@ from typing import List
 
 from unittest.mock import patch
 
-from spectral_recovery._config import REQ_DIMS
+from spectral_recovery.config import REQ_DIMS
 from spectral_recovery.indices import (
     compute_indices,
     INDEX_CONSTANT_DEFAULTS,

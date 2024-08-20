@@ -18,8 +18,8 @@ import spyndex as spx
 
 from typing import List, Dict
 
-from spectral_recovery._utils import maintain_rio_attrs
-from spectral_recovery._config import SUPPORTED_DOMAINS
+from spectral_recovery.utils import maintain_rio_attrs
+from spectral_recovery.config import SUPPORTED_DOMAINS
 
 # Set up global index configurations:
 #    1. Only support vegetation and burn indices
@@ -40,7 +40,7 @@ def GCI(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
 
 
 def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
-    """Compute the Tasselled Cap Wetness (TCW) index"""
+    """Compute the Tasselled Cap Wetness (TCW) index with Landsat 8/9 coeff"""
     try:
         tcw = (
             0.1511 * params_dict["B"]
@@ -56,7 +56,7 @@ def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     return tcw
 
 def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
-    """Compute the Tasselled Cap Greenness (TCW) index"""
+    """Compute the Tasselled Cap Greenness (TCW) index with Landsat 8/9 coeff"""
     try:
         tcg = (
             -0.2941 * params_dict["B"]
@@ -75,15 +75,18 @@ SR_REC_IDXS = {"GCI": GCI, "TCW": TCW, "TCG": TCG}
 
 @maintain_rio_attrs
 def compute_indices(
-    image_stack: xr.DataArray, indices: list[str], constants: dict = {}, **kwargs
+    timeseries_data: xr.DataArray, indices: list[str], constants: dict = {}, **kwargs
 ):
-    """Compute spectral indices using the spyndex package.
+    """Compute spectral indices.
 
+    Compute spectral indices using the spyndex package or 
+    manually implemented indices.
 
     Parameters
     ----------
-    image_stack : xr.DataArray
-        stack of images.
+    timeseries_data : xr.DataArray
+        The timeseries of spectral bands to compute indices with.
+        Must contain band, time, y, and x dimensions.
     indices : list of str
         list of spectral indices to compute
     constants : dict of flt, optional
@@ -92,13 +95,14 @@ def compute_indices(
         Additional kwargs for wrapped spyndex.computeIndex function.
 
     Returns
-    -------jmk,
-        xr.DataArray: stack of images with spectral indices stacked along
-        the band dimension.
+    -------
+    index_stack : xarray.DataArray
+        DataArray of spectral indices, with spectral
+        indices stacked along the band coordinate dimension.
 
     """
     spx_indices, sr_indices = _split_indices_by_source(indices)
-    params_dict = _build_params_dict(image_stack)
+    params_dict = _build_params_dict(timeseries_data)
     spx_and_sr_outputs = []
     if spx_indices:
         # Compute indexes implemented in spx (spyndex)
