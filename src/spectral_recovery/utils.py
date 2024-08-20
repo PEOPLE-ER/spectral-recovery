@@ -67,12 +67,16 @@ def maintain_rio_attrs(func: callable) -> callable:
         result = func(*args, **kwargs)
         try:
             result.rio.write_crs(xarray_obj.rio.crs, inplace=True)
-        except MissingCRS:
+            result.rio.update_encoding(xarray_obj.encoding, inplace=True)
+        except AttributeError as ae:
+            if isinstance(result, dict):
+                for i, elem in result.items():
+                    result[i] = elem.rio.write_crs(xarray_obj.rio.crs, inplace=True)
+                    result[i] = elem.rio.update_encoding(xarray_obj.encoding, inplace=True)
+        except MissingCRS as mcrs:
             # TODO: add warning log here?
             pass
-        result.rio.update_encoding(xarray_obj.encoding, inplace=True)
         return result
-
     return wrapper_maintain_rio_attrs
 
 
