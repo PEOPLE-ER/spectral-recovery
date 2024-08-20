@@ -6,19 +6,21 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+import warnings
 
 from spectral_recovery.utils import maintain_rio_attrs
+
+warnings.filterwarnings("ignore", message="invalid value encountered in divide", category=RuntimeWarning)
+warnings.filterwarnings("ignore", message="All-NaN slice encountered", category=RuntimeWarning)
 
 NEG_TIMESTEP_MSG = "timestep cannot be negative."
 VALID_PERC_MSP = "percent must be between 0 and 100."
 METRIC_FUNCS = {}
 
-
 def register_metric(f):
     """Add function and name to global name/func dict"""
     METRIC_FUNCS[f.__name__] = f
     return f
-
 
 @maintain_rio_attrs
 def compute_metrics(
@@ -113,7 +115,6 @@ def has_no_missing_years(images: xr.DataArray):
     if not np.all((years == list(range(years[0], years[-1] + 1)))):
         return False
     return True
-
 
 @register_metric
 def dir(
@@ -211,7 +212,6 @@ def yryr(
     obs_post_t = timeseries_data.sel(time=rest_post_t).drop_vars("time")
     obs_start = timeseries_data.sel(time=str(restoration_start)).drop_vars("time")
     yryr_v = ((obs_post_t - obs_start) / params["timestep"]).squeeze("time")
-
     return yryr_v
 
 
@@ -272,7 +272,6 @@ def r80p(
     except KeyError:
         pass
     return r80p_v
-
 
 @register_metric
 def y2r(
