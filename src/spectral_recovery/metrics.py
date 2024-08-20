@@ -316,10 +316,7 @@ def y2r(
         raise ValueError(
             f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}."
         )
-
-    print(recovery_target, params["percent_of_target"])
     y2r_target = recovery_target * (params["percent_of_target"] / 100)
-
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be:
     # 1. pixels that were recovered at the first timestep

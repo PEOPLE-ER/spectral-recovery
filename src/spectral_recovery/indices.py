@@ -122,7 +122,6 @@ def compute_indices(
             sr_idxs_outputs.append(SR_REC_IDXS[i](params_dict=params_dict))
         sr_index_stack = xr.concat(sr_idxs_outputs, dim="band")
         spx_and_sr_outputs.append(sr_index_stack)
-    print(spx_and_sr_outputs)
     # concatenate spx and sr indexes into one DataArray
     index_stack = xr.concat(spx_and_sr_outputs, dim="band")
     return index_stack
