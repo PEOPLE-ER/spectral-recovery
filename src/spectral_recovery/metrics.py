@@ -6,8 +6,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import warnings 
-import functools
+import warnings
 
 from spectral_recovery.utils import maintain_rio_attrs
 
@@ -22,32 +21,6 @@ def register_metric(f):
     """Add function and name to global name/func dict"""
     METRIC_FUNCS[f.__name__] = f
     return f
-
-def silence_warnings(*warnings_specs: tuple) -> callable:
-    """Decorator to silence specific runtime warnings.
-
-    Used on recovery metric funcs where dividing by invalid 
-    values or all-Nan slices are expected.
-
-    Parameters
-    ----------
-    warning_specs : tuple 
-        Each tuple contains a (warning_type, message) pair to be silenced.
-
-    Returns
-    -------
-        function: The decorated function.
-    """
-    print("IN HERRRRREEE")
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            with warnings.catch_warnings():
-                for warning_type, message in warnings_specs:
-                    
-                    return func(*args, **kwargs)
-        return wrapper
-    return decorator
 
 @maintain_rio_attrs
 def compute_metrics(
