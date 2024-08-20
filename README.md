@@ -18,7 +18,7 @@ Documentation: [https://people-er.github.io/spectral-recovery/](https://people-e
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
 ---
-:bangbang: The first stable release (1.0.0) of spectral-recovery is scheduled for 2024.07.15!
+:bangbang: The first stable release (1.0.0) of spectral-recovery is scheduled for 2024.08.30!
 
 ---
 ## Overview
