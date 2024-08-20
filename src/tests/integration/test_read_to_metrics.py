@@ -35,7 +35,7 @@ class TestReadingCanPassToIndices:
         indices = sr.compute_indices(timeseries, indices=["NBR", "NDVI", "SAVI"])
 
         metrics = sr.compute_metrics(
-            metrics=["dIR", "YrYr"],
+            metrics=["deltaIR", "YrYr"],
             restoration_sites=rest_site,
             timeseries_data=indices,
         )
@@ -77,7 +77,7 @@ class TestReadingCanPassToIndices:
         indices = sr.compute_indices(timeseries, indices=["NBR", "NDVI", "SAVI"])
 
         sr.compute_metrics(
-            metrics=["dIR", "YrYr"],
+            metrics=["deltaIR", "YrYr"],
             restoration_sites=rest_site,
             timeseries_data=indices,
         )
@@ -112,7 +112,7 @@ class TestReadingCanPassToIndices:
         indices = sr.compute_indices(timeseries, indices=["NBR", "NDVI", "SAVI"])
 
         metrics = sr.compute_metrics(
-            metrics=["dIR", "YrYr"],
+            metrics=["deltaIR", "YrYr"],
             restoration_sites=rest_site,
             timeseries_data=indices,
         )

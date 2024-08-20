@@ -1,12 +1,12 @@
 """Methods for computing recovery metrics."""
 
 from typing import Dict, List
+import warnings
 
 import xarray as xr
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import warnings
 
 from spectral_recovery.utils import maintain_rio_attrs
 
@@ -27,10 +27,10 @@ def compute_metrics(
     metrics: List[str],
     timeseries_data: xr.DataArray,
     restoration_sites: gpd.GeoDataFrame,
-    recovery_targets: xr.DataArray | dict = None,
+    recovery_targets: xr.DataArray | Dict = None,
     timestep: int = 5,
     percent_of_target: int = 80,
-) -> dict:
+) -> Dict:
     """Compute recovery metrics for each restoration site.
 
     Parameters
@@ -39,7 +39,7 @@ def compute_metrics(
         The names of recovery metrics to compute. Accepted values:
             - "Y2R": Years-to-Recovery
             - "R80P": Recovered 80 Percent
-            - "dIR": delta Index Regrowth
+            - "deltaIR": delta Index Regrowth
             - "YrYr": Year-on-Year Average
             - "RRI": Relative Recovery Indicator
     timeseries_data : xarray.DataArray
@@ -51,14 +51,13 @@ def compute_metrics(
         The recovery targets. Either a dict mapping polygon IDs to 
         xarray.DataArrays of recovery targets or a single xarray.DataArray.
     timestep : int, optional
-        The timestep post-restoration to consider when computing recovery 
-        metrics. Only used for "R80P", "dIR", and "YrYr" and "RRI" recovery
+        The timestep post-restoration to consider when computing recovery
+        metrics. Only used for "R80P", "deltaIR", and "YrYr" and "RRI" recovery
         metrics. Default = 5.
     percent_of_target : int, optional
         The percent of the recovery target to consider when computing
         recovery metrics. Only used for "Y2R" and "R80P". Default = 80.
 
-    
     Returns
     -------
     metric_ds : xarray.Dataset
@@ -77,35 +76,32 @@ def compute_metrics(
                 raise ValueError(
                     f"{tmetric} requires a recovery target but recovery_target is None"
                 )
-
     per_polygon_metrics = {}
-    for index, row in restoration_sites.iterrows():
+    for site_id, row in restoration_sites.iterrows():
         # Prepare arguments being passed to the metric functions
         clipped_ts = timeseries_data.rio.clip([row.geometry])
-        m_kwargs = dict(
-            disturbance_start=row["dist_start"],
-            restoration_start=row["rest_start"],
-            timeseries_data=clipped_ts,
-            params={
-                "timestep": timestep,
-                "percent_of_target": percent_of_target,
-            },
-        )
+        all_kwargs = {
+            "disturbance_start": row["dist_start"],
+            "restoration_start": row["rest_start"],
+            "timeseries_data": clipped_ts,
+            "timestep": timestep,
+            "percent_of_target": percent_of_target,
+        }
         if isinstance(recovery_targets, dict):
-            m_kwargs["recovery_target"] = recovery_targets[index]
+            all_kwargs["recovery_target"] = recovery_targets[site_id]
         else:
             # if a DataArray or None, just pass as-is
-            m_kwargs["recovery_target"] = recovery_targets
-
+            all_kwargs["recovery_target"] = recovery_targets
         m_results = []
         for m in metrics:
             try:
                 m_func = METRIC_FUNCS[m.lower()]
             except KeyError:
-                raise ValueError(f"{m} is not a valid metric choice!")
-            m_results.append(m_func(**m_kwargs).assign_coords({"metric": m}))
-        per_polygon_metrics[index] = xr.concat(m_results, "metric")
-    
+                raise ValueError(f"{m} is not a valid metric choice!") from None
+            func_kwargs = {k: all_kwargs[k] for k in m_func.__code__.co_varnames if k in list(all_kwargs.keys())}
+            m_results.append(m_func(**func_kwargs).assign_coords({"metric": m}))
+        per_polygon_metrics[site_id] = xr.concat(m_results, "metric")
+
     return per_polygon_metrics
 
 
@@ -117,12 +113,10 @@ def has_no_missing_years(images: xr.DataArray):
     return True
 
 @register_metric
-def dir(
+def deltair(
     restoration_start: int,
     timeseries_data: xr.DataArray,
-    params: Dict = {"timestep": 5},
-    recovery_target: xr.DataArray = None,
-    disturbance_start: int = None,
+    timestep: int = 5,
 ) -> xr.DataArray:
     """Per-pixel dNBR.
 
@@ -138,46 +132,41 @@ def dir(
     timeseries_data: 
         The timeseries of indices to compute dIR with. Must contain
         band, time, y, and x coordinate dimensions.
-    params : Dict
-        Parameters to customize metric computation. dIR uses
-        the 'timestep' parameter with default = {"timestep": 5}
-    recovery_target : xarray.DataArray
-        Recovery target values. Must be broadcastable to timeseries_data.
+    timestep : int
+        TODO
 
     Returns
     -------
-    dir_v : xr.DataArray
+    deltair_v : xr.DataArray
         DataArray containing the dNBR value for each pixel.
 
     """
-    if params["timestep"] < 0:
+    if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(restoration_start + params["timestep"])
+    rest_post_t = str(restoration_start + timestep)
     timesries_end = (
         np.max(timeseries_data.time.values).astype("datetime64[Y]").astype(int) + 1970
     )
     if int(rest_post_t) > int(timesries_end):
         raise ValueError(
-            f" {restoration_start}+{params['timestep']}={rest_post_t} is greater"
+            f" {restoration_start}+{timestep}={rest_post_t} is greater"
             f" than end of timeseries: {timesries_end}. "
         ) from None
 
-    dir_v = (
+    deltair_v = (
         timeseries_data.sel(time=rest_post_t).drop_vars("time")
         - timeseries_data.sel(time=str(restoration_start)).drop_vars("time")
     ).squeeze("time")
 
-    return dir_v
+    return deltair_v
 
 
 @register_metric
 def yryr(
     restoration_start: int,
     timeseries_data: xr.DataArray,
-    params: Dict = {"timestep": 5},
-    recovery_target: xr.DataArray = None,
-    disturbance_start: int = None,
+    timestep: int = 5,
 ):
     """Per-pixel YrYr.
 
@@ -193,11 +182,8 @@ def yryr(
     timeseries_data: 
         The timeseries of indices to compute YrYr with. Must contain
         band, time, y, and x coordinate dimensions.
-    params : Dict
-        Parameters to customize metric computation. YrYr uses
-        the 'timestep' parameter with default = {"timestep": 5}
-    recovery_target : xarray.DataArray
-        Recovery target values. Must be broadcastable to timeseries_data.
+    timestep : int
+        TODO
 
     Returns
     -------
@@ -205,13 +191,13 @@ def yryr(
         DataArray containing the YrYr value for each pixel.
 
     """
-    if params["timestep"] < 0:
+    if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    rest_post_t = str(restoration_start + params["timestep"])
+    rest_post_t = str(restoration_start + timestep)
     obs_post_t = timeseries_data.sel(time=rest_post_t).drop_vars("time")
     obs_start = timeseries_data.sel(time=str(restoration_start)).drop_vars("time")
-    yryr_v = ((obs_post_t - obs_start) / params["timestep"]).squeeze("time")
+    yryr_v = ((obs_post_t - obs_start) / timestep).squeeze("time")
     return yryr_v
 
 
@@ -220,8 +206,8 @@ def r80p(
     restoration_start: int,
     timeseries_data: xr.DataArray,
     recovery_target: xr.DataArray,
-    params: Dict = {"percent_of_target": 80, "timestep": 5},
-    disturbance_start: int = None,
+    timestep: int = 5,
+    percent_of_target: int = 80,
 ) -> xr.DataArray:
     """Per-pixel R80P.
 
@@ -241,12 +227,12 @@ def r80p(
     timeseries_data: 
         The timeseries of indices to compute R80P with. Must contain
         band, time, y, and x coordinate dimensions.
-    params : Dict
-        Parameters to customize metric computation. r80p uses
-        the 'timestep' and 'percent_of_target' parameters with
-        default = {"percent_of_target": 80, "timestep": 5}.
     recovery_target : xarray.DataArray
         Recovery target values. Must be broadcastable to timeseries_data.
+    timestep : int
+        TODO
+    percent_of_target : int
+        TODO
 
     Returns
     -------
@@ -254,16 +240,14 @@ def r80p(
         DataArray containing the R80P value for each pixel.
 
     """
-    if params["timestep"] is None:
-        rest_post_t = timeseries_data["time"].data[-1]
-    elif params["timestep"] < 0:
+    if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
-    elif params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
+    elif percent_of_target <= 0 or percent_of_target > 100:
         raise ValueError(VALID_PERC_MSP)
     else:
-        rest_post_t = str(restoration_start + params["timestep"])
+        rest_post_t = str(restoration_start + timestep)
     r80p_v = (timeseries_data.sel(time=rest_post_t)).drop_vars("time") / (
-        (params["percent_of_target"] / 100) * recovery_target
+        (percent_of_target / 100) * recovery_target
     )
     try:
         # if using the default timestep (the max/most recent),
@@ -278,8 +262,7 @@ def y2r(
     restoration_start: int,
     timeseries_data: xr.DataArray,
     recovery_target: xr.DataArray,
-    params: Dict = {"percent_of_target": 80},
-    disturbance_start: int = None,
+    percent_of_target: int = 80,
 ) -> xr.DataArray:
     """Per-pixel Y2R.
 
@@ -294,11 +277,10 @@ def y2r(
     timeseries_data: 
         The timeseries of indices to compute Y2R with. Must contain
         band, time, y, and x coordinate dimensions.
-    params : Dict
-        Parameters to customize metric computation. r80p uses
-        the 'percent_of_target' parameter with default = {"percent_of_target": 80}
     recovery_target : xarray.DataArray
         Recovery target values. Must be broadcastable to timeseries_data.
+    percent_of_target : int
+        TODO
 
     Returns
     -------
@@ -308,7 +290,7 @@ def y2r(
         have not yet reached the recovery target value.
 
     """
-    if params["percent_of_target"] <= 0 or params["percent_of_target"] > 100:
+    if percent_of_target <= 0 or percent_of_target > 100:
         raise ValueError(VALID_PERC_MSP)
 
     recovery_window = timeseries_data.sel(time=slice(str(restoration_start), None))
@@ -316,10 +298,7 @@ def y2r(
         raise ValueError(
             f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}."
         )
-
-    print(recovery_target, params["percent_of_target"])
-    y2r_target = recovery_target * (params["percent_of_target"] / 100)
-
+    y2r_target = recovery_target * (percent_of_target / 100)
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
     # Pixels with value 0 could be:
     # 1. pixels that were recovered at the first timestep
@@ -349,8 +328,7 @@ def rri(
     disturbance_start: int,
     restoration_start: int,
     timeseries_data: xr.DataArray,
-    params: Dict = {"timestep": 5},
-    recovery_target: xr.DataArray = None,
+    timestep: int = 5,
 ) -> xr.DataArray:
     """Per-pixel RRI.
 
@@ -362,17 +340,15 @@ def rri(
 
     Parameters
     ----------
+    disturbance_start : int
+        TODO
     restoration_start : int
         The start year of restoration activities.
     timeseries_data: 
         The timeseries of indices to compute RRI with. Must contain
         band, time, y, and x coordinate dimensions.
-    params : Dict
-        Parameters to customize metric computation. r80p uses
-        the 'timestep' and 'use_dist_avg' parameters with
-        default = {"timestep": 5}.
-    recovery_target : xarray.DataArray
-        Recovery target values. Must be broadcastable to timeseries_data.
+    timestep : int
+        TODO
 
     Returns
     -------
@@ -380,14 +356,14 @@ def rri(
         DataArray containing the RRI value for each pixel.
 
     """
-    if params["timestep"] < 0:
+    if timestep < 0:
         raise ValueError(NEG_TIMESTEP_MSG)
 
-    if params["timestep"] == 0:
+    if timestep == 0:
         raise ValueError("timestep for RRI must be greater than 0.")
 
-    rest_post_tm1 = str(restoration_start + (params["timestep"] - 1))
-    rest_post_t = str(restoration_start + params["timestep"])
+    rest_post_tm1 = str(restoration_start + (timestep - 1))
+    rest_post_t = str(restoration_start + timestep)
 
     if pd.to_datetime(rest_post_tm1) not in timeseries_data.time.values:
         raise ValueError(

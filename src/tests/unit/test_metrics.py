@@ -11,7 +11,7 @@ from shapely import Polygon
 # from spectral_recovery.restoration import RestorationArea
 from spectral_recovery.metrics import (
     y2r,
-    dir,
+    deltair,
     rri,
     yryr,
     r80p,
@@ -21,7 +21,7 @@ from spectral_recovery.metrics import (
 
 
 def test_metric_funcs_global_contains_all_funcs():
-    expected_dict = {"y2r": y2r, "dir": dir, "yryr": yryr, "r80p": r80p, "rri": rri}
+    expected_dict = {"y2r": y2r, "deltair": deltair, "yryr": yryr, "r80p": r80p, "rri": rri}
     assert METRIC_FUNCS == expected_dict
 
 
@@ -66,6 +66,8 @@ class TestComputeMetrics:
 
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+        y2r_mock.__code__ = Mock()
+        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
         none_rt = None
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"yryr": y2r_mock}):
@@ -84,6 +86,8 @@ class TestComputeMetrics:
     ):
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+        y2r_mock.__code__ = Mock()
+        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
         none_rt = None
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"yryr": y2r_mock}):
@@ -108,12 +112,17 @@ class TestComputeMetrics:
         self, valid_array, valid_frame, valid_rt
     ):
         patched_dict = {}
-        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
-        for i, metric in enumerate(multi_metrics):
-            metric_mock = Mock()
-            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
-
-            patched_dict[metric.lower()] = metric_mock
+        multi_metrics = ["Y2R", "deltaIR"]
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
+        y2r_mock.__code__ = Mock()
+        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        patched_dict[multi_metrics[0].lower()] = y2r_mock
+        deltair_mock = Mock()
+        deltair_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
+        deltair_mock.__code__ = Mock()
+        deltair_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "timestep")
+        patched_dict[multi_metrics[1].lower()] = deltair_mock
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
 
@@ -132,12 +141,17 @@ class TestComputeMetrics:
     ):
 
         patched_dict = {}
-        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
-        for i, metric in enumerate(multi_metrics):
-            metric_mock = Mock()
-            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
-
-            patched_dict[metric.lower()] = metric_mock
+        multi_metrics = ["Y2R", "deltaIR"]
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
+        y2r_mock.__code__ = Mock()
+        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        patched_dict[multi_metrics[0].lower()] = y2r_mock
+        deltair_mock = Mock()
+        deltair_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
+        deltair_mock.__code__ = Mock()
+        deltair_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "timestep")
+        patched_dict[multi_metrics[1].lower()] = deltair_mock
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
 
@@ -165,11 +179,17 @@ class TestComputeMetrics:
             crs="EPSG:4326",
         )
         patched_dict = {}
-        multi_metrics = ["Y2R", "dNBR"]
-        for i, metric in enumerate(multi_metrics):
-            metric_mock = Mock()
-            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
-            patched_dict[metric.lower()] = metric_mock
+        multi_metrics = ["Y2R", "deltaIR"]
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
+        y2r_mock.__code__ = Mock()
+        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        patched_dict[multi_metrics[0].lower()] = y2r_mock
+        deltair_mock = Mock()
+        deltair_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
+        deltair_mock.__code__ = Mock()
+        deltair_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "timestep")
+        patched_dict[multi_metrics[1].lower()] = deltair_mock
 
         expected_polyids = [0, 1, 2]
 
@@ -193,25 +213,24 @@ class TestComputeMetrics:
     def test_custom_params_passed_to_metric_funcs(
         self, valid_array, valid_frame, valid_rt
     ):
-        metric = "Y2R"
-        metric_mock = Mock()
-        metric_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+        r80p_mock = Mock()
+        r80p_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
+        r80p_mock.__code__ = Mock()
+        r80p_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "timestep", "percent_of_target")
 
         with patch.dict(
-            "spectral_recovery.metrics.METRIC_FUNCS", {metric.lower(): metric_mock}
+            "spectral_recovery.metrics.METRIC_FUNCS", {"r80p": r80p_mock}
         ):
-
             compute_metrics(
                 timeseries_data=valid_array,
                 restoration_sites=valid_frame,
                 recovery_targets=valid_rt,
-                metrics=[metric],
+                metrics=["R80P"],
                 timestep=2,
                 percent_of_target=60,
             )
-
-            metric_mock.call_args.kwargs["params"]["timestep"] == 2
-            metric_mock.call_args.kwargs["params"]["percent_of_target"] == 60
+            r80p_mock.call_args.kwargs["timestep"] == 2
+            r80p_mock.call_args.kwargs["percent_of_target"] == 60
 
     def test_correct_params_passed_to_metric_func_if_rt_dict(self, valid_array):
         multi_frame = gpd.GeoDataFrame(
@@ -223,11 +242,17 @@ class TestComputeMetrics:
             crs="EPSG:4326",
         )
         patched_dict = {}
-        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
-        for i, metric in enumerate(multi_metrics):
-            metric_mock = Mock()
-            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
-            patched_dict[metric.lower()] = metric_mock
+        multi_metrics = ["Y2R", "R80P"]
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
+        y2r_mock.__code__ = Mock()
+        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        patched_dict[multi_metrics[0].lower()] = y2r_mock
+        r80p_mock = Mock()
+        r80p_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
+        r80p_mock.__code__ = Mock()
+        r80p_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target", "timestep")
+        patched_dict[multi_metrics[1].lower()] = r80p_mock
         clipped_array = valid_array.rio.clip(multi_frame["geometry"].values)
 
         rt_dict = {0: xr.DataArray([0]), 1: xr.DataArray([1]), 2: xr.DataArray([2])}
@@ -240,6 +265,7 @@ class TestComputeMetrics:
                 metrics=multi_metrics,
             )
 
+        # Check Y2R calls
         for m in multi_metrics:
             call0 = patched_dict[m.lower()].call_args_list[0].kwargs
             call1 = patched_dict[m.lower()].call_args_list[1].kwargs
@@ -248,10 +274,6 @@ class TestComputeMetrics:
             assert call0["restoration_start"] == 2013
             assert call1["restoration_start"] == 2012
             assert call2["restoration_start"] == 2013
-
-            assert call0["disturbance_start"] == 2012
-            assert call1["disturbance_start"] == 2011
-            assert call2["disturbance_start"] == 2012
 
             xr.testing.assert_equal(call0["timeseries_data"], clipped_array)
             xr.testing.assert_equal(call1["timeseries_data"], clipped_array)
@@ -273,11 +295,18 @@ class TestComputeMetrics:
             crs="EPSG:4326",
         )
         patched_dict = {}
-        multi_metrics = ["Y2R", "dNBR", "YrYr", "R80P"]
-        for i, metric in enumerate(multi_metrics):
-            metric_mock = Mock()
-            metric_mock.return_value = xr.DataArray([[[i]]], dims=["band", "y", "x"])
-            patched_dict[metric.lower()] = metric_mock
+        multi_metrics = ["Y2R", "deltaIR", "YrYr", "R80P"]
+        multi_metrics = ["Y2R", "deltaIR"]
+        y2r_mock = Mock()
+        y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
+        y2r_mock.__code__ = Mock()
+        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        patched_dict[multi_metrics[0].lower()] = y2r_mock
+        r80p_mock = Mock()
+        r80p_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
+        r80p_mock.__code__ = Mock()
+        r80p_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target", "timestep")
+        patched_dict[multi_metrics[1].lower()] = r80p_mock
         clipped_array = valid_array.rio.clip(multi_frame["geometry"].values)
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
@@ -292,10 +321,6 @@ class TestComputeMetrics:
             call0 = patched_dict[m.lower()].call_args_list[0].kwargs
             call1 = patched_dict[m.lower()].call_args_list[1].kwargs
             call2 = patched_dict[m.lower()].call_args_list[2].kwargs
-
-            assert call0["disturbance_start"] == 2012
-            assert call1["disturbance_start"] == 2011
-            assert call2["disturbance_start"] == 2012
 
             assert call0["restoration_start"] == 2013
             assert call1["restoration_start"] == 2012
@@ -549,7 +574,7 @@ class TestY2R:
             restoration_start=2020,
             timeseries_data=obs,
             recovery_target=rt,
-            params={"percent_of_target": percent},
+            percent_of_target=percent,
         ).equals(expected)
 
     def test_missing_years_in_recovery_window_throws_value_err(self):
@@ -572,7 +597,7 @@ class TestY2R:
                 restoration_start=2020,
                 timeseries_data=obs,
                 recovery_target=rt,
-                params={"percent_of_target": percent},
+                percent_of_target=percent,
             )
 
     def test_missing_years_outside_recovery_window_does_now_throw_value_err(self):
@@ -597,11 +622,11 @@ class TestY2R:
             restoration_start=2020,
             timeseries_data=obs,
             recovery_target=rt,
-            params={"percent_of_target": percent},
+            percent_of_target=percent,
         ).equals(expected)
 
 
-class TestDNBR:
+class TestTestDeltaIR:
     year_period = [
         pd.to_datetime("2010"),
         pd.to_datetime("2011"),
@@ -675,11 +700,11 @@ class TestDNBR:
             ),
         ],
     )
-    def test_default_dNBR(self, obs, expected):
+    def test_default_deltaIR(self, obs, expected):
         rest_start = 2010
-        assert dir(restoration_start=rest_start, timeseries_data=obs).equals(expected)
+        assert deltair(restoration_start=rest_start, timeseries_data=obs).equals(expected)
 
-    def test_timestep_dNBR(self):
+    def test_timestep_deltaIR(self):
         rest_start = 2010
         obs = xr.DataArray(
             [[[[50]], [[60]], [[70]], [[80]], [[90]], [[100]]]],
@@ -693,10 +718,10 @@ class TestDNBR:
             dims=["band", "y", "x"],
         ).rio.write_crs("4326")
 
-        assert dir(
+        assert deltair(
             restoration_start=rest_start,
             timeseries_data=obs,
-            params={"timestep": timestep},
+            timestep=timestep,
         ).equals(expected)
 
     def test_invalid_timestep_throws_err(self):
@@ -710,10 +735,10 @@ class TestDNBR:
         timestep = -2
 
         with pytest.raises(ValueError, match="timestep cannot be negative."):
-            dir(
+            deltair(
                 restoration_start=rest_start,
                 timeseries_data=obs,
-                params={"timestep": timestep},
+                timestep=timestep,
             )
 
     def test_timestep_too_large_throws_err(self):
@@ -728,10 +753,10 @@ class TestDNBR:
         with pytest.raises(
             ValueError,
         ):
-            dir(
+            deltair(
                 restoration_start=rest_start,
                 timeseries_data=obs,
-                params={"timestep": timestep},
+                timestep=timestep,
             )
 
 
@@ -864,7 +889,7 @@ class TestRRI:
             disturbance_start=dist_start,
             restoration_start=rest_start,
             timeseries_data=obs,
-            params={"timestep": timestep, "use_dist_avg": False},
+            timestep=timestep,
         ).equals(expected)
 
     def test_neg_timestep_raises_err(self):
@@ -878,7 +903,7 @@ class TestRRI:
                 disturbance_start=dist_start,
                 restoration_start=rest_start,
                 timeseries_data=obs,
-                params={"timestep": timestep, "use_dist_avg": False},
+                timestep=timestep,
             )
 
     def test_out_bound_timestep_raises_err(self):
@@ -898,7 +923,7 @@ class TestRRI:
                 disturbance_start=dist_start,
                 restoration_start=rest_start,
                 timeseries_data=obs,
-                params={"timestep": timestep, "use_dist_avg": False},
+                timestep=timestep,
             )
 
     def test_0_timestep_RRI_raises_err(self):
@@ -918,7 +943,7 @@ class TestRRI:
                 disturbance_start=dist_start,
                 restoration_start=rest_start,
                 timeseries_data=obs,
-                params={"timestep": timestep, "use_dist_avg": False},
+                timestep=timestep,
             )
 
     def test_0_denom_sets_inf(self):
@@ -943,7 +968,7 @@ class TestRRI:
             disturbance_start=dist_start,
             restoration_start=rest_start,
             timeseries_data=obs,
-            params={"timestep": timestep, "use_dist_avg": False},
+            timestep=timestep,
         ).equals(expected)
 
 
@@ -1024,7 +1049,8 @@ class TestR80P:
             restoration_start=rest_start,
             timeseries_data=obs,
             recovery_target=rt,
-            params={"timestep": timestep, "percent_of_target": 80},
+            timestep=timestep,
+            percent_of_target=80,
         )
         assert result.equals(expected)
 
@@ -1047,7 +1073,8 @@ class TestR80P:
             restoration_start=rest_start,
             timeseries_data=obs,
             recovery_target=rt,
-            params={"timestep": 5, "percent_of_target": percent},
+            timestep=5,
+            percent_of_target=percent,
         )
         assert result.equals(expected)
 
@@ -1066,7 +1093,8 @@ class TestR80P:
                 restoration_start=rest_start,
                 timeseries_data=obs,
                 recovery_target=rt,
-                params={"timestep": neg_timestep, "percent_of_target": 80},
+                timestep=neg_timestep,
+                percent_of_target=80,
             )
 
 
@@ -1142,7 +1170,7 @@ class TestYrYr:
         result = yryr(
             restoration_start=rest_start,
             timeseries_data=obs,
-            params={"timestep": timestep},
+            timestep=timestep,
         )
         assert result.equals(expected)
 
@@ -1155,5 +1183,5 @@ class TestYrYr:
             yryr(
                 restoration_start=rest_start,
                 timeseries_data=obs,
-                params={"timestep": timestep},
+                timestep=timestep,
             )
