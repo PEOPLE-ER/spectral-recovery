@@ -15,15 +15,16 @@ from spectral_recovery.indices import (
     TCW,
     TCG,
     GCI,
-    _split_indices_by_source
+    _split_indices_by_source,
 )
+
 
 def bands_from_index(indices: List[str]):
     """Return list of bands used in an index"""
     bands = []
-    for index in indices: 
+    for index in indices:
         if index in ["TCW", "TCG", "GCI"]:
-            continue     
+            continue
         for b in spx.indices[index].bands:
             if b in list(spx.bands) and b not in bands:
                 bands.append(b)
@@ -242,6 +243,7 @@ class TestComputeIndices:
         with pytest.raises(ValueError):
             result = compute_indices(data, [index])
 
+
 class TestSplitIndices:
     def test_only_spx_returns_empty_sr(self):
         indices = ["SR", "NDVI"]
@@ -260,7 +262,7 @@ class TestSplitIndices:
         with pytest.raises(ValueError) as valerr:
             _split_indices_by_source(indices)
         assert "'BBG'" in str(valerr.value)
-        
+
     def test_spx_and_sr_split_correctly(self):
         indices = ["SR", "TCW", "NDVI", "GCI"]
         spx_list, sr_list = _split_indices_by_source(indices)
@@ -271,9 +273,13 @@ class TestSplitIndices:
 class TestGCI:
     def test_returns_correct_values(self):
         params_dict_1 = {"N": xr.DataArray([0.2]), "G": xr.DataArray([0.4])}
-        expected_1 = xr.DataArray([[-0.5]], dims=["band", "dim_0"], coords={"band": ["GCI"]})  # (0.2/0.4)-1
+        expected_1 = xr.DataArray(
+            [[-0.5]], dims=["band", "dim_0"], coords={"band": ["GCI"]}
+        )  # (0.2/0.4)-1
         params_dict_2 = {"N": xr.DataArray([0.4]), "G": xr.DataArray([0.2])}
-        expected_2 = xr.DataArray([[1.0]], dims=["band", "dim_0"], coords={"band": ["GCI"]})  # (0.4/0.2)-1
+        expected_2 = xr.DataArray(
+            [[1.0]], dims=["band", "dim_0"], coords={"band": ["GCI"]}
+        )  # (0.4/0.2)-1
 
         output_1 = GCI(params_dict=params_dict_1)
         output_2 = GCI(params_dict=params_dict_2)

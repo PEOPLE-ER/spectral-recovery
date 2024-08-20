@@ -473,7 +473,7 @@ class TestReadTimeseriesBandNames:
                 path_to_tifs="a/dir",
                 array_type="numpy",
             )
-    
+
     @patch(
         "rioxarray.open_rasterio",
     )
@@ -498,6 +498,7 @@ class TestReadTimeseriesBandNames:
         # assert
         print(stacked_tifs["band"].data, expected_bands)
         assert_array_equal(stacked_tifs["band"].data, expected_bands)
+
 
 class TestReadTimeseriesDictInput:
 
