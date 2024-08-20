@@ -103,11 +103,8 @@ def compute_metrics(
                 raise ValueError(f"{m} is not a valid metric choice!")
             m_results.append(m_func(**m_kwargs).assign_coords({"metric": m}))
         per_polygon_metrics[index] = xr.concat(m_results, "metric")
-    metric_da = xr.concat(
-        per_polygon_metrics.values(), pd.Index(per_polygon_metrics.keys(), name="site")
-    )
-    metric_ds = metric_da.to_dataset(dim="site")
-    return metric_ds
+    
+    return per_polygon_metrics
 
 
 def has_no_missing_years(images: xr.DataArray):

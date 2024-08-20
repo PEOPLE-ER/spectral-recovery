@@ -6,7 +6,7 @@ from typing import Dict, List
 
 
 # TODO: allow users to pass attribute col names for date cols
-def read_restoration_polygons(
+def read_restoration_sites(
     path: str,
     dist_rest_years: Dict[int, List[int]] = None,
 ) -> gpd.GeoDataFrame:
