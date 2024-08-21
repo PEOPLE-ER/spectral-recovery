@@ -1,30 +1,74 @@
 # API Documentation
 
-**This part of the project documentation focuses on an information-oriented approach. Use it as a reference for the technical implementation of the `Spectral Recovery` project code.**
+This page provides a summary of spectral-recovery's public API. For details and examples, see the relevant 
+tutorials in the Documentation page.
 
-<!-- ::: src.spectral_recovery
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false -->
 
-<!-- :::src.spectral_recovery.enums
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false -->
+## **Reading timeseries data**
 
-:::src.spectral_recovery.indices
+---
+
+:::src.spectral_recovery.io.raster.read_timeseries
     options:
         docstring_options:
             ignore_init_summary: true
             trim_doctest_flags: false
         show_root_heading: true
         show_source: false
+
+## **Reading restoration site data**
+
+---
+
+:::src.spectral_recovery.io.polygon.read_restoration_sites
+    options:
+        docstring_options:
+            ignore_init_summary: true
+            trim_doctest_flags: false
+        show_root_heading: true
+        show_source: false
+
+## **Computing indices**
+---
+
+:::src.spectral_recovery.indices.compute_indices
+    options:
+        docstring_options:
+            ignore_init_summary: true
+            trim_doctest_flags: false
+        show_root_heading: true
+        show_source: false
+
+## **Computing recovery targets**
+---
+
+### **Historic recovery targets**
+
+---
+
+:::src.spectral_recovery.targets.historic
+    options:
+        docstring_options:
+            ignore_init_summary: true
+            trim_doctest_flags: false
+        show_root_heading: true
+        show_source: false
+
+### **Reference recovery targets**
+
+---
+
+:::src.spectral_recovery.targets.reference
+    options:
+        docstring_options:
+            ignore_init_summary: true
+            trim_doctest_flags: false
+        show_root_heading: true
+        show_source: false
+
+## **Compute recovery metrics**
+
+---
 
 :::src.spectral_recovery.metrics
     options:
@@ -34,6 +78,9 @@
         show_root_heading: true
         show_source: false
 
+## **Plot spectral trajectory**
+---
+
 :::src.spectral_recovery.plotting
     options:
         docstring_options:
@@ -42,43 +89,4 @@
         show_root_heading: true
         show_source: false
 
-:::src.spectral_recovery.targets
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false
 
-<!-- :::src.spectral_recovery.timeseries
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false
-        filter: ['!__init__'] -->
-
-:::src.spectral_recovery.io.raster
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false
-
-:::src.spectral_recovery.io.polygon
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false
-
-<!-- :::src.spectral_recovery.io.raster
-    options:
-        docstring_options:
-            ignore_init_summary: true
-            trim_doctest_flags: false
-        show_root_heading: true
-        show_source: false -->

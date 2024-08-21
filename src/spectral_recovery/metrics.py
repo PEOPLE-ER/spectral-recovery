@@ -17,7 +17,7 @@ NEG_TIMESTEP_MSG = "timestep cannot be negative."
 VALID_PERC_MSP = "percent must be between 0 and 100."
 METRIC_FUNCS = {}
 
-def register_metric(f):
+def _register_metrics(f):
     """Add function and name to global name/func dict"""
     METRIC_FUNCS[f.__name__] = f
     return f
@@ -105,14 +105,14 @@ def compute_metrics(
     return per_polygon_metrics
 
 
-def has_no_missing_years(images: xr.DataArray):
+def _has_no_missing_years(images: xr.DataArray):
     """Check for continous set of years in DataArray"""
     years = images.coords["time"].dt.year.values
     if not np.all((years == list(range(years[0], years[-1] + 1)))):
         return False
     return True
 
-@register_metric
+@_register_metrics
 def deltair(
     restoration_start: int,
     timeseries_data: xr.DataArray,
@@ -162,7 +162,7 @@ def deltair(
     return deltair_v
 
 
-@register_metric
+@_register_metrics
 def yryr(
     restoration_start: int,
     timeseries_data: xr.DataArray,
@@ -201,7 +201,7 @@ def yryr(
     return yryr_v
 
 
-@register_metric
+@_register_metrics
 def r80p(
     restoration_start: int,
     timeseries_data: xr.DataArray,
@@ -258,7 +258,7 @@ def r80p(
         pass
     return r80p_v
 
-@register_metric
+@_register_metrics
 def y2r(
     restoration_start: int,
     timeseries_data: xr.DataArray,
@@ -296,7 +296,7 @@ def y2r(
         raise ValueError(VALID_PERC_MSP)
 
     recovery_window = timeseries_data.sel(time=slice(str(restoration_start), None))
-    if not has_no_missing_years(recovery_window):
+    if not _has_no_missing_years(recovery_window):
         raise ValueError(
             f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}."
         )
@@ -325,7 +325,7 @@ def y2r(
     return y2r_v
 
 
-@register_metric
+@_register_metrics
 def rri(
     disturbance_start: int,
     restoration_start: int,
@@ -390,7 +390,7 @@ def rri(
     return rri_v
 
 
-def year_dt(dt, dt_type: str = "int"):
+def _year_dt(dt, dt_type: str = "int"):
     """Get int or str representation of year from datetime-like object."""
     # TODO: refuse to move forward if dt isn't datetime-like
     try:
