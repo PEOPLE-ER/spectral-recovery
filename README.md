@@ -3,7 +3,7 @@
 
 <div align="center">
   
-  ![tests](https://github.com/PEOPLE-ER/spectral-recovery/actions/workflows/python-package.yml)
+  ![tests](https://github.com/PEOPLE-ER/spectral-recovery/actions/workflows/python-package.yml/badge.svg)
   <a href="">[![PyPI version](https://badge.fury.io/py/spectral-recovery.svg)](https://badge.fury.io/py/spectral-recovery)</a>
   <a href="">[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PEOPLE-ER/spectral-recovery/HEAD?labpath=docs%2Fnotebooks%2F)</a>
   <a href="">[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)</a>
@@ -15,7 +15,7 @@
 Github: [https://github.com/PEOPLE-ER/spectral-recovery/](https://github.com/PEOPLE-ER/spectral-recovery/)
 
 Documentation: [https://people-er.github.io/spectral-recovery/](https://people-er.github.io/spectral-recovery/)
-
+git 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
 ---
