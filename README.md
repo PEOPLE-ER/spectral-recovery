@@ -1,4 +1,4 @@
-<h1 align="center">(pre-release) spectral-recovery</h1>
+<h1 align="center">spectral-recovery</h1>
 <p align="center">:artificial_satellite::evergreen_tree::chart_with_upwards_trend: supporting ecosystem restoration through spectral recovery analysis :chart_with_upwards_trend::evergreen_tree::artificial_satellite:</p>
 
 <div align="center">
@@ -15,7 +15,7 @@
 Github: [https://github.com/PEOPLE-ER/spectral-recovery/](https://github.com/PEOPLE-ER/spectral-recovery/)
 
 Documentation: [https://people-er.github.io/spectral-recovery/](https://people-er.github.io/spectral-recovery/)
-git 
+
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
 
 ---
