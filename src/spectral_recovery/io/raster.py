@@ -1,8 +1,4 @@
-"""Functions for reading and writing raster data .
-
-Handles reading timeseries of TIFs into a single DataArray, ensures
-band names and attributes are consistent. Also handles writing.
-"""
+"""Methods for reading in timeseries raster data."""
 
 from pathlib import Path
 from typing import List, Dict, Tuple

@@ -1,4 +1,4 @@
-"""Utility functions for spectral-recovery."""
+"""Utility methods, for use throughout package"""
 
 import functools
 import spyndex as spx
@@ -81,7 +81,7 @@ def maintain_rio_attrs(func: callable) -> callable:
 
 
 def common_and_long_to_short(standard):
-    """Dict of short and common names to standard names
+    """Dict of short and common bands names to standard names
 
     Notes
     -----
@@ -102,23 +102,3 @@ def common_and_long_to_short(standard):
         common_and_short[spx.bands[band].short_name] = band
         common_and_short[spx.bands[band].common_name] = band
     return common_and_short
-
-def _platforms_from_band(band_object):
-    """Get list of platform names supported by each band"""
-    platforms = []
-    for p in [
-        "sentinel2a",
-        "sentinel2b",
-        "landsat4",
-        "landsat5",
-        "landsat7",
-        "landsat8",
-        "landsat9",
-        "modis",
-        "planetscope",
-    ]:
-        try:
-            platforms.append(getattr(band_object, p).platform)
-        except AttributeError:
-            continue
-    return platforms
