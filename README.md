@@ -45,14 +45,7 @@ from spectral_recovery import data
 # Read in timeseries data
 spectral_ts = sr.read_timeseries(
     path_to_tifs=data.bc06_wildfire_landsat_BAP_timeseries(),
-    band_names={
-        1: "blue",
-        2: "green",
-        3: "red",
-        4: "nir",
-        5: "swir16",
-        6: "swir22"
-    },
+    band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"},
 )
 # Compute indices
 index_ts = sr.compute_indices(
@@ -62,7 +55,7 @@ index_ts = sr.compute_indices(
 # Read in restoration site(s)
 rest_site = sr.read_restoration_site(
     path=data.bc06_wildfire_restoration_site(),
-    dist_rest_years={0:[2006, 2007]},
+    dist_rest_years={0: [2006, 2007]},
 )
 # Compute recovery target for restoration site
 median_hist = sr.recovery_targets.historic.median(
@@ -74,8 +67,8 @@ median_hist = sr.recovery_targets.historic.median(
 )
 # Compute recovery metrics for restoration site!
 metrics = sr.compute_metrics(
-    metrics=["Y2R","R80P","YrYr","deltaIR","RRI"],
-    timeseries_data=index_ts, 
+    metrics=["Y2R", "R80P", "YrYr", "deltaIR", "RRI"],
+    timeseries_data=index_ts,
     restoration_sites=rest_site,
     recovery_targets=median_hist,
 )
