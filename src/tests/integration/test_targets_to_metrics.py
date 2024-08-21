@@ -42,7 +42,7 @@ class TestWorkflowWithTargets:
             scale="pixel",
         )
         metrics = sr.compute_metrics(
-            metrics=["dIR", "YrYr"],
+            metrics=["deltaIR", "YrYr"],
             restoration_sites=rest_site,
             timeseries_data=indices,
             recovery_targets=median_target,
@@ -88,7 +88,7 @@ class TestWorkflowWithTargets:
             reference_end=2011,
         )
         metrics = sr.compute_metrics(
-            metrics=["dIR", "YrYr"],
+            metrics=["deltaIR", "YrYr"],
             restoration_sites=rest_site,
             timeseries_data=indices,
             recovery_targets=ref_target,
@@ -196,7 +196,7 @@ class TestWorkflowWithTargets:
             reference_end=2011,
         )
         metrics = sr.compute_metrics(
-            metrics=["dIR", "YrYr"],
+            metrics=["deltaIR", "YrYr"],
             restoration_sites=rest_site,
             timeseries_data=indices,
             recovery_targets=ref_target,

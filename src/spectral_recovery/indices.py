@@ -8,16 +8,12 @@ Most notably, exports the `compute_indices` function, which computes a stack of
 spectral indices from a stack of images and str of index names.
 
 """
-
 import copy
 import json
-
-import xarray as xr
 import importlib.resources as pkg_resources
-import spyndex as spx
-
 from typing import List, Dict
-
+import xarray as xr
+import spyndex as spx
 from spectral_recovery.utils import maintain_rio_attrs
 from spectral_recovery.config import SUPPORTED_DOMAINS
 
@@ -29,20 +25,21 @@ with pkg_resources.open_text(
 ) as f:
     INDEX_CONSTANT_DEFAULTS = json.load(f)
 
-def GCI(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+
+def gci(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Green Chlorophyll Index (GCI) index"""
     try:
-        gci = (params_dict["N"] / params_dict["G"]) - 1
+        gci_v = (params_dict["N"] / params_dict["G"]) - 1
     except KeyError as e:
-        raise KeyError(f"Missing '{e.args[0]}' in the parameters for GCI")
-    gci = gci.expand_dims(dim={"band": ["GCI"]})
-    return gci
+        raise KeyError(f"Missing '{e.args[0]}' in the parameters for GCI") from None
+    gci_v = gci_v.expand_dims(dim={"band": ["GCI"]})
+    return gci_v
 
 
-def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+def tcw(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Tasselled Cap Wetness (TCW) index with Landsat 8/9 coeff"""
     try:
-        tcw = (
+        tcw_v = (
             0.1511 * params_dict["B"]
             + 0.1973 * params_dict["G"]
             + 0.3283 * params_dict["R"]
@@ -51,14 +48,15 @@ def TCW(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
             - 0.4559 * params_dict["S2"]
         )
     except KeyError as e:
-        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCW")
-    tcw = tcw.expand_dims(dim={"band": ["TCW"]})
-    return tcw
+        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCW") from None
+    tcw_v = tcw_v.expand_dims(dim={"band": ["TCW"]})
+    return tcw_v
 
-def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+
+def tcg(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Tasselled Cap Greenness (TCW) index with Landsat 8/9 coeff"""
     try:
-        tcg = (
+        tcg_v = (
             -0.2941 * params_dict["B"]
             - 0.243 * params_dict["G"]
             - 0.5424 * params_dict["R"]
@@ -67,15 +65,16 @@ def TCG(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
             - 0.1608 * params_dict["S2"]
         )
     except KeyError as e:
-        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCG")
-    tcg = tcg.expand_dims(dim={"band": ["TCG"]})
-    return tcg
+        raise KeyError(f"Missing '{e.args[0]}' in the parameters for TCG") from None
+    tcg_v = tcg_v.expand_dims(dim={"band": ["TCG"]})
+    return tcg_v
 
-SR_REC_IDXS = {"GCI": GCI, "TCW": TCW, "TCG": TCG}
+
+SR_REC_IDXS = {"GCI": gci, "TCW": tcw, "TCG": tcg}
 
 @maintain_rio_attrs
 def compute_indices(
-    timeseries_data: xr.DataArray, indices: list[str], constants: dict = {}, **kwargs
+    timeseries_data: xr.DataArray, indices: list[str], constants: dict = None, **kwargs
 ):
     """Compute spectral indices.
 
@@ -226,7 +225,10 @@ def _build_constants_dict(indices: List, constants: Dict) -> Dict:
         and more than one index uses a different default value.
 
     """
-    constants_dict = copy.deepcopy(constants)
+    if constants:
+        constants_dict = copy.deepcopy(constants)
+    else:
+        constants_dict = {}
     given_constants = list(constants_dict.keys())
     for i in indices:
         try:
@@ -238,8 +240,9 @@ def _build_constants_dict(indices: List, constants: Dict) -> Dict:
                 raise ValueError(
                     f"No default value for {c} available (required by {i}). Please provide a value for {c} with the `constants` param."
                 )
-            # If more than one index needs the same constant and the constant value wasn't given in `constants` dict
-            # (i.e must use defaults), check that the default values match o.w fail
+            # If more than one index needs the same constant and the constant value
+            # wasn't given in `constants` dict then check that the default values
+            # match. If they don't, bail out.
             if c not in given_constants:
                 if c in constants_dict:
                     if constants_dict[c] != v:
