@@ -1,7 +1,7 @@
 site_name: PEOPLE-ER Spectral Recovery
-site_url: https://PEOPLE-ER.github.io/Spectral-Recovery/
-repo_name: Spectral-Recovery
-repo_url: https://github.com/PEOPLE-ER/Spectral-Recovery
+site_url: https://PEOPLE-ER.github.io/spectral-recovery/
+repo_name: spectral-recovery
+repo_url: https://github.com/PEOPLE-ER/spectral-recovery
 
 nav:
 - Home: index.md
@@ -80,3 +80,4 @@ extra_javascript:
 
 extra_css:
   - stylesheets/extra.css
+  - stylesheets/mkdocstrings.css
