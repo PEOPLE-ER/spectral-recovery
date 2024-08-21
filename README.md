@@ -1,5 +1,5 @@
 <h1 align="center">(pre-release) spectral-recovery</h1>
-<p align="center">:artificial_satellite::evergreen_tree::chart_with_upwards_trend: supporting spectral recovery analysis for forested ecosystems :chart_with_upwards_trend::evergreen_tree::artificial_satellite:</p>
+<p align="center">:artificial_satellite::evergreen_tree::chart_with_upwards_trend: supporting ecosystem restoration through spectral recovery analysis :chart_with_upwards_trend::evergreen_tree::artificial_satellite:</p>
 
 <div align="center">
   
@@ -24,18 +24,68 @@ PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spe
 ---
 ## Overview
 
-**spectral-recovery** is an open-source project and Python package that provides computationally simple, centralized, and reproducible methods for performing [spectral recovery analysis](https://people-er.github.io/spectral-recovery/about/#13-looking-at-recovery-trajectories) of forests using satellite imagery.
+`spectral-recovery` is an open-source project and Python package that provides simple, centralized, and reproducible methods for performing [spectral recovery analysis](https://people-er.github.io/spectral-recovery/about/#13-looking-at-recovery-trajectories) to support [Ecosystem Restoration](https://people-er.github.io/spectral-recovery/about/#11-ecosystem-restoration) (ER) efforts in forested ecosystems.
 
-The package provides straight-forward interfaces to help coordinate the many moving parts of spectral recovery analysis. Users provide restoration site locations, restoration dates, and annual composites of spectral data, while spectral-recovery handles computing the spectral indices, recovery targets, recovery metrics, and more!
+The package provides straight-forward interfaces and supplementary documentation to encourage the use of well-founded remote sensing techniques in ER research and projects. To get started, users provide restoration site locations, the years of disturbance and restoration, and annual composites of spectral data. `spectral-recovery` handles the rest!
 
-The package aims, through both software and supplementary documentation, to make spectral recovery analysis more approachable, encouraging the use and adoption of well-founded remote sensing techniques to aid [Ecosystem Restoration](https://people-er.github.io/spectral-recovery/about/#11-ecosystem-restoration) research and projects.
+See [Quick Start](https://github.com/PEOPLE-ER/spectral-recovery?tab=readme-ov-file#quick-start) or our [interactive notebooks](https://mybinder.org/v2/gh/PEOPLE-ER/spectral-recovery/HEAD?labpath=docs%2Fnotebooks%2F) to dive right in, [(in-progress) tutorials](https://people-er.github.io/spectral-recovery/installation/) for detailed instructions, or the [theoretical basis](https://people-er.github.io/spectral-recovery/theoretical_basis/) for in-depth information. 
 
 ## Installation
 
-```{bash}
+```bash
 pip install spectral-recovery
 ```
 
+## Quick Start
+
+```python
+import spectral_recovery as sr
+from spectral_recovery import data
+
+# Read in timeseries data
+spectral_ts = sr.read_timeseries(
+    path_to_tifs=data.bc06_wildfire_landsat_BAP_timeseries(),
+    band_names={
+        1: "blue",
+        2: "green",
+        3: "red",
+        4: "nir",
+        5: "swir16",
+        6: "swir22"
+    },
+)
+# Compute indices
+index_ts = sr.compute_indices(
+    timeseries_data=spectral_ts,
+    indices=["NBR", "NDVI"],
+)
+# Read in restoration site(s)
+rest_site = sr.read_restoration_site(
+    path=data.bc06_wildfire_restoration_site(),
+    dist_rest_years={0:[2006, 2007]},
+)
+# Compute recovery target for restoration site
+median_hist = sr.recovery_targets.historic.median(
+    timeseries_data=index_ts,
+    restoration_sites=rest_site,
+    reference_start=2003,
+    reference_end=2005,
+    scale="pixel",
+)
+# Compute recovery metrics for restoration site!
+metrics = sr.compute_metrics(
+    metrics=["Y2R","R80P","YrYr","deltaIR","RRI"],
+    timeseries_data=index_ts, 
+    restoration_sites=rest_site,
+    recovery_targets=median_hist,
+)
+# Inspect recovery metrics for the restoration site (site 0)
+# e.g what is the site's mean R80P (porportion of 80% of the recovery target)?:
+metrics[0].sel(metric="R80P").mean().compute()
+# Or, write results out to a TIF:
+metrics[0].sel(metric="Y2R").rio.to_raster("site0_y2r.tif")
+
+```
 ## Documentation
 
 - View background information, static tutorials, and API references in our [project documentation.](https://people-er.github.io/spectral-recovery/)
