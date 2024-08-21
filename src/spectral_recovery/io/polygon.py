@@ -1,3 +1,5 @@
+"""Methods for reading in polygon/vector data for restoration sites"""
+
 import geopandas as gpd
 import pandas as pd
 import numpy as np

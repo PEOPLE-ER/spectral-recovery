@@ -1,13 +1,5 @@
-"""Methods for computing spectral indices.
+"""Methods for computing spectral indices."""
 
-Most functions are decorated with `compatible_with` and `requires_bands` decorators,
-which check that the input stack is compatible with the function and that the stack
-contains the required bands.
-
-Most notably, exports the `compute_indices` function, which computes a stack of
-spectral indices from a stack of images and str of index names.
-
-"""
 import copy
 import json
 import importlib.resources as pkg_resources

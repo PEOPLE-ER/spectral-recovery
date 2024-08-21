@@ -1,3 +1,5 @@
+"""Methods for plotting spectral trajectories"""
+
 from typing import List, Dict, Tuple
 
 import geopandas as gpd

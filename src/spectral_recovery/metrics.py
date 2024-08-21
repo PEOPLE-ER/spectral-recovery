@@ -118,7 +118,7 @@ def deltair(
     timeseries_data: xr.DataArray,
     timestep: int = 5,
 ) -> xr.DataArray:
-    """Per-pixel dNBR.
+    """Per-pixel deltaIR.
 
     The absolute change in a spectral index’s value at a point in the
     restoration monitoring window from the start of the restoration monitoring
@@ -133,12 +133,12 @@ def deltair(
         The timeseries of indices to compute dIR with. Must contain
         band, time, y, and x coordinate dimensions.
     timestep : int
-        TODO
+        The timestep post-restoration to compute deltaIR with. 
 
     Returns
     -------
     deltair_v : xr.DataArray
-        DataArray containing the dNBR value for each pixel.
+        DataArray containing the deltaIR value for each pixel.
 
     """
     if timestep < 0:
@@ -183,7 +183,7 @@ def yryr(
         The timeseries of indices to compute YrYr with. Must contain
         band, time, y, and x coordinate dimensions.
     timestep : int
-        TODO
+        The timestep post-restoration to compute YrYr with. 
 
     Returns
     -------
@@ -230,9 +230,10 @@ def r80p(
     recovery_target : xarray.DataArray
         Recovery target values. Must be broadcastable to timeseries_data.
     timestep : int
-        TODO
+        The timestep post-restoration to compute R80P with. 
     percent_of_target : int
-        TODO
+        The percent of the recovery target to consider when computing
+        R80P.
 
     Returns
     -------
@@ -280,7 +281,8 @@ def y2r(
     recovery_target : xarray.DataArray
         Recovery target values. Must be broadcastable to timeseries_data.
     percent_of_target : int
-        TODO
+        The percent of the recovery target to consider when computing
+        Y2R.
 
     Returns
     -------
@@ -341,14 +343,14 @@ def rri(
     Parameters
     ----------
     disturbance_start : int
-        TODO
+        The start year of the disturbance event.
     restoration_start : int
         The start year of restoration activities.
     timeseries_data: 
         The timeseries of indices to compute RRI with. Must contain
         band, time, y, and x coordinate dimensions.
     timestep : int
-        TODO
+        The timestep post-restoration to compute RRI with. 
 
     Returns
     -------
