@@ -44,7 +44,7 @@ def plot_spectral_trajectory(
     # Prepare arguments being passed to the metric functions
     clipped_timeseries = timeseries_data.rio.clip([restoration_site.geometry.values])
     if path:
-        plot_ra(
+        _plot_ra(
             disturbance_start=clipped_timeseries["dist_start"].iloc[0],
             restoration_start=clipped_timeseries["rest_start"].iloc[0],
             recovery_target=clipped_timeseries,
@@ -53,7 +53,7 @@ def plot_spectral_trajectory(
             path=path,
         )
     else:
-        plot_ra(
+        _plot_ra(
             disturbance_start=clipped_timeseries["dist_start"].iloc[0],
             restoration_start=clipped_timeseries["rest_start"].iloc[0],
             recovery_target=recovery_target,
@@ -62,7 +62,7 @@ def plot_spectral_trajectory(
         )
 
 
-def plot_ra(
+def _plot_ra(
     disturbance_start: int,
     restoration_start: int,
     timeseries_data: xr.DataArray,
@@ -161,7 +161,7 @@ def plot_ra(
             loc="lower center",
             fancybox=True,
             ncol=3,
-            handler_map={Patch: HandlerFilledBetween()},
+            handler_map={Patch: _HandlerFilledBetween()},
         )
         plt.subplots_adjust(
             bottom=plt.rcParams["figure.subplot.bottom"]
@@ -309,7 +309,7 @@ def _custom_legend_labels_handles(palette, plot_ref_window) -> Tuple[List, List]
     return labels, custom_handles
 
 
-class HandlerFilledBetween(HandlerPatch):
+class _HandlerFilledBetween(HandlerPatch):
     """Custom Patch Handler for trajectory windows.
 
     Draws Patch objects with left and right edges coloured/dashed

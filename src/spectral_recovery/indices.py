@@ -18,7 +18,7 @@ with pkg_resources.open_text(
     INDEX_CONSTANT_DEFAULTS = json.load(f)
 
 
-def gci(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+def _gci(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Green Chlorophyll Index (GCI) index"""
     try:
         gci_v = (params_dict["N"] / params_dict["G"]) - 1
@@ -28,7 +28,7 @@ def gci(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     return gci_v
 
 
-def tcw(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+def _tcw(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Tasselled Cap Wetness (TCW) index with Landsat 8/9 coeff"""
     try:
         tcw_v = (
@@ -45,7 +45,7 @@ def tcw(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     return tcw_v
 
 
-def tcg(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
+def _tcg(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     """Compute the Tasselled Cap Greenness (TCW) index with Landsat 8/9 coeff"""
     try:
         tcg_v = (
@@ -62,7 +62,7 @@ def tcg(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
     return tcg_v
 
 
-SR_REC_IDXS = {"GCI": gci, "TCW": tcw, "TCG": tcg}
+SR_REC_IDXS = {"GCI": _gci, "TCW": _tcw, "TCG": _tcg}
 
 @maintain_rio_attrs
 def compute_indices(

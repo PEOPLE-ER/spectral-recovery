@@ -12,9 +12,9 @@ from spectral_recovery.config import REQ_DIMS
 from spectral_recovery.indices import (
     compute_indices,
     INDEX_CONSTANT_DEFAULTS,
-    tcw,
-    tcg,
-    gci,
+    _tcw,
+    _tcg,
+    _gci,
     _split_indices_by_source,
 )
 
@@ -275,8 +275,8 @@ class TestGCI:
         params_dict_2 = {"N": xr.DataArray([0.4]), "G": xr.DataArray([0.2])}
         expected_2 = xr.DataArray([[1.0]], dims=["band", "dim_0"], coords={"band": ["GCI"]})  # (0.4/0.2)-1
 
-        output_1 = gci(params_dict=params_dict_1)
-        output_2 = gci(params_dict=params_dict_2)
+        output_1 = _gci(params_dict=params_dict_1)
+        output_2 = _gci(params_dict=params_dict_2)
 
         xr.testing.assert_equal(output_1, expected_1)
         xr.testing.assert_equal(output_2, expected_2)
@@ -284,7 +284,7 @@ class TestGCI:
     def test_throws_key_error_if_params_missing_bands(self):
         params_dict = {"G": xr.DataArray([0.4])}
         with pytest.raises(KeyError) as keyerr:
-            gci(params_dict=params_dict)
+            _gci(params_dict=params_dict)
         assert "'N'" in str(keyerr.value)
 
 
@@ -301,7 +301,7 @@ class TestTCW:
         expected = xr.DataArray(
             [[-0.34004999999999996]], dims=["band", "dim_0"], coords={"band": ["TCW"]}
         )  # 0.1511*0.1+0.1973*0.2+0.3283*0.3+0.3407*0.4-0.7117*0.5-0.4559*0.6
-        output = tcw(params_dict=params_dict)
+        output = _tcw(params_dict=params_dict)
 
         xr.testing.assert_equal(output, expected)
 
@@ -314,7 +314,7 @@ class TestTCW:
             "S2": xr.DataArray([0.6]),
         }
         with pytest.raises(KeyError) as keyerr:
-            tcw(params_dict=params_dict)
+            _tcw(params_dict=params_dict)
         assert "'B'" in str(keyerr.value)
 
 
@@ -332,7 +332,7 @@ class TestTCG:
             [[-0.010519999999999974]], dims=["band", "dim_0"], coords={"band": ["TCG"]}
         )  # -0.2941*(0.1)-0.243*(0.2)-0.5424*(0.3)+0.7276*(0.4)+0.0713*(0.5)-0.1608*(0.6)
 
-        output = tcg(params_dict=params_dict)
+        output = _tcg(params_dict=params_dict)
 
         xr.testing.assert_equal(output, expected)
 
@@ -345,5 +345,5 @@ class TestTCG:
             "S2": xr.DataArray([0.6]),
         }
         with pytest.raises(KeyError) as keyerr:
-            tcg(params_dict=params_dict)
+            _tcg(params_dict=params_dict)
         assert "'B'" in str(keyerr.value)
