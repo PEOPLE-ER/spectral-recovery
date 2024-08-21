@@ -14,7 +14,7 @@ The spectral_recovery tool requires a spatial and temporal definition of your re
 The read_restoration_polygon function can read any vector format file containing your resoration polygon and will return a geopandas.GeoDataFrame containing your polygon and dates:
 
 ``` py 
-rest_site = sr.read_restoration_polygon(
+rest_site = sr.read_restoration_sites(
     path="my_restoration_poly.gpkg",
     disturbance_start="2005",
     restoration_start="2006",

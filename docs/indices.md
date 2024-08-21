@@ -1,1 +1,2 @@
-This doc is under construction.  Check back soon!
+# Computing Spectral Indices
+

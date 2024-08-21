@@ -57,5 +57,3 @@ exclude = ["tests*"]
 [tool.setuptools.package-data]
 spectral_recovery = ["resources/*.json", "data/*.gpkg", "data/bc06_wildfire_landsat_BAP/*"]
 
-[project.scripts]
-specrec = "scripts.cli:cli"
