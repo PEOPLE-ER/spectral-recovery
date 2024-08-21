@@ -44,7 +44,7 @@ from spectral_recovery import data
 
 # Read in timeseries data
 spectral_ts = sr.read_timeseries(
-    path_to_tifs=data.bc06_wildfire_landsat_BAP_timeseries(),
+    path_to_tifs=data.bc06_wildfire_landsat_bap_timeseries(),
     band_names={1: "blue", 2: "green", 3: "red", 4: "nir", 5: "swir16", 6: "swir22"},
 )
 # Compute indices
