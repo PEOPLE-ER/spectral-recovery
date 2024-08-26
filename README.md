@@ -55,7 +55,7 @@ index_ts = sr.compute_indices(
 # Read in restoration site(s)
 rest_site = sr.read_restoration_site(
     path=data.bc06_wildfire_restoration_site(),
-    dist_rest_years={0: [2006, 2007]},
+    dist_rest_years={0: [2005, 2006]},
 )
 # Compute recovery target for restoration site
 median_hist = sr.recovery_targets.historic.median(
