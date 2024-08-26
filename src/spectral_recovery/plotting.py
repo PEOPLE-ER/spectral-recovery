@@ -62,7 +62,6 @@ def _plot_ra(
     reference_end: str,
     path: str = None,
     legend: bool = True,
-    figsize: list = None,
 ) -> None:
     """Create spectral trajectory plot of the RestorationArea (ra)
 
