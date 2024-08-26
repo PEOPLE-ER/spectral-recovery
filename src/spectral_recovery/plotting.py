@@ -50,7 +50,6 @@ def plot_spectral_trajectory(
         reference_start=str(reference_start),
         reference_end=str(reference_end),
         path=path,
-        figsize=figsize,
     )
 
 
