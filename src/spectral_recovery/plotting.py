@@ -12,7 +12,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from matplotlib.legend_handler import HandlerPatch
 
-from spectral_recovery.indices import compute_indices
+from spectral_recovery.timeseries import _SatelliteTimeSeries
 
 
 def plot_spectral_trajectory(
@@ -41,25 +41,16 @@ def plot_spectral_trajectory(
         Path and filename for writing plot.
 
     """
-    # Prepare arguments being passed to the metric functions
-    clipped_timeseries = timeseries_data.rio.clip([restoration_site.geometry.values])
-    if path:
-        _plot_ra(
-            disturbance_start=clipped_timeseries["dist_start"].iloc[0],
-            restoration_start=clipped_timeseries["rest_start"].iloc[0],
-            recovery_target=clipped_timeseries,
-            reference_start=reference_start,
-            reference_end=reference_end,
-            path=path,
-        )
-    else:
-        _plot_ra(
-            disturbance_start=clipped_timeseries["dist_start"].iloc[0],
-            restoration_start=clipped_timeseries["rest_start"].iloc[0],
-            recovery_target=recovery_target,
-            reference_start=reference_start,
-            reference_end=reference_end,
-        )
+    clipped_timeseries = timeseries_data.rio.clip(restoration_site.geometry.values)
+    _plot_ra(
+        disturbance_start=str(restoration_site["dist_start"].iloc[0]),
+        restoration_start=str(restoration_site["rest_start"].iloc[0]),
+        timeseries_data=clipped_timeseries,
+        recovery_target=recovery_target,
+        reference_start=str(reference_start),
+        reference_end=str(reference_end),
+        path=path,
+    )
 
 
 def _plot_ra(
@@ -138,11 +129,12 @@ def _plot_ra(
             linestyle=(0, (3, 5, 1, 5)),
             lw=1,
         )
-        timeseries_end = np.max(timeseries_data["time"].dt.year.values)
+        timeseries_end = str(np.max(timeseries_data["time"].dt.year.values))
         _draw_trajectory_windows(
             restoration_start,
             disturbance_start,
             timeseries_end,
+            reference_start,
             reference_end,
             axi,
             palette,
@@ -296,15 +288,13 @@ def _custom_legend_labels_handles(palette, plot_ref_window) -> Tuple[List, List]
         "recovery window",
     ]
     if plot_ref_window:
-
         custom_handles.insert(3, reference_years_patch)
         labels.insert(3, "reference year(s)")
-    else:
-        custom_handles.insert(
-            2,
-            recovery_target_line,
-        )
-        labels.insert(2, "recovery target")
+    custom_handles.insert(
+        2,
+        recovery_target_line,
+    )
+    labels.insert(2, "recovery target")
 
     return labels, custom_handles
 
