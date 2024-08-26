@@ -103,7 +103,7 @@ def _plot_ra(
     palette = sns.color_palette("deep")
 
     bands = data["band"].unique()
-    fig, axs = plt.subplots(len(bands), 1, sharey=False, sharex=True, figsize=[8, 7.5]])
+    fig, axs = plt.subplots(len(bands), 1, sharey=False, sharex=True, figsize=[8, 7.5])
     # Plot per-band statistic lineplots
     for i, band in enumerate(bands):
         band_data = data[data["band"] == band]
