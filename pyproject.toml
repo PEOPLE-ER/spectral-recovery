@@ -17,7 +17,7 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-version = "0.4.1"
+version = "1.0"
 dependencies = [
     "geopandas >= 0.13.2",
     "rioxarray >= 0.14.1",
@@ -56,6 +56,3 @@ exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 spectral_recovery = ["resources/*.json", "data/*.gpkg", "data/bc06_wildfire_landsat_BAP/*"]
-
-[project.scripts]
-specrec = "scripts.cli:cli"
