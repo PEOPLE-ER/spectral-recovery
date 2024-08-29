@@ -9,6 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+
+## [1.0.0] - 2024-08-29
+
+### Added
+
+- Add support for processing multiple restoration sites at once (#136)
+- Add GCI, TCW, and TCG indexes (#138)
+- Add support for index inputs to read_timeseries (#139)
+- Add badge for tests status to README (#150)
+- Add citation file to repository (#135)
+- Add support for non-continuous timeseries inputs to read_timeseries (#129) 
+- Allow users to pass dict of TIF paths to read_timeseries (#130)
+- Cast int inputs to float automatically in read_timeseries (#128)
+- Add "quick start" section to README (#146)
+- Add demo/example data accessible through data module (#143)
+
+### Changed
+
+- Change compute_metrics return from Xarray to dict of Xarray with restoration site ID as keys (#148)
+- Refactor recovery metrics to accept only necessary arguments (#148)
+- Change recovery targets return from Xarray dict of Xarray with restoration site ID as keys
+- Recovery target module refactored into targets.historic and targets.reference sub-modules (#136)
+- Update docstrings and API documentation (#149)
+- Silence expected runtime warnings from Dask in metric computation (#147)
+
+## Removed
+
+- Remove support for CLI (#137)
+
+### Fixed
+
+- Fix broken spectral-recovery links in documentation (#142)
+
+
+
 ## [0.4.1] - 2024-04-16
 
 ### Fixed
