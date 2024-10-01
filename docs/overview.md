@@ -198,3 +198,7 @@ or you can write metrics to file using the `rio.to_raster` function in the rioxa
 ``` py
 r80p.rio.to_raster("r80p.tif")
 ```
+
+## More Examples?
+
+For more examples of the spectral-recovery tool, see our [notebooks](https://github.com/PEOPLE-ER/spectral-recovery/tree/main/docs/notebooks) or run them in a [Binder instance](https://mybinder.org/v2/gh/PEOPLE-ER/spectral-recovery/HEAD?labpath=docs%2Fnotebooks%2F)
