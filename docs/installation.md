@@ -5,13 +5,7 @@
 spectral_recovery and all of it's required dependencies can be installed using pip (or uv):
 
 ```bash
-pip install spectral_recovery
-```
-
-To install the CLI version of spectral_recovery, use "spectral_recovery[cli]" instead:
-
-```bash
-pip install "spectral_recovery[cli]"
+pip install spectral-recovery
 ```
 
 ## From Source
@@ -23,13 +17,13 @@ pip install "spectral_recovery[cli]"
 spectral_recovery can be installed from source code directly from the project repository:
 
 ```bash
-pip install git+https://github.com/PEOPLE-ER/Spectral-Recovery.git#egg=spectral_recovery
+pip install git+https://github.com/PEOPLE-ER/spectral-recovery.git#egg=spectral_recovery
 ```
 
 or from a local clone of the repository:
 
 ```bash
-git clone https://github.com/PEOPLE-ER/Spectral-Recovery.git
-cd Spectral-Recovery
+git clone https://github.com/PEOPLE-ER/spectral-recovery.git
+cd spectral-recovery
 pip install -e .
 ```

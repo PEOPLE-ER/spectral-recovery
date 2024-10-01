@@ -17,7 +17,7 @@ Github: [https://github.com/PEOPLE-ER/spectral-recovery/](https://github.com/PEO
 Documentation: [https://people-er.github.io/spectral-recovery/](https://people-er.github.io/spectral-recovery/)
 
 PyPi: [https://pypi.org/project/spectral-recovery/](https://pypi.org/project/spectral-recovery/)
-
+    
 ## Overview
 
 `spectral-recovery` is an open-source project and Python package that provides simple, centralized, and reproducible methods for performing [spectral recovery analysis](https://people-er.github.io/spectral-recovery/about/#13-looking-at-recovery-trajectories) to support [Ecosystem Restoration](https://people-er.github.io/spectral-recovery/about/#11-ecosystem-restoration) (ER) efforts in forested ecosystems.
@@ -49,7 +49,7 @@ index_ts = sr.compute_indices(
     indices=["NBR", "NDVI"],
 )
 # Read in restoration site(s)
-rest_site = sr.read_restoration_site(
+rest_site = sr.read_restoration_sites(
     path=data.bc06_wildfire_restoration_site(),
     dist_rest_years={0: [2005, 2006]},
 )
