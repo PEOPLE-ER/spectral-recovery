@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [1.0.1] - 2024-08-29
+
+### Added
+
+- New examples TIFs for "basic workflow" notebook (#159)
+
+### Changed
+
+- Update Installation documentation (#159)
+- Update Overview documentation (#159)
+- Update notebooks (#159)
+
+### Removed
+
+- Delete old example TIFs for "basic workflow" notebook (#159)
+
+### Fixed
+
+- Fix typo in REAME "Quick Start" section (#159)
 
 ## [1.0.0] - 2024-08-29
 
