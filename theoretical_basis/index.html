@@ -1,0 +1,976 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://PEOPLE-ER.github.io/spectral-recovery/theoretical_basis/">
+      
+      
+        <link rel="prev" href="../terminology/">
+      
+      
+        <link rel="next" href="../spectral_recovery_tool/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.39">
+    
+    
+      
+        <title>Introduction - PEOPLE-ER Spectral Recovery</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.8c3ca2c6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+      <link rel="stylesheet" href="../stylesheets/mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#1-introduction" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PEOPLE-ER Spectral Recovery" class="md-header__button md-logo" aria-label="PEOPLE-ER Spectral Recovery" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PEOPLE-ER Spectral Recovery
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Introduction
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/PEOPLE-ER/spectral-recovery" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spectral-recovery
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../installation/" class="md-tabs__link">
+          
+  
+  Documentation
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  Theoretical Basis
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PEOPLE-ER Spectral Recovery" class="md-nav__button md-logo" aria-label="PEOPLE-ER Spectral Recovery" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PEOPLE-ER Spectral Recovery
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/PEOPLE-ER/spectral-recovery" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    spectral-recovery
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Documentation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Documentation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quick Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terminology/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Terminology
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Theoretical Basis
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Theoretical Basis
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#11-ecosystem-restoration" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.1 ECOSYSTEM RESTORATION
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-using-spectral-indices-to-monitor-restoration-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.2 USING SPECTRAL INDICES TO MONITOR RESTORATION OUTCOMES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-looking-at-recovery-trajectories" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.3 LOOKING AT RECOVERY TRAJECTORIES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-recovery-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.4 RECOVERY TARGETS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-recovery-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.5 RECOVERY METRICS
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spectral_recovery_tool/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spectral Recovery Tool
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#11-ecosystem-restoration" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.1 ECOSYSTEM RESTORATION
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-using-spectral-indices-to-monitor-restoration-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.2 USING SPECTRAL INDICES TO MONITOR RESTORATION OUTCOMES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-looking-at-recovery-trajectories" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.3 LOOKING AT RECOVERY TRAJECTORIES
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-recovery-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.4 RECOVERY TARGETS
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#15-recovery-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.5 RECOVERY METRICS
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="1-introduction">1. INTRODUCTION</h1>
+<p><strong>Authors:</strong></p>
+<p>Melissa Birch</p>
+<p><strong>Reviewed/Edited by:</strong></p>
+<p>Sarah Zwiep</p>
+<p>Marcos Kavlin</p>
+<p>Dr. Andy Dean</p>
+<p>Dr. Nicholas Coops</p>
+<p>This user guide provides an overview of the Spectral Recovery tool. In the first half of the user guide, there is a review of the theoretical use of spectral recovery, which covers:</p>
+<ol>
+<li>The basic approach of using remote sensing techniques for monitoring ecosystem recovery.</li>
+<li>Previous work that has been done in this area.</li>
+<li>The use of recovery targets.</li>
+<li>Interpreting spectral recovery in an ecological context.</li>
+</ol>
+<p>In the second half of this document, the tool, its inputs, and guide for its use is discussed.</p>
+<h2 id="11-ecosystem-restoration">1.1 ECOSYSTEM RESTORATION</h2>
+<p>Increasing anthropogenic activity and global climate change is resulting in increased disturbances and degradation of natural environments (Suding et al., 2015). The subsequent goals of conservation, adaptation, and mitigation are putting greater emphasis on both improvement and monitoring of ecosystems (Wortley et al., 2013). As a result, ecosystem restoration efforts, which aim to restore an area to a specified condition, and can involve passive, active, or hybrid regeneration techniques (Burnett et al., 2019; Hobbs &amp; Norton, 1996) are becoming more widespread.</p>
+<p>Restoration has proven to be an effective tool to reverse ecosystem damage, while also increasing ecosystem resilience (Wortley et al., 2013). At the same time, an important outcome of restoration interventions has often been an increased functionality of ecosystems, and a greater availability of ecosystem goods and services (Atkinson et al., 2022; Hobbs &amp; Norton, 1996). Because of the numerous potential benefits, the specific goals of restoration may differ between sites including aims such as increasing carbon storage, habitat value for species, or timber quality, with restoration techniques often tailored to reach those specific goals (Burnett et al., 2019). Depending on the restoration goals, the success of the ecosystem recovery is usually determined by measures of one or more categories of ecosystem characteristics: vegetation structure, biodiversity, and ecological functioning (Ruiz-Jaen &amp; Mitchell Aide, 2005).</p>
+<p>Monitoring restoration efforts typically involve field measurements, which can be expensive and infeasible, especially if the restoration site is inaccessible or covers large spatial extents. Especially challenging for effective monitoring is the ability to repeat the field measurements over time, to ensure that restoration efforts are still on track. These limitations often result in an incomplete understanding of the recovery process, with most restoration monitoring programs having durations of five years or less (Ruiz-Jaen &amp; Mitchell Aide, 2005). Yet recovery often occurs on much longer timescales, with biodiversity and structural regeneration requiring upwards of seven years to show progress (Chen et al., 2011; Pickell et al., 2016; Atkinson et al., 2022).</p>
+<p>Remote sensing offers a potential aid for these limitations, with open access, and operationally ready satellite data products allowing consistent, inexpensive, and repeatable measurements of ground conditions at a landscape scale (Cordell et al., 2017).  To date remote sensing techniques have not been used as frequently as field measurements, due in part to cost, access and the typical focus of fine scale site specific recovery strategies (Cordell et al., 2017). However, the increased emphasis on ecosystem restoration and management being landscape-focused (Cordell et al., 2017) makes remote sensing highly applicable to restoration monitoring frameworks.</p>
+<h2 id="12-using-spectral-indices-to-monitor-restoration-outcomes">1.2 USING SPECTRAL INDICES TO MONITOR RESTORATION OUTCOMES</h2>
+<p>Freely available satellite imagery has resulted in advancements in the use of remote sensing data products and algorithms for monitoring the conditions of vegetation (Wulder et al., 2012), with a substantial number of analyses depending on spectral indices. Sometimes referred to as vegetation indices, spectral indices use reflectance from two or more spectral bands to produce an estimate of vegetation health (Zeng et al., 2022). Spectral indices have a long history as proxies for vegetation condition (Banskota et al., 2014) and have been correlated to a wide variety of ecosystem variables, such as ecosystem structure or function (Skidmore et al., 2021), enabling their use in estimating ecosystem recovery. For example, the Normalized Difference Vegetation Index (NDVI) is frequently used to monitor growing conditions and has been shown to correlate with leaf area index (LAI) (Zeng et al., 2022); whilst the Normalized Burn Ratio (NBR) is commonly used to assess vegetation conditions following wildfire, and is related to vegetation productivity and water stress (Key and Benson, 2006).</p>
+<p>Spectral indices are commonly used in time series analyses (Banskota et al., 2014) which assess how the indices change over time, often pre and post disturbance events, resulting in a spectral trajectory. By revealing how these indices have changed (in other words, by using the trajectories), it enables the characterization of disturbances, recovery, or both (Wulder et al., 2019). Subsequently, one can use these trajectories to calculate change metrics, such as change magnitude or change duration (Banskota et al., 2014; Wulder et al., 2019). Recent developments in the use of spectral information for ecosystem recovery detection have also resulted in a variety of recovery metrics that have proven to be useful for characterizing recovery specifically, such as Years to Recovery (Y2R) (Wulder et al., 2019; Frazier et al., 2018, De Keersmaecker et al., 2022). Along with these metrics, change algorithms have also been developed, however these are often complex, require parameterization, and are inaccessible to users unfamiliar with remote sensing or statistics (Cohen et al., 2018).</p>
+<h2 id="13-looking-at-recovery-trajectories">1.3 LOOKING AT RECOVERY TRAJECTORIES</h2>
+<p>Generally, there are two main components of recovery that should be considered: recovery rate and recovery trajectory or shape (Montoya, 2021). Recovery rates and trajectories are often considered in remote sensing analyses, but they are hard to estimate when using ground data. This is primarily because revealing the rate and trajectory shape require repeated measurements of the conditions, which would be expensive to monitor using field data. Yet, recovery rates and trajectories reveal substantial information about the progress of the recovery, as it shows not only how quickly a site is recovering, but also how that rate is changing over time. It is this information offered by rates and trajectories that can be used for the calculation of recovery metrics, which consequently offer more information about recovery progress than a simple index value.</p>
+<p><img alt="image" src="../asset/historical_trends_exmpl.png" /></p>
+<p><em>Figure 1. Displays two conceptual spectral recovery trajectories, following a disturbance and using a historical recovery target (A), and following a restoration intervention with a reference recovery target (B).</em></p>
+<p>A second consideration is timescales. There can be short-term and long-term recovery indicators, with some spectral indices providing information about short-term recovery and some indices providing more information about long-term recovery. For example, NDVI often increases quite quickly in the restoration process as it is sensitive to vegetation like grasses and shrubs, which often establish themselves rapidly after a disturbance (Hislop et al., 2018; Pickell et al., 2016). However, NDVI also saturates or plateaus at relatively low biomass densities (Chu et al., 2016; Pickell et al., 2016; White et al., 2017), so it may not provide much information as a long-term recovery indicator. NBR, on the other hand, has been shown to correlate more with vegetation structure, and is thus often used to estimate the re-establishment of trees or woody vegetation, as opposed to grasses (Frazier et al., 2015; Hislop et al., 2018; Pickell et al., 2016; White et al. 2017). Both indices provide complementary insight into the recovery progress of a site, and it is recommended to look at both short-term and long-term recovery indicators for this reason.</p>
+<p>Recovery trajectories following restoration can be variable, often being a nonlinear process that experiences interannual variation (Ruiz-Jaen &amp; Mitchell Aide, 2005). In fact, the first five years of a restoration project may see highly divergent trajectories across the site, due to stochasticity, variations in climate, and other highly localized environmental variables and processes (Matthews &amp; Spyreas, 2010). This is especially true with the increasingly rapid climate changes due to anthropogenic activities (Suding et al., 2015). Because of this interannual variation, a trajectory may change year-to-year, which is why it is recommended to run the tool annually to assess the recovery progress. However, it is also expected that there will be variability in the spectral trajectories, and a decreased recovery rate for a single year may not be cause for concern.</p>
+<p>Spectral trajectories often differ with disturbance severity and disturbance types (Bright et al., 2019; Chen et al., 2011; Chu et al., 2016; Schroeder et al., 2011), or local environment such as the amount of precipitation that is received, or differences in previous land cover, soils, nutrient availabilities, and ecosystem types (Epting &amp; Verbyla, 2005; Frazier et al., 2015; Frolking et al., 2009; Kennedy et al., 2012). Spectral trajectories can also vary by forest type or dominant species (Frazier et al. 2015; Bright et al., 2019). For example, Morresi et al. (2019) found that broadleaved trees recovery more quickly than conifers. Spectral indices will also display different trajectories (Cohen et al., 2018; Pickell et al., 2016) so it is important to consider what information each index offers as an ecological indicator, and be aware of its limitations. Altogether these differences indicate a key reason why this tool, which monitors individual areas through time using multiple indices, is necessary for understanding forest restoration and recovery, as generalizations across both time and space cannot be made.</p>
+<h2 id="14-recovery-targets">1.4 RECOVERY TARGETS</h2>
+<p>A necessary component of monitoring restoration success is having an appropriate recovery target for a restoration site (Hobbs &amp; Norton, 1996; Ruiz-Jaen &amp; Mitchell Aide, 2005). In the field of ecological restoration, users should clearly define measurable target ecosystem attributes (Hobbs &amp; Norton, 1996), which identify the degree of recovery desired for the degraded area (Gann et al., 2019). The most common approach for measuring restoration success, is to measure the similarity between the restoration site and these recovery targets (Hobbs &amp; Norton, 1996). The field of remote sensing also frequently estimates restoration success by assessing similarity of a restoration site to a recovery target condition, via the comparison of spectral index values to pre-disturbance conditions (Frazier et al., 2018; White et al., 2017).</p>
+<p>Each of these approaches is described in more detail below.</p>
+<p>DETERMINING THE RECOVERY TARGET USING A HISTORICAL APPROACH</p>
+<p>A historical approach uses a historical condition of a restoration site as the recovery target. This is the most common approach in the field of remote sensing, with the readily available satellite imagery in the Landsat archives dating back to 1984 making it possible to select a historical recovery target. Support for this approach has grown as there has been increasing freely available historic satellite imagery, with Sentinel-2 imagery's earliest historical period being 2016. In annual time series trajectory analyses, the recovery target is frequently set by taking the average spectral value of the two years prior to the start of the disturbance (De Keersmaecker et al., 2022; Pickell et al., 2016; White et al., 2017). As spectral trajectories can be noisy and subject to interannual variation, an average is taken to represent the general pre-disturbance condition to offset any potential noise in the spectral trajectory of those two years (Pickell et al., 2016). </p>
+<p>DETERMINING THE RECOVERY TARGET USING A REFERENCE APPROACH</p>
+<p>The second, recommended approach for determining recovery targets within the field of ecological restoration is the use of reference systems (Gann et al., 2019). Reference systems are areas within the same landscape of the restoration site which exhibit desirable ecosystem attributes and represent a healthy or stable ecosystem condition (Gann et al., 2019). These are often attributed to be natural or semi-natural ecosystems which could have been similar to the restoration site's state if not for the site's degradation or disturbance (Gann et al., 2019). The use of reference systems is built on the recognition that within an ecosystem, there are multiple possible meta-states depending on environmental drivers such as climate or species which may affect the successional dynamics, and that ecosystems are always in a state of change (Gann et al., 2019; Hobbs &amp; Norton, 1996). Ecological restoration frameworks strongly encourage the use of reference systems over historical conditions, as the latter target might be impossible or even undesirable to reach. This is primarily due to changes in biotic and abiotic conditions, especially in the context of climate change and the importance of ecosystem resilience (Gann et al., 2019). Yet, to determine restoration successful, a target is still required which is where reference systems become integral.</p>
+<p>By incorporating a number of reference systems into the recovery target, it allows for a range of dynamic conditions making restoration success more feasible (Hobbs &amp; Norton, 1996). It also helps to avoid any potential bias in reference system selection, as choosing one may result in only the highest quality site being chosen (which may be unattainable) or failure to include systems that that experience the same conditions as the restoration site (Atkinson et al. 2022).</p>
+<h2 id="15-recovery-metrics">1.5 RECOVERY METRICS</h2>
+<p>Recovery metrics allow for the characterization or spectral trends through time, using the spectral trajectories to result in standardized and comparable numeric variables (Wulder et al., 2019). There are five common recovery metrics, which are each informed by previous research (De Keersmaecker et al., 2022; Frazier et al., 2018; Pickell et al., 2016; White et al., 2017).</p>
+<p>A choice of metrics is included to make the outputs applicable to different research or monitoring objectives, and offer differing information. ∆Index(regrowth) quantifies the absolute change during a restoration window, whilst YrYr uses this absolute change to derive an average annual rate of change. R80P allows for the quantification of recovery progress relative to a recovery target, while the Y2R metric reveals how long it took for the recovery process to occur. RRI is distinct from other metrics, as it relates the change during the restoration window to the change due to the disturbance, essentially scaling the recovery to the disturbance severity (Frazier et al., 2018). </p>
+<p>Visualising of per-pixel recovery metrics enables a clearer understanding of the recovery progress across an entire landscape. Subsequent spatial analyses using these tool outputs can include measures of spatial autocorrelation with external variables, cluster analyses, or measures of spatial heterogeneity. This could prove useful to identifying any spatial patterns or trends in recovery in the landscape, or the potential to identify which external factors (such as restoration treatments, topography, soil, dominant species, precipitation, etc.) are more significant drivers of ecological recovery. Conversely, this can also aid in the identification of areas that could require further restoration activities to aid in the recovery process.</p>
+<h1 id="2-acknowledgements-and-references">2. ACKNOWLEDGEMENTS AND REFERENCES</h1>
+<p>Atkinson, J., Brudvig, L. A., Mallen-Cooper, M., Nakagawa, S., Moles, A. T., &amp; Bonser, S. P. (2022). Terrestrial ecosystem restoration increases biodiversity and reduces its variability, but not to reference levels: A global meta-analysis. <em>Ecology Letters</em>, <em>25</em>(7), 1725–1737. <a href="https://doi.org/10.1111/ele.14025">https://doi.org/10.1111/ele.14025</a></p>
+<p>Banskota, A., Kayastha, N., Falkowski, M. J., Wulder, M. A., Froese, R. E., &amp; White, J. C. (2014). Forest Monitoring Using Landsat Time Series Data: A Review. <em>Canadian Journal of Remote Sensing</em>, <em>40</em>(5), 362–384. <a href="https://doi.org/10.1080/07038992.2014.987376">https://doi.org/10.1080/07038992.2014.987376</a></p>
+<p>Bright, B. C., Hudak, A. T., Kennedy, R. E., Braaten, J. D., &amp; Henareh Khalyani, A. (2019). Examining post-fire vegetation recovery with Landsat time series analysis in three western North American forest types. <em>Fire Ecology</em>, <em>15</em>(1), 8. <a href="https://doi.org/10.1186/s42408-018-0021-9">https://doi.org/10.1186/s42408-018-0021-9</a></p>
+<p>Burnett, K. M., Ticktin, T., Bremer, L. L., Quazi, S. A., Geslani, C., Wada, C. A., Kurashima, N., Mandle, L., Pascua, P., Depraetere, T., Wolkis, D., Edmonds, M., Giambelluca, T., Falinski, K., &amp; Winter, K. B. (2019). Restoring to the future: Environmental, cultural, and management trade-offs in historical versus hybrid restoration of a highly modified ecosystem. <em>Conservation Letters</em>, <em>12</em>(1), e12606. <a href="https://doi.org/10.1111/conl.12606">https://doi.org/10.1111/conl.12606</a></p>
+<p>Chen, X., Vogelmann, J. E., Rollins, M., Ohlen, D., Key, C. H., Yang, L., Huang, C., &amp; Shi, H. (2011). Detecting post-fire burn severity and vegetation recovery using multitemporal remote sensing spectral indices and field-collected composite burn index data in a ponderosa pine forest. <em>International Journal of Remote Sensing</em>, <em>32</em>(23), 7905–7927. <a href="https://doi.org/10.1080/01431161.2010.524678">https://doi.org/10.1080/01431161.2010.524678</a></p>
+<p>Chu, T., Guo, X., &amp; Takeda, K. (2016). Remote sensing approach to detect post-fire vegetation regrowth in Siberian boreal larch forest. <em>Ecological Indicators</em>, <em>62</em>, 32–46. <a href="https://doi.org/10.1016/j.ecolind.2015.11.026">https://doi.org/10.1016/j.ecolind.2015.11.026</a></p>
+<p>Cohen, W. B., Yang, Z., Healey, S. P., Kennedy, R. E., &amp; Gorelick, N. (2018). A LandTrendr multispectral ensemble for forest disturbance detection. <em>Remote Sensing of Environment</em>, <em>205</em>, 131–140. <a href="https://doi.org/10.1016/j.rse.2017.11.015">https://doi.org/10.1016/j.rse.2017.11.015</a></p>
+<p>Cohen, W. B., Yang, Z., &amp; Kennedy, R. (2010). Detecting trends in forest disturbance and recovery using yearly Landsat time series: 2. TimeSync — Tools for calibration and validation. <em>Remote Sensing of Environment</em>, <em>114</em>(12), 2911–2924. <a href="https://doi.org/10.1016/j.rse.2010.07.010">https://doi.org/10.1016/j.rse.2010.07.010</a></p>
+<p>Cordell, S., Questad, E. J., Asner, G. P., Kinney, K. M., Thaxton, J. M., Uowolo, A., Brooks, S., &amp; Chynoweth, M. W. (2017). Remote sensing for restoration planning: How the big picture can inform stakeholders. <em>Restoration Ecology</em>, <em>25</em>(S2), S147–S154. <a href="https://doi.org/10.1111/rec.12448">https://doi.org/10.1111/rec.12448</a></p>
+<p>Crawford, C. J., Roy, D. P., Arab, S., Barnes, C., Vermote, E., Hulley, G., Gerace, A., Choate, M., Engebretson, C., Micijevic, E., Schmidt, G., Anderson, C., Anderson, M., Bouchard, M., Cook, B., Dittmeier, R., Howard, D., Jenkerson, C., Kim, M., … Zahn, S. (2023). The 50-year Landsat collection 2 archive. <em>Science of Remote Sensing</em>, <em>8</em>, 100103. <a href="https://doi.org/10.1016/j.srs.2023.100103">https://doi.org/10.1016/j.srs.2023.100103</a></p>
+<p>De Keersmaecker, W., Rodríguez-Sánchez, P., Milencović, M., Herold, M., Reiche, J., &amp; Verbesselt, J. (2022). Evaluating recovery metrics derived from optical time series over tropical forest ecosystems. <em>Remote Sensing of Environment</em>, <em>274</em>, 112991. <a href="https://doi.org/10.1016/j.rse.2022.112991">https://doi.org/10.1016/j.rse.2022.112991</a></p>
+<p>Epting, J., &amp; Verbyla, D. (2005). Landscape-level interactions of prefire vegetation, burn severity, and postfire vegetation over a 16-year period in interior Alaska. <em>Canadian Journal of Forest Research</em>, <em>35</em>(6), 1367–1377. <a href="https://doi.org/10.1139/x05-060">https://doi.org/10.1139/x05-060</a></p>
+<p>Francini, S., Hermosilla, T., Coops, N. C., Wulder, M. A., White, J. C., &amp; Chirici, G. (2023). An assessment approach for pixel-based image composites. <em>ISPRS Journal of Photogrammetry and Remote Sensing</em>, <em>202</em>, 1–12. <a href="https://doi.org/10.1016/j.isprsjprs.2023.06.002">https://doi.org/10.1016/j.isprsjprs.2023.06.002</a></p>
+<p>Frazier, R. J., Coops, N. C., &amp; Wulder, M. A. (2015). Boreal Shield forest disturbance and recovery trends using Landsat time series. <em>Remote Sensing of Environment</em>, <em>170</em>, 317–327. <a href="https://doi.org/10.1016/j.rse.2015.09.015">https://doi.org/10.1016/j.rse.2015.09.015</a></p>
+<p>Frazier, R. J., Coops, N. C., Wulder, M. A., Hermosilla, T., &amp; White, J. C. (2018). Analyzing spatial and temporal variability in short-term rates of post-fire vegetation return from Landsat time series. <em>Remote Sensing of Environment</em>, <em>205</em>, 32–45. <a href="https://doi.org/10.1016/j.rse.2017.11.007">https://doi.org/10.1016/j.rse.2017.11.007</a></p>
+<p>Frolking, S., Palace, M. W., Clark, D. B., Chambers, J. Q., Shugart, H. H., &amp; Hurtt, G. C. (2009). Forest disturbance and recovery: A general review in the context of spaceborne remote sensing of impacts on aboveground biomass and canopy structure. <em>Journal of Geophysical Research: Biogeosciences</em>, <em>114</em>(G2). <a href="https://doi.org/10.1029/2008JG000911">https://doi.org/10.1029/2008JG000911</a></p>
+<p>Gann, G. D., McDonald, T., Walder, B., Aronson, J., Nelson, C. R., Jonson, J., Hallett, J. G., Eisenberg, C., Guariguata, M. R., Liu, J., Hua, F., Echeverría, C., Gonzales, E., Shaw, N., Decleer, K., &amp; Dixon, K. W. (2019). International principles and standards for the practice of ecological restoration. <em>Restoration Ecology</em>, <em>27</em>(S1), S1–S46. <a href="https://doi.org/10.1111/rec.13035">https://doi.org/10.1111/rec.13035</a></p>
+<p>Gitelson, A. A., Kaufman, Y. J., &amp; Merzlyak, M. N. (1996). Use of a green channel in remote sensing of global vegetation from EOS-MODIS. <em>Remote Sensing of Environment</em>, <em>58</em>(3), 289–298. <a href="https://doi.org/10.1016/S0034-4257(96)00072-7">https://doi.org/10.1016/S0034-4257(96)00072-7</a></p>
+<p>Gitelson, A. A., Viña, A., Arkebauer, T. J., Rundquist, D. C., Keydan, G., &amp; Leavitt, B. (2003). Remote estimation of leaf area index and green leaf biomass in maize canopies. <em>Geophysical Research Letters</em>, <em>30</em>(5). <a href="https://doi.org/10.1029/2002GL016450">https://doi.org/10.1029/2002GL016450</a></p>
+<p>Gould, W. (2000). Remote Sensing of Vegetation, Plant Species Richness, and Regional Biodiversity Hotspots. <em>Ecological Applications</em>, <em>10</em>(6), 1861–1870. <a href="https://doi.org/10.1890/1051-0761(2000)010%5B1861:RSOVPS%5D2.0.CO;2">https://doi.org/10.1890/1051-0761(2000)010[1861:RSOVPS]2.0.CO;2</a></p>
+<p>Hardisky, M., Klemas, V., &amp; Smart, R. (1983). The Influence of Soil-Salinity, Growth Form, and Leaf Moisture on the Spectral Radiance of Spartina-Alterniflora Canopies. <em>PHOTOGRAMMETRIC ENGINEERING AND REMOTE SENSING</em>, <em>49</em>(1), 77–83.</p>
+<p>Hermosilla, T., Wulder, M. A., White, J. C., Coops, N. C., Hobart, G. W., &amp; Campbell, L. B. (2016). Mass data processing of time series Landsat imagery: Pixels to data products for forest monitoring. <em>International Journal of Digital Earth</em>, <em>9</em>(11), 1035–1054. <a href="https://doi.org/10.1080/17538947.2016.1187673">https://doi.org/10.1080/17538947.2016.1187673</a></p>
+<p>Hislop, S., Jones, S., Soto-Berelov, M., Skidmore, A., Haywood, A., &amp; Nguyen, T. H. (2018). Using Landsat Spectral Indices in Time-Series to Assess Wildfire Disturbance and Recovery. <em>Remote Sensing</em>, <em>10</em>(3), Article 3. <a href="https://doi.org/10.3390/rs10030460">https://doi.org/10.3390/rs10030460</a></p>
+<p>Hobbs, R. J., &amp; Norton, D. A. (1996). Towards a Conceptual Framework for Restoration Ecology. <em>Restoration Ecology</em>, <em>4</em>(2), 93–110. <a href="https://doi.org/10.1111/j.1526-100X.1996.tb00112.x">https://doi.org/10.1111/j.1526-100X.1996.tb00112.x</a></p>
+<p>Huete, A., Didan, K., Miura, T., Rodriguez, E. P., Gao, X., &amp; Ferreira, L. G. (2002). Overview of the radiometric and biophysical performance of the MODIS vegetation indices. <em>Remote Sensing of Environment</em>, <em>83</em>(1), 195–213. <a href="https://doi.org/10.1016/S0034-4257(02)00096-2">https://doi.org/10.1016/S0034-4257(02)00096-2</a></p>
+<p>Huete, A. R. (1988). A soil-adjusted vegetation index (SAVI). <em>Remote Sensing of Environment</em>, <em>25</em>(3), 295–309. <a href="https://doi.org/10.1016/0034-4257(88)90106-X">https://doi.org/10.1016/0034-4257(88)90106-X</a></p>
+<p>Kennedy, R. E., Yang, Z., Cohen, W. B., Pfaff, E., Braaten, J., &amp; Nelson, P. (2012). Spatial and temporal patterns of forest disturbance and regrowth within the area of the Northwest Forest Plan. <em>Remote Sensing of Environment</em>, <em>122</em>, 117–133. <a href="https://doi.org/10.1016/j.rse.2011.09.024">https://doi.org/10.1016/j.rse.2011.09.024</a></p>
+<p>Key, C. H., &amp; Benson, N. C. (2006). Landscape Assessment (LA). <em>In: Lutes, Duncan C.; Keane, Robert E.; Caratti, John F.; Key, Carl H.; Benson, Nathan C.; Sutherland, Steve; Gangi, Larry J. 2006. FIREMON: Fire Effects Monitoring and Inventory System. Gen. Tech. Rep. RMRS-GTR-164-CD. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. p. LA-1-55</em>, <em>164</em>. <a href="https://www.fs.usda.gov/research/treesearch/24066">https://www.fs.usda.gov/research/treesearch/24066</a></p>
+<p>Kumar, V., Sharma, A., Bhardwaj, R., &amp; Thukral, A. K. (2018). Comparison of different reflectance indices for vegetation analysis using Landsat-TM data. <em>Remote Sensing Applications: Society and Environment</em>, <em>12</em>, 70–77. <a href="https://doi.org/10.1016/j.rsase.2018.10.013">https://doi.org/10.1016/j.rsase.2018.10.013</a></p>
+<p>Latifovic, R., &amp; Pouliot, D. (2014). Monitoring Cumulative Long-Term Vegetation Changes Over the Athabasca Oil Sands Region. <em>IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing</em>, <em>7</em>(8), 3380–3392. <a href="https://doi.org/10.1109/JSTARS.2014.2321058">https://doi.org/10.1109/JSTARS.2014.2321058</a></p>
+<p>Mangewa, L. J., Link to external site, this link will open in a new window, Ndakidemi, P. A., Alward, R. D., Kija, H. K., Link to external site, this link will open in a new window, Bukombe, J. K., Nasolwa, E. R., &amp; Munishi, L. K. (2022). Comparative Assessment of UAV and Sentinel-2 NDVI and GNDVI for Preliminary Diagnosis of Habitat Conditions in Burunge Wildlife Management Area, Tanzania. <em>Earth</em>, <em>3</em>(3), 769. <a href="https://doi.org/10.3390/earth3030044">https://doi.org/10.3390/earth3030044</a></p>
+<p>Matthews, J. W., &amp; Spyreas, G. (2010). Convergence and divergence in plant community trajectories as a framework for monitoring wetland restoration progress. <em>Journal of Applied Ecology</em>, <em>47</em>(5), 1128–1136. <a href="https://doi.org/10.1111/j.1365-2664.2010.01862.x">https://doi.org/10.1111/j.1365-2664.2010.01862.x</a></p>
+<p>Montoya, D. (2021). Challenges and directions toward a general theory of ecological recovery dynamics: A metacommunity perspective. <em>One Earth</em>, <em>4</em>(8), 1083–1094. <a href="https://doi.org/10.1016/j.oneear.2021.07.012">https://doi.org/10.1016/j.oneear.2021.07.012</a></p>
+<p>Morresi, D., Vitali, A., Urbinati, C., &amp; Garbarino, M. (2019). Forest Spectral Recovery and Regeneration Dynamics in Stand-Replacing Wildfires of Central Apennines Derived from Landsat Time Series. <em>Remote Sensing</em>, <em>11</em>(3). <a href="https://doi.org/10.3390/rs11030308">https://doi.org/10.3390/rs11030308</a></p>
+<p>Pickell, P. D., Hermosilla, T., Frazier, R. J., Coops, N. C., &amp; Wulder, M. A. (2016). Forest recovery trends derived from Landsat time series for North American boreal forests. <em>International Journal of Remote Sensing</em>, <em>37</em>(1), 138–149. <a href="https://doi.org/10.1080/2150704X.2015.1126375">https://doi.org/10.1080/2150704X.2015.1126375</a></p>
+<p>Roy, P. S., Sharma, K. P., &amp; Jain, A. (1996). Stratification of density in dry deciduous forest using satellite remote sensing digital data—An approach based on spectral indices. <em>Journal of Biosciences</em>, <em>21</em>(5), 723–734. <a href="https://doi.org/10.1007/BF02703148">https://doi.org/10.1007/BF02703148</a></p>
+<p>Ruiz-Jaén, M. C., &amp; Mitchell Aide, T. (2005). Restoration Success: How Is It Being Measured? <em>Restoration Ecology</em>, <em>13</em>(3), 569–577. <a href="https://doi.org/10.1111/j.1526-100X.2005.00072.x">https://doi.org/10.1111/j.1526-100X.2005.00072.x</a></p>
+<p>Schroeder, T. A., Wulder, M. A., Healey, S. P., &amp; Moisen, G. G. (2011). Mapping wildfire and clearcut harvest disturbances in boreal forests with Landsat time series data. <em>Remote Sensing of Environment</em>, <em>115</em>(6), 1421–1433. <a href="https://doi.org/10.1016/j.rse.2011.01.022">https://doi.org/10.1016/j.rse.2011.01.022</a></p>
+<p>Skidmore, A. K., Coops, N. C., Neinavaz, E., Ali, A., Schaepman, M. E., Paganini, M., Kissling, W. D., Vihervaara, P., Darvishzadeh, R., Feilhauer, H., Fernandez, M., Fernández, N., Gorelick, N., Geijzendorffer, I., Heiden, U., Heurich, M., Hobern, D., Holzwarth, S., Muller-Karger, F. E., … Wingate, V. (2021). Priority list of biodiversity metrics to observe from space. <em>Nature Ecology &amp; Evolution</em>, <em>5</em>(7), Article 7. <a href="https://doi.org/10.1038/s41559-021-01451-x">https://doi.org/10.1038/s41559-021-01451-x</a></p>
+<p>Song, C., Woodcock, C. E., &amp; Li, X. (2002). The spectral/temporal manifestation of forest succession in optical imagery: The potential of multitemporal imagery. <em>Remote Sensing of Environment</em>, <em>82</em>(2), 285–302. <a href="https://doi.org/10.1016/S0034-4257(02)00046-9">https://doi.org/10.1016/S0034-4257(02)00046-9</a></p>
+<p>Sonnenschein, R., Kuemmerle, T., Udelhoven, T., Stellmes, M., &amp; Hostert, P. (2011). Differences in Landsat-based trend analyses in drylands due to the choice of vegetation estimate. <em>Remote Sensing of Environment</em>, <em>115</em>(6), 1408–1420. <a href="https://doi.org/10.1016/j.rse.2011.01.021">https://doi.org/10.1016/j.rse.2011.01.021</a></p>
+<p>Suding, K., Higgs, E., Palmer, M., Callicott, J. B., Anderson, C. B., Baker, M., Gutrich, J. J., Hondula, K. L., LaFevor, M. C., Larson, B. M. H., Randall, A., Ruhl, J. B., &amp; Schwartz, K. Z. S. (2015). Conservation. Committing to ecological restoration. <em>Science (New York, N.Y.)</em>, <em>348</em>(6235), 638–640. <a href="https://doi.org/10.1126/science.aaa4216">https://doi.org/10.1126/science.aaa4216</a></p>
+<p>Taloor, A. K., Drinder Singh Manhas, &amp; Chandra Kothyari, G. (2021). Retrieval of land surface temperature, normalized difference moisture index, normalized difference water index of the Ravi basin using Landsat data. <em>Applied Computing and Geosciences</em>, <em>9</em>, 100051. <a href="https://doi.org/10.1016/j.acags.2020.100051">https://doi.org/10.1016/j.acags.2020.100051</a></p>
+<p>Tucker, C. J. (1979). Red and photographic infrared linear combinations for monitoring vegetation. <em>Remote Sensing of Environment</em>, <em>8</em>(2), 127–150. <a href="https://doi.org/10.1016/0034-4257(79)90013-0">https://doi.org/10.1016/0034-4257(79)90013-0</a></p>
+<p>Verbesselt, J., Somers, B., Lhermitte, S., Jonckheere, I., van Aardt, J., &amp; Coppin, P. (2007). Monitoring herbaceous fuel moisture content with SPOT VEGETATION time-series for fire risk prediction in savanna ecosystems. <em>Remote Sensing of Environment</em>, <em>108</em>(4), 357–368. <a href="https://doi.org/10.1016/j.rse.2006.11.019">https://doi.org/10.1016/j.rse.2006.11.019</a></p>
+<p>Vogelmann, J. E., Xian, G., Homer, C., &amp; Tolk, B. (2012). Monitoring gradual ecosystem change using Landsat time series analyses: Case studies in selected forest and rangeland ecosystems. <em>Remote Sensing of Environment</em>, <em>122</em>, 92–105. <a href="https://doi.org/10.1016/j.rse.2011.06.027">https://doi.org/10.1016/j.rse.2011.06.027</a></p>
+<p>White, J. C., Hermosilla, T., Wulder, M. A., &amp; Coops, N. C. (2022). Mapping, validating, and interpreting spatio-temporal trends in post-disturbance forest recovery. <em>Remote Sensing of Environment</em>, <em>271</em>, 112904. <a href="https://doi.org/10.1016/j.rse.2022.112904">https://doi.org/10.1016/j.rse.2022.112904</a></p>
+<p>White, J. C., Wulder, M. A., Hermosilla, T., Coops, N. C., &amp; Hobart, G. W. (2017). A nationwide annual characterization of 25years of forest disturbance and recovery for Canada using Landsat time series. <em>Remote Sensing of Environment</em>, <em>194</em>, 303–321. <a href="https://doi.org/10.1016/j.rse.2017.03.035">https://doi.org/10.1016/j.rse.2017.03.035</a></p>
+<p>White, J. C., Wulder, M. A., Hobart, G. W., Luther, J. E., Hermosilla, T., Griffiths, P., Coops, N. C., Hall, R. J., Hostert, P., Dyk, A., &amp; Guindon, L. (2014). Pixel-Based Image Compositing for Large-Area Dense Time Series Applications and Science. <em>Canadian Journal of Remote Sensing</em>, <em>40</em>(3), 192–212. <a href="https://doi.org/10.1080/07038992.2014.945827">https://doi.org/10.1080/07038992.2014.945827</a></p>
+<p>Wortley, L., Hero, J.-M., &amp; Howes, M. (2013). Evaluating Ecological Restoration Success: A Review of the Literature. <em>Restoration Ecology</em>, <em>21</em>(5), 537–543. <a href="https://doi.org/10.1111/rec.12028">https://doi.org/10.1111/rec.12028</a></p>
+<p>Wulder, M. A., Loveland, T. R., Roy, D. P., Crawford, C. J., Masek, J. G., Woodcock, C. E., Allen, R. G., Anderson, M. C., Belward, A. S., Cohen, W. B., Dwyer, J., Erb, A., Gao, F., Griffiths, P., Helder, D., Hermosilla, T., Hipple, J. D., Hostert, P., Hughes, M. J., … Zhu, Z. (2019). Current status of Landsat program, science, and applications. <em>Remote Sensing of Environment</em>, <em>225</em>, 127–147. <a href="https://doi.org/10.1016/j.rse.2019.02.015">https://doi.org/10.1016/j.rse.2019.02.015</a></p>
+<p>Wulder, M. A., Masek, J. G., Cohen, W. B., Loveland, T. R., &amp; Woodcock, C. E. (2012). Opening the archive: How free data has enabled the science and monitoring promise of Landsat. <em>Remote Sensing of Environment</em>, <em>122</em>, 2–10. <a href="https://doi.org/10.1016/j.rse.2012.01.010">https://doi.org/10.1016/j.rse.2012.01.010</a></p>
+<p>Yilmaz, M. T., Hunt, E. R., &amp; Jackson, T. J. (2008). Remote sensing of vegetation water content from equivalent water thickness using satellite imagery. <em>Remote Sensing of Environment</em>, <em>112</em>(5), 2514–2522. <a href="https://doi.org/10.1016/j.rse.2007.11.014">https://doi.org/10.1016/j.rse.2007.11.014</a></p>
+<p>Zeng, Y., Hao, D., Huete, A., Dechant, B., Berry, J., Chen, J. M., Joiner, J., Frankenberg, C., Bond-Lamberty, B., Ryu, Y., Xiao, J., Asrar, G. R., &amp; Chen, M. (2022). Optical vegetation indices for monitoring terrestrial ecosystems globally. <em>Nature Reviews Earth &amp; Environment</em>, <em>3</em>(7), Article 7. <a href="https://doi.org/10.1038/s43017-022-00298-5">https://doi.org/10.1038/s43017-022-00298-5</a></p>
+<p>Zhu, Z. (2017). Change detection using landsat time series: A review of frequencies, preprocessing, algorithms, and applications. <em>ISPRS Journal of Photogrammetry and Remote Sensing</em>, <em>130</em>, 370–384. <a href="https://doi.org/10.1016/j.isprsjprs.2017.06.013">https://doi.org/10.1016/j.isprsjprs.2017.06.013</a></p>
+<p>Zhu, Z., Wang, S., &amp; Woodcock, C. E. (2015). Improvement and expansion of the Fmask algorithm: Cloud, cloud shadow, and snow detection for Landsats 4–7, 8, and Sentinel 2 images. <em>Remote Sensing of Environment</em>, <em>159</em>, 269–277. <a href="https://doi.org/10.1016/j.rse.2014.12.014">https://doi.org/10.1016/j.rse.2014.12.014</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.525ec568.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
