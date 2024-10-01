@@ -105,11 +105,12 @@ def compute_metrics(
     return per_polygon_metrics
 
 
-def _has_no_missing_years(images: xr.DataArray):
+def _has_continuous_years(images: xr.DataArray):
     """Check for continous set of years in DataArray"""
     years = images.coords["time"].dt.year.values
-    if not np.all((years == list(range(years[0], years[-1] + 1)))):
-        return False
+    for year in list(range(years[0], years[-1] + 1)):
+        if year not in years:
+            return False
     return True
 
 @_register_metrics
@@ -296,9 +297,9 @@ def y2r(
         raise ValueError(VALID_PERC_MSP)
 
     recovery_window = timeseries_data.sel(time=slice(str(restoration_start), None))
-    if not _has_no_missing_years(recovery_window):
+    if not _has_continuous_years(recovery_window):
         raise ValueError(
-            f"Missing years. Y2R requires data for all years between {recovery_window.time.min()}-{recovery_window.time.max()}."
+            f"Missing years in `timeseries_data`, cannot compute Y2R. Y2R requires a continuous timeseries from the restoration start year onwards."
         )
     y2r_target = recovery_target * (percent_of_target / 100)
     years_to_recovery = (recovery_window >= y2r_target).argmax(dim="time", skipna=True)
