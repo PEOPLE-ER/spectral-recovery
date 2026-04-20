@@ -64,13 +64,14 @@ def _tcg(params_dict: Dict[str, xr.DataArray]) -> xr.DataArray:
 
 SR_REC_IDXS = {"GCI": _gci, "TCW": _tcw, "TCG": _tcg}
 
+
 @maintain_rio_attrs
 def compute_indices(
     timeseries_data: xr.DataArray, indices: list[str], constants: dict = None, **kwargs
 ):
     """Compute spectral indices.
 
-    Compute spectral indices using the spyndex package or 
+    Compute spectral indices using the spyndex package or
     manually implemented indices.
 
     Parameters
@@ -102,9 +103,11 @@ def compute_indices(
             params_dict = params_dict | constants_dict | kwargs
             spx_index_stack = spx.computeIndex(index=spx_indices, params=params_dict)
             # Rename index to band or expand if only one index was computed
-            spx_index_stack = (spx_index_stack.rename({"index": "band"})
-                   if "index" in spx_index_stack.dims
-                   else spx_index_stack.expand_dims(dim={"band": spx_indices}))
+            spx_index_stack = (
+                spx_index_stack.rename({"index": "band"})
+                if "index" in spx_index_stack.dims
+                else spx_index_stack.expand_dims(dim={"band": spx_indices})
+            )
             spx_and_sr_outputs.append(spx_index_stack)
     if sr_indices:
         # Compute indexes implemented in sr (spectral-recovery)

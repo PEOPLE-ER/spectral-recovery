@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - N/A
 
+## [1.0.2] - 2026-04-20
+
+### Added
+
+- Add `value_source` parameter to recovery metric calculations so users can choose observed values or Sen-slope gap-fill behavior for missing required years (1184d1e)
+- Add unit test coverage for outlier resilience and missing key-year data handling in recovery metrics (1184d1e)
+
+### Changed
+
+- Improve recovery metric computation to be more resilient to outliers and missing key-year values (1184d1e)
+
+### Removed
+
+- N/A
+
+### Fixed
+
+- Fix instability in recovery metric results when key-year observations are missing (1184d1e)
+
 ## [1.0.1] - 2024-08-29
 
 ### Added
