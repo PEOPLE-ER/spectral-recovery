@@ -1307,6 +1307,146 @@ class TestModeledValueSource:
         )
         assert result.equals(expected)
 
+    def test_yryr_uses_sen_slope_for_missing_required_year(self):
+        obs_missing = xr.DataArray(
+            [[[[40]], [[50]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        obs_filled = xr.DataArray(
+            [[[[40]], [[50]], [[60]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        result = yryr(
+            restoration_start=2010,
+            timeseries_data=obs_missing,
+            recovery_target=rt,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        expected = yryr(
+            restoration_start=2010,
+            timeseries_data=obs_filled,
+            recovery_target=rt,
+            timestep=2,
+            value_source="observed",
+        )
+        assert result.equals(expected)
+
+    def test_yryr_uses_sen_slope_with_sparse_data(self):
+        obs_sparse = xr.DataArray(
+            [[[[40]], [[np.nan]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        obs_constant = xr.DataArray(
+            [[[[40]], [[np.nan]], [[40]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        result = yryr(
+            restoration_start=2010,
+            timeseries_data=obs_sparse,
+            recovery_target=rt,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        expected = yryr(
+            restoration_start=2010,
+            timeseries_data=obs_constant,
+            recovery_target=rt,
+            timestep=2,
+            value_source="observed",
+        )
+        assert result.equals(expected)
+
+    def test_rri_uses_sen_slope_for_missing_required_year(self):
+        obs_missing = xr.DataArray(
+            [[[[40]], [[50]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        obs_filled = xr.DataArray(
+            [[[[40]], [[50]], [[60]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        result = rri(
+            restoration_start=2010,
+            timeseries_data=obs_missing,
+            recovery_target=rt,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        expected = rri(
+            restoration_start=2010,
+            timeseries_data=obs_filled,
+            recovery_target=rt,
+            timestep=2,
+            value_source="observed",
+        )
+        assert result.equals(expected)
+
+    def test_rri_uses_sen_slope_with_sparse_data(self):
+        obs_sparse = xr.DataArray(
+            [[[[40]], [[np.nan]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        obs_constant = xr.DataArray(
+            [[[[40]], [[np.nan]], [[40]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        result = rri(
+            restoration_start=2010,
+            timeseries_data=obs_sparse,
+            recovery_target=rt,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        expected = rri(
+            restoration_start=2010,
+            timeseries_data=obs_constant,
+            recovery_target=rt,
+            timestep=2,
+            value_source="observed",
+        )
+        assert result.equals(expected)
+
+    def test_compute_metrics_passes_value_source_to_metric_func(self):
+        obs = xr.DataArray(
+            [[[[40]], [[50]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+        mocked_result = xr.DataArray(
+            [[[1.0]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+        mocked_metric = Mock(return_value=mocked_result)
+
+        with patch.dict(METRIC_FUNCS, {"rri": mocked_metric}, clear=False):
+            compute_metrics(
+                restoration_start=2010,
+                timeseries_data=obs,
+                metrics=["rri"],
+                recovery_target=rt,
+                timestep=2,
+                value_source="sen_slope",
+            )
+
+        assert mocked_metric.call_args.kwargs["value_source"] == "sen_slope"
     def test_r80p_all_nan_stays_nan(self):
         obs = xr.DataArray(
             [[[[np.nan]], [[np.nan]], [[np.nan]]]],
