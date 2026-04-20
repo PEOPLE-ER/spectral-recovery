@@ -38,7 +38,7 @@ def median(
     Parameters
     ----------
     restoration_sites : gpd.GeoDataFrame or str
-       The restoration sites to compute a recovery targets for. If str, 
+       The restoration sites to compute a recovery targets for. If str,
        must be a patch to a vector file containing one more more polygons.
     timeseries_data : xr.DataArray
         The timeseries of indices to derive the recovery target from.

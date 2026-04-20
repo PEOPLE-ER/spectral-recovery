@@ -473,7 +473,7 @@ class TestReadTimeseriesBandNames:
                 path_to_tifs="a/dir",
                 array_type="numpy",
             )
-    
+
     @patch(
         "rioxarray.open_rasterio",
     )
@@ -498,6 +498,7 @@ class TestReadTimeseriesBandNames:
         # assert
         print(stacked_tifs["band"].data, expected_bands)
         assert_array_equal(stacked_tifs["band"].data, expected_bands)
+
 
 class TestReadTimeseriesDictInput:
 
@@ -538,11 +539,7 @@ class TestReadTimeseriesDictInput:
             [[[[1.0]], [[2.0]], [[0.0]]]],
             dims=["band", "time", "y", "x"],
             coords={
-                "time": [
-                    np.datetime64("2015"),
-                    np.datetime64("2016"),
-                    np.datetime64("2017"),
-                ],
+                "time": pd.to_datetime(["2015", "2016", "2017"]),
                 "band": ["B"],
             },
         )
@@ -550,7 +547,9 @@ class TestReadTimeseriesDictInput:
         output_ts = read_timeseries(
             path_to_tifs=out_of_order_tifs, band_names=bands, array_type="numpy"
         )
-        assert output_ts.equals(excepted_output)
+        assert_array_equal(output_ts.values, excepted_output.values)
+        assert list(pd.to_datetime(output_ts.time.values).year) == [2015, 2016, 2017]
+        assert list(output_ts.band.values) == ["B"]
 
 
 class TestValidYearStr:

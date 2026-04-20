@@ -21,7 +21,13 @@ from spectral_recovery.metrics import (
 
 
 def test_metric_funcs_global_contains_all_funcs():
-    expected_dict = {"y2r": y2r, "deltair": deltair, "yryr": yryr, "r80p": r80p, "rri": rri}
+    expected_dict = {
+        "y2r": y2r,
+        "deltair": deltair,
+        "yryr": yryr,
+        "r80p": r80p,
+        "rri": rri,
+    }
     assert METRIC_FUNCS == expected_dict
 
 
@@ -67,7 +73,12 @@ class TestComputeMetrics:
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
         y2r_mock.__code__ = Mock()
-        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        y2r_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+        )
         none_rt = None
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"yryr": y2r_mock}):
@@ -87,7 +98,12 @@ class TestComputeMetrics:
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
         y2r_mock.__code__ = Mock()
-        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        y2r_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+        )
         none_rt = None
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"yryr": y2r_mock}):
@@ -116,12 +132,21 @@ class TestComputeMetrics:
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
         y2r_mock.__code__ = Mock()
-        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        y2r_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+        )
         patched_dict[multi_metrics[0].lower()] = y2r_mock
         deltair_mock = Mock()
         deltair_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
         deltair_mock.__code__ = Mock()
-        deltair_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "timestep")
+        deltair_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "timestep",
+        )
         patched_dict[multi_metrics[1].lower()] = deltair_mock
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
@@ -134,7 +159,7 @@ class TestComputeMetrics:
             )
 
         for m in multi_metrics:
-            assert patched_dict[m.lower()].called_once()
+            patched_dict[m.lower()].assert_called_once()
 
     def test_output_data_array_stacked_along_metric_dim(
         self, valid_array, valid_frame, valid_rt
@@ -145,12 +170,21 @@ class TestComputeMetrics:
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
         y2r_mock.__code__ = Mock()
-        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        y2r_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+        )
         patched_dict[multi_metrics[0].lower()] = y2r_mock
         deltair_mock = Mock()
         deltair_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
         deltair_mock.__code__ = Mock()
-        deltair_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "timestep")
+        deltair_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "timestep",
+        )
         patched_dict[multi_metrics[1].lower()] = deltair_mock
 
         with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", patched_dict):
@@ -183,12 +217,21 @@ class TestComputeMetrics:
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
         y2r_mock.__code__ = Mock()
-        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        y2r_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+        )
         patched_dict[multi_metrics[0].lower()] = y2r_mock
         deltair_mock = Mock()
         deltair_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
         deltair_mock.__code__ = Mock()
-        deltair_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "timestep")
+        deltair_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "timestep",
+        )
         patched_dict[multi_metrics[1].lower()] = deltair_mock
 
         expected_polyids = [0, 1, 2]
@@ -216,11 +259,15 @@ class TestComputeMetrics:
         r80p_mock = Mock()
         r80p_mock.return_value = xr.DataArray([[[0.0]]], dims=["band", "y", "x"])
         r80p_mock.__code__ = Mock()
-        r80p_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "timestep", "percent_of_target")
+        r80p_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "timestep",
+            "percent_of_target",
+        )
 
-        with patch.dict(
-            "spectral_recovery.metrics.METRIC_FUNCS", {"r80p": r80p_mock}
-        ):
+        with patch.dict("spectral_recovery.metrics.METRIC_FUNCS", {"r80p": r80p_mock}):
             compute_metrics(
                 timeseries_data=valid_array,
                 restoration_sites=valid_frame,
@@ -246,12 +293,23 @@ class TestComputeMetrics:
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
         y2r_mock.__code__ = Mock()
-        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        y2r_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+        )
         patched_dict[multi_metrics[0].lower()] = y2r_mock
         r80p_mock = Mock()
         r80p_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
         r80p_mock.__code__ = Mock()
-        r80p_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target", "timestep")
+        r80p_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+            "timestep",
+        )
         patched_dict[multi_metrics[1].lower()] = r80p_mock
         clipped_array = valid_array.rio.clip(multi_frame["geometry"].values)
 
@@ -300,12 +358,23 @@ class TestComputeMetrics:
         y2r_mock = Mock()
         y2r_mock.return_value = xr.DataArray([[[0]]], dims=["band", "y", "x"])
         y2r_mock.__code__ = Mock()
-        y2r_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target")
+        y2r_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+        )
         patched_dict[multi_metrics[0].lower()] = y2r_mock
         r80p_mock = Mock()
         r80p_mock.return_value = xr.DataArray([[[1]]], dims=["band", "y", "x"])
         r80p_mock.__code__ = Mock()
-        r80p_mock.__code__.co_varnames = ("restoration_start", "timeseries_data", "recovery_target", "percent_of_target", "timestep")
+        r80p_mock.__code__.co_varnames = (
+            "restoration_start",
+            "timeseries_data",
+            "recovery_target",
+            "percent_of_target",
+            "timestep",
+        )
         patched_dict[multi_metrics[1].lower()] = r80p_mock
         clipped_array = valid_array.rio.clip(multi_frame["geometry"].values)
 
@@ -702,7 +771,9 @@ class TestTestDeltaIR:
     )
     def test_default_deltaIR(self, obs, expected):
         rest_start = 2010
-        assert deltair(restoration_start=rest_start, timeseries_data=obs).equals(expected)
+        assert deltair(restoration_start=rest_start, timeseries_data=obs).equals(
+            expected
+        )
 
     def test_timestep_deltaIR(self):
         rest_start = 2010
@@ -1184,4 +1255,128 @@ class TestYrYr:
                 restoration_start=rest_start,
                 timeseries_data=obs,
                 timestep=timestep,
+            )
+
+
+class TestModeledValueSource:
+    year_period = [
+        pd.to_datetime("2010"),
+        pd.to_datetime("2011"),
+        pd.to_datetime("2012"),
+    ]
+
+    def test_r80p_uses_sen_slope_for_missing_required_year(self):
+        obs = xr.DataArray(
+            [[[[40]], [[50]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        expected = xr.DataArray(
+            [[[0.75]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+
+        result = r80p(
+            restoration_start=2010,
+            timeseries_data=obs,
+            recovery_target=rt,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        assert result.equals(expected)
+
+    def test_deltair_uses_sen_slope_for_missing_required_year(self):
+        obs = xr.DataArray(
+            [[[[50]], [[60]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+
+        expected = xr.DataArray(
+            [[[20.0]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+
+        result = deltair(
+            restoration_start=2010,
+            timeseries_data=obs,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        assert result.equals(expected)
+
+    def test_r80p_all_nan_stays_nan(self):
+        obs = xr.DataArray(
+            [[[[np.nan]], [[np.nan]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        result = r80p(
+            restoration_start=2010,
+            timeseries_data=obs,
+            recovery_target=rt,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        assert np.isnan(result.values).all()
+
+    def test_single_observation_falls_back_to_constant(self):
+        obs = xr.DataArray(
+            [[[[np.nan]], [[80]], [[np.nan]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        expected = xr.DataArray(
+            [[[1.0]]],
+            dims=["band", "y", "x"],
+        ).rio.write_crs("4326")
+
+        result = r80p(
+            restoration_start=2010,
+            timeseries_data=obs,
+            recovery_target=rt,
+            timestep=2,
+            value_source="sen_slope",
+        )
+        assert result.equals(expected)
+
+    def test_invalid_value_source_raises_err(self):
+        obs = xr.DataArray(
+            [[[[40]], [[50]], [[60]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        with pytest.raises(ValueError, match="value_source"):
+            r80p(
+                restoration_start=2010,
+                timeseries_data=obs,
+                recovery_target=rt,
+                timestep=2,
+                value_source="invalid_source",
+            )
+
+    def test_invalid_sen_min_valid_points_raises_err(self):
+        obs = xr.DataArray(
+            [[[[40]], [[50]], [[60]]]],
+            coords={"time": self.year_period},
+            dims=["band", "time", "y", "x"],
+        ).rio.write_crs("4326")
+        rt = xr.DataArray([100], dims=["band"]).rio.write_crs("4326")
+
+        with pytest.raises(ValueError, match="sen_min_valid_points"):
+            r80p(
+                restoration_start=2010,
+                timeseries_data=obs,
+                recovery_target=rt,
+                timestep=2,
+                value_source="sen_slope",
+                sen_min_valid_points=0,
             )

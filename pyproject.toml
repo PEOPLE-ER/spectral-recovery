@@ -7,9 +7,11 @@ name = "spectral_recovery"
 requires-python = ">=3.10"
 authors = [
     {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"},
+    {name = "Marcos Kavlin-Castaneda", email = "mkavlin@hatfieldgroup.com"},
 ]
 maintainers = [
-  {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"}
+  {name = "Sarah Zwiep", email = "sarahvz@mail.ubc.ca"},
+  {name = "Marcos Kavlin-Castaneda", email = "mkavlin@hatfieldgroup.com"}
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -17,7 +19,7 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
     "geopandas >= 0.13.2",
     "rioxarray >= 0.14.1",
@@ -30,6 +32,7 @@ dependencies = [
     "dask-expr >= 1.0",
     "matplotlib >= 3.7.1",
     "seaborn >= 0.12.2",
+    "pyarrow >=14.0.1",
 ]
 
 [project.optional-dependencies]
